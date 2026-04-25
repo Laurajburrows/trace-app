@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+    min-height: 100vh;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1;
+  }
+
+  .input {
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white placeholder-gray-400;
+  }
+
+  .textarea {
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white placeholder-gray-400 resize-y;
+  }
+
+  .select {
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white;
+  }
+
+  .btn-primary {
+    @apply bg-trace-forest text-white px-6 py-2.5 rounded text-sm font-semibold
+           hover:bg-trace-moss transition-colors duration-150 focus:outline-none
+           focus:ring-2 focus:ring-trace-moss focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-trace-forest border border-trace-forest px-6 py-2.5 rounded
+           text-sm font-semibold hover:bg-trace-pale transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:ring-offset-2;
+  }
+
+  .section-heading {
+    @apply text-xs font-bold uppercase tracking-widest text-trace-moss mb-4
+           pb-2 border-b border-trace-pale;
+  }
+
+  .status-green {
+    @apply bg-status-green-bg text-status-green border border-green-200;
+  }
+
+  .status-yellow {
+    @apply bg-status-yellow-bg text-status-yellow border border-yellow-200;
+  }
+
+  .status-red {
+    @apply bg-status-red-bg text-status-red border border-red-200;
+  }
+
+  .status-badge {
+    @apply px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide;
+  }
+}
+
+@media print {
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    background: white;
+  }
+}
