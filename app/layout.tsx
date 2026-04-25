@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Navigation from '@/components/Navigation'
 
@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'TRACE',
   },
+}
+
+export const viewport: Viewport = {
   themeColor: '#1A3D2B',
 }
 
