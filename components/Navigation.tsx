@@ -7,6 +7,8 @@ const links = [
   { href: '/receipt/new', label: 'Receipt Form' },
   { href: '/log', label: 'Receipt Log' },
   { href: '/report', label: 'Compliance Report' },
+  { href: '/lct', label: 'LCT Check Sheet' },
+  { href: '/admin', label: 'OAS Admin' },
 ]
 
 export default function Navigation() {

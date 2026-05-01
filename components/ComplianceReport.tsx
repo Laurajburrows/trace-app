@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
 import type { ReportData, ToolStatus } from '@/lib/types'
 
-const STATUS_COLORS: Record<ToolStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
-  YELLOW: 'status-yellow',
+  AMBER: 'status-amber',
+  YELLOW: 'status-amber',
   RED: 'status-red',
+  UNVERIFIED: 'status-red',
 }
 
 function fmt(iso: string) {
@@ -39,7 +41,7 @@ async function generatePDF(report: ReportData) {
 
   function statusColor(s: string): [number, number, number] {
     if (s === 'GREEN') return GREEN_C
-    if (s === 'YELLOW') return YELLOW_C
+    if (s === 'AMBER' || s === 'YELLOW') return YELLOW_C
     return RED_C
   }
 
@@ -239,7 +241,7 @@ async function generatePDF(report: ReportData) {
     )
   })
 
-  const flagged = report.by_tool.filter((t) => t.status === 'RED' || t.status === 'YELLOW')
+  const flagged = report.by_tool.filter((t) => t.status !== 'GREEN')
   if (flagged.length > 0) {
     gap(6)
     h3('Flagged Tool Use')
@@ -289,9 +291,27 @@ async function generatePDF(report: ReportData) {
     })
   }
 
+  // ── SECTION 5: WHITELIST COMPLIANCE REGISTER ──────────────────────────────
+  newPage()
+  h2('5. Whitelist Compliance Register')
+  gap(2)
+  body('The following table records the whitelist status of every AI tool at the time each receipt was submitted.')
+  gap(4)
+
+  tableRow(['Tool', 'Whitelist Status', 'Condition at Submission', 'Date'], [50, 30, 70, 30], true)
+  report.receipts.forEach((r) => {
+    const cond = r.whitelist_condition ? r.whitelist_condition.substring(0, 50) + (r.whitelist_condition.length > 50 ? '…' : '') : '—'
+    tableRow(
+      [r.ai_tool_used, r.tool_status, cond, new Date(r.date).toLocaleDateString('en-GB')],
+      [50, 30, 70, 30],
+      false,
+      r.tool_status !== 'GREEN' ? statusColor(r.tool_status) : undefined
+    )
+  })
+
   // ── SECTION 6: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
   newPage()
-  h2('5. Platform Disclosure Summary')
+  h2('6. Platform Disclosure Summary')
   gap(4)
 
   const uniqueTools = Array.from(new Set(report.receipts.map((r) => r.ai_tool_used)))
@@ -315,7 +335,7 @@ async function generatePDF(report: ReportData) {
 
   // ── SECTION 7: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
   newPage()
-  h2('6. Delivery Support Note')
+  h2('7. Delivery Support Note')
   gap(4)
 
   const bondPara = [
@@ -473,7 +493,8 @@ export default function ComplianceReport() {
                   >
                     <option value="">All statuses</option>
                     <option value="GREEN">GREEN</option>
-                    <option value="YELLOW">YELLOW</option>
+                    <option value="AMBER">AMBER</option>
+                <option value="YELLOW">YELLOW (legacy)</option>
                     <option value="RED">RED</option>
                   </select>
                 </div>
@@ -695,13 +716,46 @@ export default function ComplianceReport() {
               )}
             </ReportSection>
 
-            {/* Section 5: Platform Disclosure Summary */}
-            <ReportSection title="5. Platform Disclosure Summary">
+            {/* Section 5: Whitelist Compliance Register */}
+            <ReportSection title="5. Whitelist Compliance Register">
+              <p className="text-sm text-gray-600 mb-4">
+                Whitelist status of each AI tool at the time of submission.
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-trace-pale">
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Status</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Condition at Submission</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.receipts.map((r) => (
+                    <tr key={r.id} className={`border-t border-gray-100 ${r.tool_status !== 'GREEN' ? 'bg-yellow-50/30' : ''}`}>
+                      <td className="px-3 py-2 text-gray-800 font-medium">{r.ai_tool_used}</td>
+                      <td className="px-3 py-2">
+                        <span className={`status-badge ${STATUS_COLORS[r.tool_status] || 'status-red'}`}>
+                          {r.tool_status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-500 italic">
+                        {r.whitelist_condition || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-gray-500">{fmt(r.date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ReportSection>
+
+            {/* Section 6: Platform Disclosure Summary */}
+            <ReportSection title="6. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
             </ReportSection>
 
-            {/* Section 6: Completion Bond Support Note */}
-            <ReportSection title="6. Delivery Support Note">
+            {/* Section 7: Delivery Support Note */}
+            <ReportSection title="7. Delivery Support Note">
               <CompletionBondNote report={report} />
             </ReportSection>
 

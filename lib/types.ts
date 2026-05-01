@@ -32,7 +32,7 @@ export type Department =
   | 'Wardrobe'
   | 'Writing'
 
-export type ToolStatus = 'GREEN' | 'YELLOW' | 'RED'
+export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
 export const DEPARTMENTS: Department[] = [
   'Access',
@@ -69,7 +69,16 @@ export const DEPARTMENTS: Department[] = [
   'Writing',
 ]
 
-export const TOOL_STATUSES: ToolStatus[] = ['GREEN', 'YELLOW', 'RED']
+export interface WhitelistEntry {
+  id: string
+  toolName: string
+  displayName: string
+  status: 'GREEN' | 'AMBER' | 'RED'
+  condition?: string | null
+  requiresLCT: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 export interface Receipt {
   id: string
@@ -82,6 +91,7 @@ export interface Receipt {
   script_date: string
   ai_tool_used: string
   tool_status: ToolStatus
+  whitelist_condition?: string | null
   por_description: string
   sel_description: string
   adj_description: string

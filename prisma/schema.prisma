@@ -8,24 +8,36 @@ datasource db {
 }
 
 model Receipt {
-  id               String   @id @default(uuid())
-  production_name  String
-  date             DateTime @default(now())
-  department       String
-  crew_member_name String
-  crew_role        String
-  scene_usid       String
-  script_date      String?
-  ai_tool_used     String
-  tool_status      String
-  por_description  String
-  sel_description  String
-  adj_description  String
-  auth_signer      String
-  auth_timestamp   DateTime @default(now())
-  lct_required     Boolean  @default(false)
-  lct_reference    String?
-  notes            String?
-  twin_lock_hash   String?
-  created_at       DateTime @default(now())
+  id                  String   @id @default(uuid())
+  production_name     String
+  date                DateTime @default(now())
+  department          String
+  crew_member_name    String
+  crew_role           String
+  scene_usid          String
+  script_date         String?
+  ai_tool_used        String
+  tool_status         String
+  whitelist_condition String?
+  por_description     String
+  sel_description     String
+  adj_description     String
+  auth_signer         String
+  auth_timestamp      DateTime @default(now())
+  lct_required        Boolean  @default(false)
+  lct_reference       String?
+  notes               String?
+  twin_lock_hash      String?
+  created_at          DateTime @default(now())
+}
+
+model WhitelistEntry {
+  id          String   @id @default(uuid())
+  toolName    String   @unique
+  displayName String
+  status      String
+  condition   String?
+  requiresLCT Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       por_description: body.por_description,
       sel_description: body.sel_description,
       adj_description: body.adj_description,
+      whitelist_condition: body.whitelist_condition || null,
       auth_signer: body.auth_signer,
       auth_timestamp: new Date(),
       lct_required: Boolean(body.lct_required),

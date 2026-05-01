@@ -1,32 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { DEPARTMENTS, TOOL_STATUSES } from '@/lib/types'
-import type { Department, ToolStatus } from '@/lib/types'
-
-const STATUS_CONFIG = {
-  GREEN: {
-    label: 'GREEN — Vetted',
-    color: '#2E7D32',
-    bg: '#E8F5E9',
-    border: '#A5D6A7',
-    description: 'Tool has been reviewed and approved for production use',
-  },
-  YELLOW: {
-    label: 'YELLOW — Restricted',
-    color: '#C8841A',
-    bg: '#FFF8E1',
-    border: '#FFE082',
-    description: 'Tool is permitted with restrictions — check with HOD',
-  },
-  RED: {
-    label: 'RED — Prohibited',
-    color: '#C62828',
-    bg: '#FFEBEE',
-    border: '#EF9A9A',
-    description: 'Tool is not authorised for use on this production',
-  },
-}
+import { useState, useEffect, useRef } from 'react'
+import { DEPARTMENTS } from '@/lib/types'
+import type { Department, WhitelistEntry } from '@/lib/types'
 
 async function sha256(data: object): Promise<string> {
   const text = JSON.stringify(data, Object.keys(data).sort())
@@ -46,7 +22,8 @@ const emptyForm = {
   crew_role: '',
   scene_usid: '',
   ai_tool_used: '',
-  tool_status: '' as ToolStatus | '',
+  tool_status: '' as string,
+  whitelist_condition: '' as string,
   por_description: '',
   sel_description: '',
   adj_description: '',
@@ -65,6 +42,70 @@ interface Confirmation {
   production_name: string
 }
 
+function StatusBadge({ status, condition, requiresLCT }: {
+  status: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | ''
+  condition?: string | null
+  requiresLCT?: boolean
+}) {
+  if (!status) return null
+
+  if (status === 'GREEN') {
+    return (
+      <div className="rounded border border-green-200 bg-green-50 px-4 py-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="w-3 h-3 rounded-full bg-status-green flex-shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide text-status-green">GREEN — Approved for production use</span>
+        </div>
+        {condition && <p className="text-xs text-green-700 italic mt-1 ml-5">{condition}</p>}
+      </div>
+    )
+  }
+
+  if (status === 'AMBER') {
+    return (
+      <div className="rounded border border-yellow-300 bg-yellow-50 px-4 py-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-status-amber flex-shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide text-status-amber">AMBER — Conditional approval</span>
+        </div>
+        {condition && <p className="text-xs text-yellow-800 italic ml-5">{condition}</p>}
+        {requiresLCT && (
+          <div className="ml-5 flex items-center gap-1.5">
+            <span className="text-status-amber text-xs">⚠</span>
+            <span className="text-xs font-semibold text-status-amber">LCT required before use</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  if (status === 'RED') {
+    return (
+      <div className="rounded border border-red-300 bg-red-50 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-status-red flex-shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide text-status-red">RED — Not approved for production use</span>
+        </div>
+        <p className="text-xs text-red-700 mt-1 ml-5">This tool is on the blocked list. Contact the OAS before proceeding.</p>
+      </div>
+    )
+  }
+
+  if (status === 'UNVERIFIED') {
+    return (
+      <div className="rounded border border-red-200 bg-red-50 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full bg-status-red flex-shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-wide text-status-red">UNVERIFIED — Not on production whitelist</span>
+        </div>
+        <p className="text-xs text-red-700 mt-1 ml-5">Tool not found on production whitelist — refer to OAS before proceeding.</p>
+      </div>
+    )
+  }
+
+  return null
+}
+
 export default function ReceiptForm() {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
@@ -73,31 +114,93 @@ export default function ReceiptForm() {
   const [productions, setProductions] = useState<string[]>([])
   const [newProduction, setNewProduction] = useState(false)
 
+  const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([])
+  const [toolQuery, setToolQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<WhitelistEntry[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<WhitelistEntry | null>(null)
+  const toolRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
-    fetch('/api/productions')
-      .then((r) => r.json())
-      .then(setProductions)
-      .catch(() => {})
+    fetch('/api/productions').then((r) => r.json()).then(setProductions).catch(() => {})
+    fetch('/api/whitelist').then((r) => r.json()).then(setWhitelist).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (toolRef.current && !toolRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
   function set(field: keyof FormState, value: unknown) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  function handleToolInput(value: string) {
+    setToolQuery(value)
+    setSelectedEntry(null)
+    set('ai_tool_used', value)
+    set('tool_status', '')
+    set('whitelist_condition', '')
+
+    if (value.trim().length >= 1) {
+      const q = value.toLowerCase()
+      const matches = whitelist.filter(
+        (e) => e.displayName.toLowerCase().includes(q) || e.toolName.includes(q)
+      )
+      setSuggestions(matches)
+      setShowSuggestions(true)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  function selectEntry(entry: WhitelistEntry) {
+    setSelectedEntry(entry)
+    setToolQuery(entry.displayName)
+    set('ai_tool_used', entry.displayName)
+    set('tool_status', entry.status)
+    set('whitelist_condition', entry.condition || '')
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
+
+  const derivedStatus: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' = selectedEntry
+    ? (selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
+    : toolQuery.trim().length >= 3
+    ? 'UNVERIFIED'
+    : ''
+
+  const authBlocked =
+    derivedStatus === 'RED' ||
+    derivedStatus === 'UNVERIFIED' ||
+    derivedStatus === ''
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
     if (!form.department) return setError('Please select a department.')
-    if (!form.tool_status) return setError('Please select a tool status.')
+    if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
+    if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before signing.')
 
     setSubmitting(true)
 
     try {
+      const payload = {
+        ...form,
+        tool_status: selectedEntry?.status || 'RED',
+        whitelist_condition: selectedEntry?.condition || null,
+      }
       const res = await fetch('/api/receipts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) throw new Error('Submission failed')
@@ -151,6 +254,8 @@ export default function ReceiptForm() {
             onClick={() => {
               setConfirmation(null)
               setNewProduction(false)
+              setToolQuery('')
+              setSelectedEntry(null)
               setForm({ ...emptyForm, production_name: form.production_name })
               fetch('/api/productions').then(r => r.json()).then(setProductions).catch(() => {})
             }}
@@ -301,63 +406,64 @@ export default function ReceiptForm() {
       {/* AI Tool */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="section-heading">AI Tool</h2>
-        <div className="mb-4">
+
+        <div className="mb-4" ref={toolRef}>
           <label className="label" htmlFor="ai_tool_used">Tool Name</label>
-          <input
-            id="ai_tool_used"
-            className="input"
-            required
-            placeholder="e.g. Midjourney v6, ChatGPT-4o, Adobe Firefly"
-            value={form.ai_tool_used}
-            onChange={(e) => set('ai_tool_used', e.target.value)}
-          />
+          <p className="text-xs text-gray-400 mb-1.5">Start typing to search the production whitelist. Status is set automatically.</p>
+          <div className="relative">
+            <input
+              id="ai_tool_used"
+              className="input"
+              required
+              autoComplete="off"
+              placeholder="e.g. Adobe Firefly, Runway Gen-3, Eleven Labs…"
+              value={toolQuery}
+              onChange={(e) => handleToolInput(e.target.value)}
+              onFocus={() => toolQuery.length >= 1 && setShowSuggestions(suggestions.length > 0)}
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                {suggestions.map((entry) => (
+                  <li key={entry.id}>
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-trace-pale text-left transition-colors"
+                      onMouseDown={(e) => { e.preventDefault(); selectEntry(entry) }}
+                    >
+                      <span className="text-sm font-medium text-gray-800">{entry.displayName}</span>
+                      <span className={`status-badge ml-3 flex-shrink-0 ${
+                        entry.status === 'GREEN' ? 'status-green' :
+                        entry.status === 'AMBER' ? 'status-amber' : 'status-red'
+                      }`}>
+                        {entry.status}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {toolQuery.trim().length >= 3 && !selectedEntry && suggestions.length === 0 && (
+            <p className="text-xs text-red-600 mt-2 font-medium">
+              Tool not found on production whitelist — refer to OAS before proceeding.
+            </p>
+          )}
         </div>
 
         <div>
-          <p className="label">Tool Status</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {TOOL_STATUSES.map((status) => {
-              const cfg = STATUS_CONFIG[status]
-              const selected = form.tool_status === status
-              return (
-                <label
-                  key={status}
-                  className="relative flex flex-col gap-1 p-3 rounded border-2 cursor-pointer transition-all duration-150"
-                  style={{
-                    borderColor: selected ? cfg.color : '#E5E7EB',
-                    backgroundColor: selected ? cfg.bg : 'white',
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="tool_status"
-                    value={status}
-                    checked={selected}
-                    onChange={() => set('tool_status', status)}
-                    className="sr-only"
-                    required
-                  />
-                  <span
-                    className="text-xs font-bold uppercase tracking-wide"
-                    style={{ color: cfg.color }}
-                  >
-                    {status}
-                  </span>
-                  <span className="text-xs text-gray-500">{cfg.description}</span>
-                  {selected && (
-                    <span
-                      className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: cfg.color }}
-                    >
-                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12">
-                        <path d="M10 3L5 8.5 2 5.5" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </span>
-                  )}
-                </label>
-              )
-            })}
-          </div>
+          <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
+          {derivedStatus ? (
+            <StatusBadge
+              status={derivedStatus}
+              condition={selectedEntry?.condition}
+              requiresLCT={selectedEntry?.requiresLCT}
+            />
+          ) : (
+            <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
+              Enter a tool name above to check whitelist status.
+            </div>
+          )}
         </div>
       </section>
 
@@ -416,8 +522,32 @@ export default function ReceiptForm() {
       </section>
 
       {/* AUTH */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
+      <section className={`bg-white rounded-lg p-6 ${
+        authBlocked && derivedStatus !== ''
+          ? 'border-2 border-red-400'
+          : derivedStatus === 'AMBER'
+          ? 'border-2 border-yellow-300'
+          : 'border border-gray-200'
+      }`}>
         <h2 className="section-heading">AUTH — Authorial Control</h2>
+
+        {authBlocked && derivedStatus !== '' && (
+          <div className="mb-4 rounded bg-red-50 border border-red-300 px-4 py-3">
+            <p className="text-sm font-semibold text-red-700 mb-1">AUTH cannot be applied.</p>
+            <p className="text-xs text-red-600">
+              This tool has not been approved for production use. Contact the OAS before proceeding.
+            </p>
+          </div>
+        )}
+
+        {derivedStatus === 'AMBER' && (
+          <div className="mb-4 rounded bg-yellow-50 border border-yellow-300 px-4 py-3">
+            <p className="text-xs font-semibold text-yellow-800">
+              Conditional tool — confirm the stated conditions have been met before signing.
+            </p>
+          </div>
+        )}
+
         <p className="text-xs text-gray-400 mb-4">
           This sign-off confirms that a human exercised authorial control over this creative act.
           This field must be completed by the Head of Department or Lead Creative.
@@ -428,7 +558,8 @@ export default function ReceiptForm() {
             id="auth_signer"
             className="input"
             required
-            placeholder="Full name of authorising HOD or Lead Creative"
+            disabled={authBlocked && derivedStatus !== ''}
+            placeholder={authBlocked && derivedStatus !== '' ? 'AUTH blocked — resolve tool status first' : 'Full name of authorising HOD or Lead Creative'}
             value={form.auth_signer}
             onChange={(e) => set('auth_signer', e.target.value)}
           />
@@ -490,7 +621,11 @@ export default function ReceiptForm() {
         <p className="text-xs text-gray-400">
           Submission is logged with a SHA-256 TRACE Twin Lock hash for audit purposes.
         </p>
-        <button type="submit" disabled={submitting} className="btn-primary disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={submitting || (authBlocked && derivedStatus !== '')}
+          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           {submitting ? 'Logging receipt…' : 'Submit Receipt'}
         </button>
       </div>

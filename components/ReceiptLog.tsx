@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { DEPARTMENTS, TOOL_STATUSES } from '@/lib/types'
+import { DEPARTMENTS } from '@/lib/types'
 import type { Receipt, Department, ToolStatus } from '@/lib/types'
 
-const STATUS_COLORS: Record<ToolStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
-  YELLOW: 'status-yellow',
+  AMBER: 'status-amber',
+  YELLOW: 'status-amber',
   RED: 'status-red',
+  UNVERIFIED: 'status-red',
 }
 
 function fmt(iso: string) {
@@ -133,7 +135,7 @@ export default function ReceiptLog() {
               onChange={(e) => setFilter('status', e.target.value as ToolStatus | '')}
             >
               <option value="">All</option>
-              {TOOL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {(['GREEN', 'AMBER', 'RED'] as const).map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>

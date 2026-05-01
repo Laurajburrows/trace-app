@@ -20,6 +20,8 @@ const config: Config = {
           'green-bg': '#E8F5E9',
           yellow: '#C8841A',
           'yellow-bg': '#FFF8E1',
+          amber: '#B8860B',
+          'amber-bg': '#FFF8E1',
           red: '#C62828',
           'red-bg': '#FFEBEE',
         },
