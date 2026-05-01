@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Fragment } from 'react'
 
 const styles = `
 @page { size: A4 portrait; margin: 11mm 13mm 10mm 13mm; }
@@ -226,8 +226,8 @@ export default function LCTSheet() {
             </thead>
             <tbody>
               {performers.map((parity, i) => (
-                <>
-                  <tr key={`p-${i}`} className={`p-row ${parity}`}>
+                <Fragment key={i}>
+                  <tr className={`p-row ${parity}`}>
                     <td className="tl" />
                     <td />
                     <td className="flag" />
@@ -237,10 +237,10 @@ export default function LCTSheet() {
                     <td />
                     <td className="tl" />
                   </tr>
-                  <tr key={`n-${i}`} className={`n-row ${parity}`}>
+                  <tr className={`n-row ${parity}`}>
                     <td colSpan={8} style={{ paddingLeft: '2.5mm', fontStyle: 'italic', color: '#aaa', fontSize: '7pt' }}>Notes:</td>
                   </tr>
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
