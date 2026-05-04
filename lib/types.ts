@@ -35,6 +35,8 @@ export type Department =
 
 export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
+export type ReceiptStatus = 'PENDING_AUTH' | 'AUTH_COMPLETE'
+
 export const SEL_REASONS = [
   'Creative direction — style, tone, aesthetic fit',
   'Technical quality — resolution, accuracy, detail',
@@ -110,8 +112,10 @@ export interface Receipt {
   sel_description: string
   sel_detail?: string | null
   adj_description: string
-  auth_signer: string
-  auth_timestamp: string
+  status: ReceiptStatus
+  crew_confirmed_at?: string | null
+  auth_signer?: string | null
+  auth_timestamp?: string | null
   lct_required: boolean
   lct_reference?: string | null
   notes?: string | null

@@ -4,13 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS, SEL_REASONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
-async function sha256(data: object): Promise<string> {
-  const text = JSON.stringify(data, Object.keys(data).sort())
-  const buffer = new TextEncoder().encode(text)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -29,7 +22,6 @@ const emptyForm = {
   sel_description: '' as SelReason | '',
   sel_detail: '',
   adj_description: '',
-  auth_signer: '',
   lct_required: false,
   lct_reference: '',
   notes: '',
@@ -43,6 +35,7 @@ interface Confirmation {
   hash: string
   production_name: string
 }
+
 
 function StatusBadge({ status, condition, requiresLCT }: {
   status: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | ''
@@ -189,7 +182,7 @@ export default function ReceiptForm() {
 
     if (!form.department) return setError('Please select a department.')
     if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
-    if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before signing.')
+    if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before proceeding.')
 
     setSubmitting(true)
 
@@ -208,9 +201,7 @@ export default function ReceiptForm() {
       if (!res.ok) throw new Error('Submission failed')
 
       const receipt = await res.json()
-      const hash = await sha256(receipt)
-
-      setConfirmation({ id: receipt.id, hash, production_name: receipt.production_name })
+      setConfirmation({ id: receipt.id, hash: '', production_name: receipt.production_name })
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -222,33 +213,31 @@ export default function ReceiptForm() {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-status-green-bg flex items-center justify-center">
-            <svg className="w-5 h-5 text-status-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+          <div className="w-10 h-10 rounded-full bg-yellow-50 border border-yellow-200 flex items-center justify-center">
+            <svg className="w-5 h-5 text-status-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-trace-forest">Receipt Logged</h2>
+            <h2 className="text-lg font-bold text-trace-forest">Receipt submitted — pending HOD sign-off</h2>
             <p className="text-sm text-gray-500">Production: {confirmation.production_name}</p>
           </div>
         </div>
 
-        <div className="space-y-4 mb-8">
-          <div>
-            <p className="label">Receipt ID</p>
-            <p className="font-mono text-sm bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all">
-              {confirmation.id}
-            </p>
-          </div>
-          <div>
-            <p className="label">TRACE Twin Lock — SHA-256</p>
-            <p className="font-mono text-xs bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all text-gray-600">
-              {confirmation.hash}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              This hash is a cryptographic fingerprint of the submitted record. Retain for audit purposes.
-            </p>
-          </div>
+        <div className="rounded border border-yellow-200 bg-yellow-50 px-4 py-3 mb-6">
+          <p className="text-sm text-yellow-800">
+            This receipt is locked and queued for AUTH sign-off. Your HOD can review and sign it from the <strong>HOD Sign-off</strong> page.
+          </p>
+        </div>
+
+        <div className="mb-8">
+          <p className="label">Receipt ID</p>
+          <p className="font-mono text-sm bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all">
+            {confirmation.id}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            The TRACE Twin Lock hash is generated once your HOD applies the AUTH signature.
+          </p>
         </div>
 
         <div className="flex gap-3">
@@ -265,8 +254,8 @@ export default function ReceiptForm() {
           >
             Log Another Receipt
           </button>
-          <a href="/log" className="btn-secondary">
-            View Receipt Log
+          <a href="/hod" className="btn-secondary">
+            HOD Sign-off Queue
           </a>
         </div>
       </div>
@@ -553,49 +542,29 @@ export default function ReceiptForm() {
         </div>
       </section>
 
-      {/* AUTH */}
+      {/* AUTH — Stage 1 info */}
       <section className={`bg-white rounded-lg p-6 ${
         authBlocked && derivedStatus !== ''
           ? 'border-2 border-red-400'
-          : derivedStatus === 'AMBER'
-          ? 'border-2 border-yellow-300'
           : 'border border-gray-200'
       }`}>
         <h2 className="section-heading">AUTH — Authorial Control</h2>
 
-        {authBlocked && derivedStatus !== '' && (
-          <div className="mb-4 rounded bg-red-50 border border-red-300 px-4 py-3">
-            <p className="text-sm font-semibold text-red-700 mb-1">AUTH cannot be applied.</p>
+        {authBlocked && derivedStatus !== '' ? (
+          <div className="rounded bg-red-50 border border-red-300 px-4 py-3">
+            <p className="text-sm font-semibold text-red-700 mb-1">Cannot proceed.</p>
             <p className="text-xs text-red-600">
               This tool has not been approved for production use. Contact the OAS before proceeding.
             </p>
           </div>
-        )}
-
-        {derivedStatus === 'AMBER' && (
-          <div className="mb-4 rounded bg-yellow-50 border border-yellow-300 px-4 py-3">
-            <p className="text-xs font-semibold text-yellow-800">
-              Conditional tool — confirm the stated conditions have been met before signing.
+        ) : (
+          <div className="rounded bg-trace-pale border border-gray-200 px-4 py-3">
+            <p className="text-sm font-medium text-trace-forest mb-1">Stage 1 of 2 — Crew confirmation</p>
+            <p className="text-xs text-gray-600">
+              Submitting this receipt locks it and sends it to your HOD for review. Your HOD will apply the AUTH signature from the HOD Sign-off queue.
             </p>
           </div>
         )}
-
-        <p className="text-xs text-gray-400 mb-4">
-          This sign-off confirms that a human exercised authorial control over this creative act.
-          This field must be completed by the Head of Department or Lead Creative.
-        </p>
-        <div>
-          <label className="label" htmlFor="auth_signer">HOD / Lead Creative Signatory</label>
-          <input
-            id="auth_signer"
-            className="input"
-            required
-            disabled={authBlocked && derivedStatus !== ''}
-            placeholder={authBlocked && derivedStatus !== '' ? 'AUTH blocked — resolve tool status first' : 'Full name of authorising HOD or Lead Creative'}
-            value={form.auth_signer}
-            onChange={(e) => set('auth_signer', e.target.value)}
-          />
-        </div>
       </section>
 
       {/* LCT */}
@@ -651,14 +620,14 @@ export default function ReceiptForm() {
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-gray-400">
-          Submission is logged with a SHA-256 TRACE Twin Lock hash for audit purposes.
+          Submitting locks this receipt and sends it to your HOD for AUTH sign-off.
         </p>
         <button
           type="submit"
           disabled={submitting || (authBlocked && derivedStatus !== '')}
           className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Logging receipt…' : 'Submit Receipt'}
+          {submitting ? 'Submitting…' : 'Confirm and send to HOD'}
         </button>
       </div>
     </form>

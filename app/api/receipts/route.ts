@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
@@ -9,6 +8,7 @@ export async function GET(req: NextRequest) {
   const production = searchParams.get('production')
   const department = searchParams.get('department')
   const status = searchParams.get('status')
+  const receiptStatus = searchParams.get('receiptStatus')
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   const authSigner = searchParams.get('authSigner')
@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
   if (production) where.production_name = { contains: production }
   if (department) where.department = department
   if (status) where.tool_status = status
+  if (receiptStatus) where.status = receiptStatus
   if (authSigner) where.auth_signer = { contains: authSigner }
   if (dateFrom || dateTo) {
     where.date = {}
@@ -57,22 +58,13 @@ export async function POST(req: NextRequest) {
       sel_detail: body.sel_detail || null,
       adj_description: body.adj_description,
       whitelist_condition: body.whitelist_condition || null,
-      auth_signer: body.auth_signer,
-      auth_timestamp: new Date(),
+      status: 'PENDING_AUTH',
+      crew_confirmed_at: new Date(),
       lct_required: Boolean(body.lct_required),
       lct_reference: body.lct_reference || null,
       notes: body.notes || null,
     },
   })
 
-  const hash = createHash('sha256')
-    .update(JSON.stringify(receipt, Object.keys(receipt).sort()))
-    .digest('hex')
-
-  const withHash = await prisma.receipt.update({
-    where: { id: receipt.id },
-    data: { twin_lock_hash: hash },
-  })
-
-  return NextResponse.json(withHash, { status: 201 })
+  return NextResponse.json(receipt, { status: 201 })
 }

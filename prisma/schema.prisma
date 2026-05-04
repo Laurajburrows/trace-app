@@ -24,8 +24,10 @@ model Receipt {
   sel_description     String
   sel_detail          String?
   adj_description     String
-  auth_signer         String
-  auth_timestamp      DateTime @default(now())
+  status              String   @default("PENDING_AUTH")
+  crew_confirmed_at   DateTime?
+  auth_signer         String?
+  auth_timestamp      DateTime?
   lct_required        Boolean  @default(false)
   lct_reference       String?
   notes               String?

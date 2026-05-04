@@ -215,7 +215,7 @@ async function generatePDF(report: ReportData) {
 
   gap(6)
   h3('Authorising Signatories')
-  const signers = Array.from(new Set(report.receipts.map((r) => r.auth_signer)))
+  const signers = Array.from(new Set(report.receipts.map((r) => r.auth_signer).filter((s): s is string => !!s)))
   signers.forEach((s) => {
     const count = report.receipts.filter((r) => r.auth_signer === s).length
     tableRow([s, `${count} receipt${count !== 1 ? 's' : ''}`], [120, 80])
@@ -830,7 +830,7 @@ function PlatformDisclosure({ report }: { report: ReportData }) {
 }
 
 function CompletionBondNote({ report }: { report: ReportData }) {
-  const signers = Array.from(new Set(report.receipts.map((r) => r.auth_signer)))
+  const signers = Array.from(new Set(report.receipts.map((r) => r.auth_signer).filter((s): s is string => !!s)))
 
   return (
     <div className="space-y-3 text-sm text-gray-700 leading-relaxed">

@@ -72,12 +72,15 @@ export async function GET(req: NextRequest) {
 
   const lctReceipts = receipts.filter((r) => r.lct_required)
 
-  const allSigners = Array.from(new Set(receipts.map((r) => r.auth_signer)))
+  const allSigners = Array.from(
+    new Set(receipts.map((r) => r.auth_signer).filter((s): s is string => !!s))
+  )
 
   const serializeReceipt = (r: (typeof receipts)[number]) => ({
     ...r,
     date: r.date.toISOString(),
-    auth_timestamp: r.auth_timestamp.toISOString(),
+    crew_confirmed_at: r.crew_confirmed_at?.toISOString() ?? null,
+    auth_timestamp: r.auth_timestamp?.toISOString() ?? null,
     created_at: r.created_at.toISOString(),
   })
 
@@ -95,7 +98,7 @@ export async function GET(req: NextRequest) {
     date_range: dateRange,
     by_department: byDepartment,
     by_tool: byTool,
-    auth_signed_count: receipts.filter((r) => r.auth_signer).length,
+    auth_signed_count: receipts.filter((r) => r.status === 'AUTH_COMPLETE').length,
     green_pct: greenPct,
     lct_receipts: lctReceipts.map(serializeReceipt) as unknown as ReportData['lct_receipts'],
     all_signers: allSigners,

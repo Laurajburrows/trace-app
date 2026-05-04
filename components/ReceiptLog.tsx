@@ -239,7 +239,16 @@ export default function ReceiptLog() {
                           {r.tool_status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{r.auth_signer}</td>
+                      <td className="px-4 py-3">
+                        {r.status === 'AUTH_COMPLETE' ? (
+                          <span className="text-gray-600">{r.auth_signer}</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-status-amber">
+                            <span className="w-2 h-2 rounded-full bg-status-amber flex-shrink-0" />
+                            Pending sign-off
+                          </span>
+                        )}
+                      </td>
                     </tr>
 
                     {expanded === r.id && (
@@ -273,9 +282,24 @@ export default function ReceiptLog() {
                             </div>
                             <div className="space-y-4">
                               <div>
-                                <p className="label">AUTH — Signatory</p>
-                                <p className="text-gray-700">{r.auth_signer}</p>
-                                <p className="text-xs text-gray-400">{fmtDateTime(r.auth_timestamp)}</p>
+                                <p className="label">Stage 1 — Crew Confirmed</p>
+                                <p className="text-xs text-gray-400">
+                                  {r.crew_confirmed_at ? fmtDateTime(r.crew_confirmed_at) : fmtDateTime(r.created_at)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="label">Stage 2 — AUTH Signature</p>
+                                {r.status === 'AUTH_COMPLETE' ? (
+                                  <>
+                                    <p className="text-gray-700">{r.auth_signer}</p>
+                                    <p className="text-xs text-gray-400">{r.auth_timestamp ? fmtDateTime(r.auth_timestamp) : '—'}</p>
+                                  </>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-status-amber">
+                                    <span className="w-2 h-2 rounded-full bg-status-amber" />
+                                    Pending HOD sign-off
+                                  </span>
+                                )}
                               </div>
                               <div>
                                 <p className="label">LCT Required</p>
@@ -290,12 +314,17 @@ export default function ReceiptLog() {
                                   <p className="text-gray-700 whitespace-pre-wrap">{r.notes}</p>
                                 </div>
                               )}
-                              {r.twin_lock_hash && (
+                              {r.twin_lock_hash ? (
                                 <div>
                                   <p className="label">TRACE Twin Lock — SHA-256</p>
                                   <p className="font-mono text-xs text-gray-500 break-all bg-gray-50 border border-gray-200 rounded px-2 py-1.5">
                                     {r.twin_lock_hash}
                                   </p>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="label">TRACE Twin Lock — SHA-256</p>
+                                  <p className="text-xs text-gray-400 italic">Generated on HOD sign-off</p>
                                 </div>
                               )}
                             </div>

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const links = [
   { href: '/receipt/new', label: 'Receipt Form' },
+  { href: '/hod', label: 'HOD Sign-off' },
   { href: '/log', label: 'Receipt Log' },
   { href: '/report', label: 'Compliance Report' },
   { href: '/lct', label: 'LCT Check Sheet' },
