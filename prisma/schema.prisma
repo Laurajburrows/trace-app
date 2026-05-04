@@ -20,6 +20,7 @@ model Receipt {
   tool_status         String
   whitelist_condition String?
   por_description     String
+  sel_output          String?
   sel_description     String
   sel_detail          String?
   adj_description     String

@@ -106,6 +106,7 @@ export interface Receipt {
   tool_status: ToolStatus
   whitelist_condition?: string | null
   por_description: string
+  sel_output?: string | null
   sel_description: string
   sel_detail?: string | null
   adj_description: string

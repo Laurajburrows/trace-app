@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       ai_tool_used: body.ai_tool_used,
       tool_status: body.tool_status,
       por_description: body.por_description,
+      sel_output: body.sel_output || null,
       sel_description: body.sel_description,
       sel_detail: body.sel_detail || null,
       adj_description: body.adj_description,

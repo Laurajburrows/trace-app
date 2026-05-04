@@ -257,7 +257,10 @@ export default function ReceiptLog() {
                               </div>
                               <div>
                                 <p className="label">SEL — Selection</p>
-                                <p className="text-gray-700">{r.sel_description || '—'}</p>
+                                {r.sel_output && (
+                                  <p className="text-gray-700 mb-0.5">{r.sel_output}</p>
+                                )}
+                                <p className="text-xs text-gray-500">{r.sel_description || '—'}</p>
                                 {r.sel_detail && (
                                   <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>
                                 )}

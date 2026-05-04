@@ -25,6 +25,7 @@ const emptyForm = {
   tool_status: '' as string,
   whitelist_condition: '' as string,
   por_description: '',
+  sel_output: '',
   sel_description: '' as SelReason | '',
   sel_detail: '',
   adj_description: '',
@@ -489,31 +490,48 @@ export default function ReceiptForm() {
           </div>
 
           <div>
-            <label className="label" htmlFor="sel_description">
+            <label className="label" htmlFor="sel_output">
               SEL — Selection
             </label>
-            <p className="text-xs text-gray-400 mb-1.5">Why was this AI output chosen?</p>
-            <select
-              id="sel_description"
-              className="select"
-              required
-              value={form.sel_description}
-              onChange={(e) => set('sel_description', e.target.value as SelReason)}
-            >
-              <option value="">Select a reason…</option>
-              {SEL_REASONS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
-            <div className="mt-3">
-              <label className="label" htmlFor="sel_detail">Add detail (optional)</label>
-              <input
-                id="sel_detail"
-                className="input"
-                placeholder="Describe the selection reasoning…"
-                value={form.sel_detail}
-                onChange={(e) => set('sel_detail', e.target.value)}
-              />
+            <div className="space-y-3">
+              <div>
+                <label className="label" htmlFor="sel_output">What did you select?</label>
+                <input
+                  id="sel_output"
+                  className="input"
+                  required
+                  placeholder="Identify the specific output chosen from the AI…"
+                  value={form.sel_output}
+                  onChange={(e) => set('sel_output', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="sel_description">Why did you select it?</label>
+                <select
+                  id="sel_description"
+                  className="select"
+                  required
+                  value={form.sel_description}
+                  onChange={(e) => set('sel_description', e.target.value as SelReason)}
+                >
+                  <option value="">Select a reason…</option>
+                  {SEL_REASONS.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+              {form.sel_description === 'Other' && (
+                <div>
+                  <label className="label" htmlFor="sel_detail">Describe your reason</label>
+                  <input
+                    id="sel_detail"
+                    className="input"
+                    placeholder="Describe your selection reasoning…"
+                    value={form.sel_detail}
+                    onChange={(e) => set('sel_detail', e.target.value)}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
