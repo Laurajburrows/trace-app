@@ -505,18 +505,16 @@ export default function ReceiptForm() {
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
-            {form.sel_description === 'Other' && (
-              <div className="mt-3">
-                <label className="label" htmlFor="sel_detail">Add detail (optional)</label>
-                <input
-                  id="sel_detail"
-                  className="input"
-                  placeholder="Describe the selection reasoning…"
-                  value={form.sel_detail}
-                  onChange={(e) => set('sel_detail', e.target.value)}
-                />
-              </div>
-            )}
+            <div className="mt-3">
+              <label className="label" htmlFor="sel_detail">Add detail (optional)</label>
+              <input
+                id="sel_detail"
+                className="input"
+                placeholder="Describe the selection reasoning…"
+                value={form.sel_detail}
+                onChange={(e) => set('sel_detail', e.target.value)}
+              />
+            </div>
           </div>
 
           <div>
