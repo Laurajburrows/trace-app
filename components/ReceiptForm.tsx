@@ -537,15 +537,15 @@ export default function ReceiptForm() {
 
           <div>
             <label className="label" htmlFor="adj_description">
-              ADJ — Adjustment
+              ADJ — Where did you end up?
             </label>
-            <p className="text-xs text-gray-400 mb-1">How did the human modify the AI output? Describe the delta between AI output and final version.</p>
+            <p className="text-xs text-gray-400 mb-1">The final version after working with the AI output — not a description of every change, just where you ended up. The gap between this and POR is the evidence of human authorship.</p>
             <textarea
               id="adj_description"
               className="textarea"
               rows={3}
               required
-              placeholder="Describe modifications made: what changed, what was added, what was removed…"
+              placeholder="The final version after working with the AI output — not a description of every change, just where you ended up. The gap between this and POR is the evidence of human authorship."
               value={form.adj_description}
               onChange={(e) => set('adj_description', e.target.value)}
             />
