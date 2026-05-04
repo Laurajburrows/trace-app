@@ -2,6 +2,7 @@ export type Department =
   | 'Access'
   | 'Animals'
   | 'Armoury'
+  | 'Art Department'
   | 'Camera'
   | 'Cast'
   | 'Directors'
@@ -34,10 +35,22 @@ export type Department =
 
 export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
+export const SEL_REASONS = [
+  'Creative direction — style, tone, aesthetic fit',
+  'Technical quality — resolution, accuracy, detail',
+  'Brief compliance — closest to the original instruction',
+  'Least adjustment needed — most efficient to work with',
+  'Combination of the above',
+  'Other',
+] as const
+
+export type SelReason = typeof SEL_REASONS[number]
+
 export const DEPARTMENTS: Department[] = [
   'Access',
   'Animals',
   'Armoury',
+  'Art Department',
   'Camera',
   'Cast',
   'Directors',
@@ -94,6 +107,7 @@ export interface Receipt {
   whitelist_condition?: string | null
   por_description: string
   sel_description: string
+  sel_detail?: string | null
   adj_description: string
   auth_signer: string
   auth_timestamp: string

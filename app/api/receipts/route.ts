@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       tool_status: body.tool_status,
       por_description: body.por_description,
       sel_description: body.sel_description,
+      sel_detail: body.sel_detail || null,
       adj_description: body.adj_description,
       whitelist_condition: body.whitelist_condition || null,
       auth_signer: body.auth_signer,

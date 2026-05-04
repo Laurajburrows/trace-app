@@ -257,7 +257,11 @@ export default function ReceiptLog() {
                               </div>
                               <div>
                                 <p className="label">SEL — Selection</p>
-                                <p className="text-gray-700 whitespace-pre-wrap">{r.sel_description}</p>
+                                <p className="text-gray-700">{r.sel_description || '—'}</p>
+                                {r.sel_detail && (
+                                  <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>
+                                )}
+                                <p className="text-xs text-gray-400 mt-1">Recorded: {fmtDateTime(r.created_at)}</p>
                               </div>
                               <div>
                                 <p className="label">ADJ — Adjustment</p>

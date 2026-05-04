@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS } from '@/lib/types'
-import type { Department, WhitelistEntry } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS } from '@/lib/types'
+import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
 async function sha256(data: object): Promise<string> {
   const text = JSON.stringify(data, Object.keys(data).sort())
@@ -25,7 +25,8 @@ const emptyForm = {
   tool_status: '' as string,
   whitelist_condition: '' as string,
   por_description: '',
-  sel_description: '',
+  sel_description: '' as SelReason | '',
+  sel_detail: '',
   adj_description: '',
   auth_signer: '',
   lct_required: false,
@@ -491,16 +492,31 @@ export default function ReceiptForm() {
             <label className="label" htmlFor="sel_description">
               SEL — Selection
             </label>
-            <p className="text-xs text-gray-400 mb-1">What did the human choose from the AI output, and why?</p>
-            <textarea
+            <p className="text-xs text-gray-400 mb-1.5">Why was this AI output chosen?</p>
+            <select
               id="sel_description"
-              className="textarea"
-              rows={3}
+              className="select"
               required
-              placeholder="Describe what was selected from the AI output and the creative reasoning behind that selection…"
               value={form.sel_description}
-              onChange={(e) => set('sel_description', e.target.value)}
-            />
+              onChange={(e) => set('sel_description', e.target.value as SelReason)}
+            >
+              <option value="">Select a reason…</option>
+              {SEL_REASONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+            {form.sel_description === 'Other' && (
+              <div className="mt-3">
+                <label className="label" htmlFor="sel_detail">Add detail (optional)</label>
+                <input
+                  id="sel_detail"
+                  className="input"
+                  placeholder="Describe the selection reasoning…"
+                  value={form.sel_detail}
+                  onChange={(e) => set('sel_detail', e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           <div>

@@ -328,7 +328,7 @@ async function generatePDF(report: ReportData) {
       ? `${nonGreenTools.map((t) => `${t.tool} (${t.status})`).join(', ')} ${nonGreenTools.length === 1 ? 'was' : 'were'} used under restricted or flagged status. All such uses carry full TRACE documentation and AUTH sign-off from the relevant Head of Department.`
       : 'All tool use on this production was GREEN-status (fully vetted).',
     '',
-    `Every logged creative decision has been documented with a Point of Record (POR), a human Selection (SEL), an Adjustment record (ADJ), and an Authorial Control sign-off (AUTH) confirming that a human was the creative decision-maker at each stage. This documentation constitutes the chain of human authorship required for copyright eligibility under Thaler v. Perlmutter (2025).`,
+    `Every logged creative decision has been documented with a Point of Record (POR), a structured Selection reason (SEL — categorised from: creative direction, technical quality, brief compliance, least adjustment, combination, or other), an Adjustment record (ADJ), and an Authorial Control sign-off (AUTH) confirming that a human was the creative decision-maker at each stage. This documentation constitutes the chain of human authorship required for copyright eligibility under Thaler v. Perlmutter (2025).`,
   ].join('\n')
 
   body(disclosurePara)
@@ -817,9 +817,11 @@ function PlatformDisclosure({ report }: { report: ReportData }) {
         </p>
       )}
       <p>
-        Every logged creative decision has been documented with a Point of Record (POR), a human
-        Selection (SEL), an Adjustment record (ADJ), and an Authorial Control sign-off (AUTH)
-        confirming that a human was the creative decision-maker at each stage. This documentation
+        Every logged creative decision has been documented with a Point of Record (POR), a
+        structured Selection reason (SEL), an Adjustment record (ADJ), and an Authorial Control
+        sign-off (AUTH) confirming that a human was the creative decision-maker at each stage.
+        SEL is recorded as a categorised reason: creative direction, technical quality, brief
+        compliance, least adjustment needed, combination of the above, or other. This documentation
         constitutes the chain of human authorship required for copyright eligibility under{' '}
         <em>Thaler v. Perlmutter</em> (2025).
       </p>

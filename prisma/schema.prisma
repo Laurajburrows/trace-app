@@ -21,6 +21,7 @@ model Receipt {
   whitelist_condition String?
   por_description     String
   sel_description     String
+  sel_detail          String?
   adj_description     String
   auth_signer         String
   auth_timestamp      DateTime @default(now())
