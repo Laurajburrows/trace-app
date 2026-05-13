@@ -309,9 +309,25 @@ async function generatePDF(report: ReportData) {
     )
   })
 
-  // ── SECTION 6: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
+  // ── SECTION 6: SELECTION REGISTER ─────────────────────────────────────────
   newPage()
-  h2('6. Platform Disclosure Summary')
+  h2('6. Selection Register')
+  gap(2)
+  body('Per-receipt record of what was selected from each AI output and the stated reason for that selection.')
+  gap(4)
+
+  tableRow(['Scene / Asset', 'Crew Member', 'What was selected', 'Why selected'], [25, 35, 55, 55], true)
+  report.receipts.forEach((r) => {
+    const selOutput = (r.sel_output || '—').substring(0, 38) + ((r.sel_output || '').length > 38 ? '…' : '')
+    const selReason = r.sel_description === 'Other' && r.sel_detail
+      ? (`Other — ${r.sel_detail}`).substring(0, 38) + ((`Other — ${r.sel_detail}`).length > 38 ? '…' : '')
+      : (r.sel_description || '—')
+    tableRow([r.scene_usid, r.crew_member_name, selOutput, selReason], [25, 35, 55, 55])
+  })
+
+  // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
+  newPage()
+  h2('7. Platform Disclosure Summary')
   gap(4)
 
   const uniqueTools = Array.from(new Set(report.receipts.map((r) => r.ai_tool_used)))
@@ -333,9 +349,9 @@ async function generatePDF(report: ReportData) {
 
   body(disclosurePara)
 
-  // ── SECTION 7: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
+  // ── SECTION 8: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
   newPage()
-  h2('7. Delivery Support Note')
+  h2('8. Delivery Support Note')
   gap(4)
 
   const bondPara = [
@@ -749,13 +765,48 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 6: Platform Disclosure Summary */}
-            <ReportSection title="6. Platform Disclosure Summary">
+            {/* Section 6: Selection Register */}
+            <ReportSection title="6. Selection Register">
+              <p className="text-sm text-gray-600 mb-4">
+                Per-receipt record of what was selected from each AI output and the stated reason for that selection.
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-trace-pale">
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">What was selected</th>
+                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Why selected</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {report.receipts.map((r) => (
+                    <tr key={r.id} className="border-t border-gray-100 align-top">
+                      <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
+                      <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                        {r.crew_member_name}
+                        <span className="block text-xs text-gray-400">{r.crew_role}</span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-700">{r.sel_output || '—'}</td>
+                      <td className="px-3 py-2 text-gray-600">
+                        {r.sel_description || '—'}
+                        {r.sel_detail && (
+                          <span className="block text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ReportSection>
+
+            {/* Section 7: Platform Disclosure Summary */}
+            <ReportSection title="7. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
             </ReportSection>
 
-            {/* Section 7: Delivery Support Note */}
-            <ReportSection title="7. Delivery Support Note">
+            {/* Section 8: Delivery Support Note */}
+            <ReportSection title="8. Delivery Support Note">
               <CompletionBondNote report={report} />
             </ReportSection>
 

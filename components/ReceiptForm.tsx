@@ -479,9 +479,7 @@ export default function ReceiptForm() {
           </div>
 
           <div>
-            <label className="label" htmlFor="sel_output">
-              SEL — Selection
-            </label>
+            <p className="label">SEL — Selection</p>
             <div className="space-y-3">
               <div>
                 <label className="label" htmlFor="sel_output">What did you select?</label>
@@ -515,6 +513,7 @@ export default function ReceiptForm() {
                   <input
                     id="sel_detail"
                     className="input"
+                    required
                     placeholder="Describe your selection reasoning…"
                     value={form.sel_detail}
                     onChange={(e) => set('sel_detail', e.target.value)}

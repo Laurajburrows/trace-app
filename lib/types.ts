@@ -38,10 +38,10 @@ export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 export type ReceiptStatus = 'PENDING_AUTH' | 'AUTH_COMPLETE'
 
 export const SEL_REASONS = [
-  'Creative direction — style, tone, aesthetic fit',
-  'Technical quality — resolution, accuracy, detail',
-  'Brief compliance — closest to the original instruction',
-  'Least adjustment needed — most efficient to work with',
+  'Creative direction',
+  'Technical quality',
+  'Brief compliance',
+  'Least adjustment needed',
   'Combination of the above',
   'Other',
 ] as const

@@ -33,7 +33,8 @@ function fmtDateTime(iso: string) {
 function exportCSV(receipts: Receipt[]) {
   const cols = [
     'id', 'production_name', 'date', 'department', 'crew_member_name', 'crew_role',
-    'scene_usid', 'ai_tool_used', 'tool_status', 'por_description', 'sel_description',
+    'scene_usid', 'ai_tool_used', 'tool_status', 'por_description',
+    'sel_output', 'sel_description', 'sel_detail',
     'adj_description', 'auth_signer', 'auth_timestamp', 'lct_required', 'lct_reference', 'notes',
   ]
 
@@ -266,14 +267,20 @@ export default function ReceiptLog() {
                               </div>
                               <div>
                                 <p className="label">SEL — Selection</p>
-                                {r.sel_output && (
-                                  <p className="text-gray-700 mb-0.5">{r.sel_output}</p>
-                                )}
-                                <p className="text-xs text-gray-500">{r.sel_description || '—'}</p>
-                                {r.sel_detail && (
-                                  <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>
-                                )}
-                                <p className="text-xs text-gray-400 mt-1">Recorded: {fmtDateTime(r.created_at)}</p>
+                                <div className="space-y-2">
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">What was selected</p>
+                                    <p className="text-sm text-gray-700">{r.sel_output || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Why selected</p>
+                                    <p className="text-sm text-gray-600">{r.sel_description || '—'}</p>
+                                    {r.sel_detail && (
+                                      <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-2">Recorded: {fmtDateTime(r.created_at)}</p>
                               </div>
                               <div>
                                 <p className="label">ADJ — Adjustment</p>
