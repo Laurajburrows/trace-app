@@ -26,6 +26,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <div className="w-full bg-[#0f2318] text-[#c8ddd1] text-[11px] text-center px-4 py-2 leading-snug">
+          Confidential beta — for evaluation purposes only. TRACE© and all associated materials are the intellectual property of Laura Burrows (or her licensors) © 2026. Access to this application is by invitation. Contents are confidential and may not be reproduced or disclosed without permission.
+        </div>
         <Navigation />
         <main className="min-h-screen">{children}</main>
       </body>
