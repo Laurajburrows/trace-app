@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <div className="w-full bg-[#0f2318] text-[#c8ddd1] text-[11px] text-center px-4 py-2 leading-snug font-bold">
-          Confidential beta — for evaluation purposes only. TRACE© and all associated materials are the intellectual property of Laura Burrows (or her licensors) © 2026. Access to this application is by invitation. Contents are confidential and may not be reproduced or disclosed without permission.{' '}
+          Confidential beta — for evaluation purposes only. TRACE© and all associated materials are the intellectual property of and belongs to Laura Burrows (or her licensors) © 2026. Access to this application is by invitation. Contents are confidential and may not be reproduced or disclosed without permission.{' '}
           For more information visit{' '}
           <a href="https://traceprotocol.ai/" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">
             traceprotocol.ai
