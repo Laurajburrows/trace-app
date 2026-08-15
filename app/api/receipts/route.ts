@@ -91,6 +91,10 @@ export async function POST(req: NextRequest) {
       writing_ai_contribution: body.writing_ai_contribution || null,
       writing_no_training_confirmed: Boolean(body.writing_no_training_confirmed),
       writing_authorship_declared: Boolean(body.writing_authorship_declared),
+      writing_wga_writers_count: body.writing_wga_writers_count ? parseInt(body.writing_wga_writers_count, 10) : null,
+      writing_wga_registration: body.writing_wga_registration || null,
+      writing_wggb_context: body.writing_wggb_context || null,
+      writing_wggb_paternity: Boolean(body.writing_wggb_paternity),
     },
   })
 

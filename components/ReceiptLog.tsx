@@ -443,6 +443,32 @@ export default function ReceiptLog() {
                                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guild status</p>
                                   <p className="text-gray-700">{r.writing_guild_status || '—'}</p>
                                 </div>
+                                {r.writing_guild_status === 'WGA' && (
+                                  <>
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Writers in session</p>
+                                      <p className="text-gray-700">{r.writing_wga_writers_count ?? '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">WGA registration</p>
+                                      <p className="text-gray-700">{r.writing_wga_registration || '—'}</p>
+                                    </div>
+                                  </>
+                                )}
+                                {r.writing_guild_status === 'WGGB' && (
+                                  <>
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Writing context</p>
+                                      <p className="text-gray-700">{r.writing_wggb_context || '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Paternity asserted (CDPA s.77)</p>
+                                      <p className={r.writing_wggb_paternity ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                        {r.writing_wggb_paternity ? 'Confirmed' : 'Not confirmed'}
+                                      </p>
+                                    </div>
+                                  </>
+                                )}
                                 <div className="sm:col-span-2">
                                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">AI contribution</p>
                                   <p className="text-gray-700">{r.writing_ai_contribution || '—'}</p>

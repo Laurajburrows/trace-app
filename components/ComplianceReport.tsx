@@ -414,6 +414,34 @@ async function generatePDF(report: ReportData) {
         flagged ? YELLOW_C : undefined
       )
     })
+
+    const wgaReceipts = writingReceipts.filter((r) => r.writing_guild_status === 'WGA')
+    if (wgaReceipts.length > 0) {
+      gap(5)
+      h3('WGA — Additional Disclosure Detail')
+      tableRow(['Scene / Asset', 'Writers in Session', 'Registration Status'], [50, 40, 74], true)
+      wgaReceipts.forEach((r) => {
+        tableRow(
+          [r.scene_usid.substring(0, 18), r.writing_wga_writers_count != null ? String(r.writing_wga_writers_count) : '—', r.writing_wga_registration || '—'],
+          [50, 40, 74]
+        )
+      })
+    }
+
+    const wggbReceipts = writingReceipts.filter((r) => r.writing_guild_status === 'WGGB')
+    if (wggbReceipts.length > 0) {
+      gap(5)
+      h3('WGGB — Additional Disclosure Detail')
+      tableRow(['Scene / Asset', 'Writing Context', 'Paternity (CDPA s.77)'], [50, 70, 44], true)
+      wggbReceipts.forEach((r) => {
+        tableRow(
+          [r.scene_usid.substring(0, 18), r.writing_wggb_context || '—', r.writing_wggb_paternity ? 'Asserted' : 'Not asserted'],
+          [50, 70, 44],
+          false,
+          !r.writing_wggb_paternity ? YELLOW_C : undefined
+        )
+      })
+    }
   }
 
   // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
@@ -1033,7 +1061,21 @@ export default function ComplianceReport() {
                             <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
                             <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.writing_stage || '—'}</td>
                             <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_submitted_material || '—'}</td>
-                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.writing_guild_status || '—'}</td>
+                            <td className="px-3 py-2 text-gray-700">
+                              <span className="whitespace-nowrap">{r.writing_guild_status || '—'}</span>
+                              {r.writing_guild_status === 'WGA' && (
+                                <span className="block text-xs text-gray-400 mt-0.5">
+                                  {r.writing_wga_writers_count != null ? `${r.writing_wga_writers_count} writer${Number(r.writing_wga_writers_count) !== 1 ? 's' : ''}` : ''}
+                                  {r.writing_wga_registration ? ` · ${r.writing_wga_registration}` : ''}
+                                </span>
+                              )}
+                              {r.writing_guild_status === 'WGGB' && (
+                                <span className="block text-xs text-gray-400 mt-0.5">
+                                  {r.writing_wggb_context || ''}
+                                  {r.writing_wggb_paternity ? ' · Paternity asserted' : ' · Paternity not asserted'}
+                                </span>
+                              )}
+                            </td>
                             <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_ai_contribution || '—'}</td>
                             <td className="px-3 py-2">
                               <span className={`text-xs font-semibold ${r.writing_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>

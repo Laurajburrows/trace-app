@@ -233,6 +233,14 @@ export default function ReceiptForm() {
       if (!form.writing_submitted_material) return setError('Writing: Please select what script material was submitted.')
       if (!form.writing_processing_location) return setError('Writing: Please select where this was processed.')
       if (!form.writing_guild_status) return setError('Writing: Please select writer guild status.')
+      if (form.writing_guild_status === 'WGA') {
+        if (!form.writing_wga_writers_count || Number(form.writing_wga_writers_count) < 1) return setError('Writing: Please enter the number of writers in this session.')
+        if (!form.writing_wga_registration) return setError('Writing: Please select the WGA script registration status.')
+      }
+      if (form.writing_guild_status === 'WGGB') {
+        if (!form.writing_wggb_context) return setError('Writing: Please select your writing context.')
+        if (!form.writing_wggb_paternity) return setError('Writing: Please confirm your right of paternity assertion (CDPA s.77).')
+      }
       if (!form.writing_ai_contribution) return setError('Writing: Please select what the AI contributed.')
       if (!form.writing_no_training_confirmed) return setError('Writing: Please confirm the training data policy.')
       if (!form.writing_authorship_declared) return setError('Writing: Please confirm your authorship declaration.')
@@ -868,6 +876,90 @@ export default function ReceiptForm() {
                 {WRITING_GUILD_STATUSES.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
+
+            {form.writing_guild_status === 'WGA' && (
+              <div className="space-y-4 rounded border border-blue-200 bg-blue-50/40 px-4 py-4">
+                <div>
+                  <label className="label" htmlFor="writing_wga_writers_count">Number of writers present in this session</label>
+                  <input
+                    id="writing_wga_writers_count"
+                    type="number"
+                    min={1}
+                    className="input"
+                    required
+                    placeholder="1"
+                    value={form.writing_wga_writers_count}
+                    onChange={(e) => set('writing_wga_writers_count', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="writing_wga_registration">WGA script registration status</label>
+                  <select
+                    id="writing_wga_registration"
+                    className="select"
+                    required
+                    value={form.writing_wga_registration}
+                    onChange={(e) => set('writing_wga_registration', e.target.value)}
+                  >
+                    <option value="">Select registration status…</option>
+                    {WGA_SCRIPT_REGISTRATION_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <p className="text-xs text-blue-800 italic">
+                  By submitting this receipt you confirm disclosure of AI tool use as required under the WGA 2026 Minimum Basic Agreement.
+                </p>
+              </div>
+            )}
+
+            {form.writing_guild_status === 'WGGB' && (
+              <div className="space-y-4 rounded border border-trace-forest/20 bg-trace-pale/50 px-4 py-4">
+                <div>
+                  <label className="label" htmlFor="writing_wggb_context">Writing context</label>
+                  <select
+                    id="writing_wggb_context"
+                    className="select"
+                    required
+                    value={form.writing_wggb_context}
+                    onChange={(e) => set('writing_wggb_context', e.target.value)}
+                  >
+                    <option value="">Select context…</option>
+                    {WGGB_WRITING_CONTEXTS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="flex items-start gap-3">
+                  <input
+                    id="writing_wggb_paternity"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                    checked={form.writing_wggb_paternity}
+                    onChange={(e) => set('writing_wggb_paternity', e.target.checked)}
+                  />
+                  <label htmlFor="writing_wggb_paternity" className="text-sm text-gray-700 cursor-pointer">
+                    I assert my right of paternity in this work under CDPA s.77 as the human author who directed and shaped this material
+                  </label>
+                </div>
+                <p className="text-xs text-trace-forest italic">
+                  By submitting this receipt I confirm transparency of AI tool use as required under the WGGB AI principles.
+                </p>
+              </div>
+            )}
+
+            {form.writing_guild_status === 'BECTU' && (
+              <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3">
+                <p className="text-xs text-gray-600 italic">
+                  By submitting this receipt I confirm transparency of AI tool use in accordance with BECTU guidelines.
+                </p>
+              </div>
+            )}
+
+            {(form.writing_guild_status === 'Neither' || form.writing_guild_status === 'Unknown') && (
+              <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3">
+                <p className="text-xs text-gray-600">
+                  No guild disclosure obligation applies. This receipt is your forensic record of human authorship for copyright purposes.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="label" htmlFor="writing_ai_contribution">What did the AI contribute?</label>
               <select
