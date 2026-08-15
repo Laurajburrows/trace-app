@@ -325,9 +325,42 @@ async function generatePDF(report: ReportData) {
     tableRow([r.scene_usid, r.crew_member_name, selOutput, selReason], [25, 35, 55, 55])
   })
 
-  // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
+  // ── SECTION 7: VFX COMPLIANCE REGISTER ────────────────────────────────────
+  const vfxReceipts = report.receipts.filter((r) => r.department === 'VFX')
+  if (vfxReceipts.length > 0) {
+    newPage()
+    h2('7. VFX Compliance Register')
+    gap(2)
+    body(`${vfxReceipts.length} VFX receipt${vfxReceipts.length !== 1 ? 's' : ''} recorded on this production.`)
+    gap(4)
+
+    tableRow(['Scene', 'Crew', 'Software', 'Data Location', 'Input', 'Output', 'No Train', 'LCT'], [20, 28, 30, 28, 28, 24, 16, 12], true)
+    vfxReceipts.forEach((r) => {
+      const noTrain = r.vfx_no_training_confirmed ? 'Yes' : 'No'
+      const lct = r.vfx_input_type === 'Plate footage containing performers'
+        ? (r.vfx_lct_confirmed ? 'Yes' : 'No')
+        : 'N/A'
+      tableRow(
+        [
+          r.scene_usid.substring(0, 8),
+          r.crew_member_name.substring(0, 12),
+          (r.vfx_software || '—').substring(0, 16),
+          (r.vfx_data_location || '—').substring(0, 14),
+          (r.vfx_input_type || '—').substring(0, 14),
+          (r.vfx_output_type || '—').substring(0, 12),
+          noTrain,
+          lct,
+        ],
+        [20, 28, 30, 28, 28, 24, 16, 12],
+        false,
+        !r.vfx_no_training_confirmed ? RED_C : undefined
+      )
+    })
+  }
+
+  // ── SECTION 8: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
   newPage()
-  h2('7. Platform Disclosure Summary')
+  h2('8. Platform Disclosure Summary')
   gap(4)
 
   const uniqueTools = Array.from(new Set(report.receipts.map((r) => r.ai_tool_used)))
@@ -349,9 +382,9 @@ async function generatePDF(report: ReportData) {
 
   body(disclosurePara)
 
-  // ── SECTION 8: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
+  // ── SECTION 9: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
   newPage()
-  h2('8. Delivery Support Note')
+  h2('9. Delivery Support Note')
   gap(4)
 
   const bondPara = [
@@ -800,13 +833,64 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 7: Platform Disclosure Summary */}
-            <ReportSection title="7. Platform Disclosure Summary">
+            {/* Section 7: VFX Compliance Register */}
+            {report.receipts.some((r) => r.department === 'VFX') && (
+              <ReportSection title="7. VFX Compliance Register">
+                <p className="text-sm text-gray-600 mb-4">
+                  Per-receipt VFX compliance data: software used, data processing location, input and output types, and training data confirmation.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-trace-pale">
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Software</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Data Location</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Input</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Output</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">LCT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.receipts.filter((r) => r.department === 'VFX').map((r) => (
+                        <tr key={r.id} className="border-t border-gray-100 align-top">
+                          <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
+                          <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
+                          <td className="px-3 py-2 text-gray-700">{r.vfx_software || '—'}</td>
+                          <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.vfx_data_location || '—'}</td>
+                          <td className="px-3 py-2 text-gray-700">{r.vfx_input_type || '—'}</td>
+                          <td className="px-3 py-2 text-gray-700">{r.vfx_output_type || '—'}</td>
+                          <td className="px-3 py-2">
+                            <span className={`text-xs font-semibold ${r.vfx_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                              {r.vfx_no_training_confirmed ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            {r.vfx_input_type === 'Plate footage containing performers' ? (
+                              <span className={`text-xs font-semibold ${r.vfx_lct_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                                {r.vfx_lct_confirmed ? 'Yes' : 'No'}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">N/A</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </ReportSection>
+            )}
+
+            {/* Section 8: Platform Disclosure Summary */}
+            <ReportSection title="8. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
             </ReportSection>
 
-            {/* Section 8: Delivery Support Note */}
-            <ReportSection title="8. Delivery Support Note">
+            {/* Section 9: Delivery Support Note */}
+            <ReportSection title="9. Delivery Support Note">
               <CompletionBondNote report={report} />
             </ReportSection>
 

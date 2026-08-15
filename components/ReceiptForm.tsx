@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
 
@@ -26,6 +26,12 @@ const emptyForm = {
   lct_reference: '',
   notes: '',
   script_date: '',
+  vfx_software: '',
+  vfx_data_location: '',
+  vfx_no_training_confirmed: false,
+  vfx_input_type: '',
+  vfx_output_type: '',
+  vfx_lct_confirmed: false,
 }
 
 type FormState = typeof emptyForm
@@ -183,6 +189,17 @@ export default function ReceiptForm() {
     if (!form.department) return setError('Please select a department.')
     if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
     if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before proceeding.')
+
+    if (form.department === 'VFX') {
+      if (!form.vfx_software.trim()) return setError('VFX: Please enter the software name and version.')
+      if (!form.vfx_data_location) return setError('VFX: Please select where data was processed.')
+      if (!form.vfx_no_training_confirmed) return setError('VFX: Please confirm the training data policy.')
+      if (!form.vfx_input_type) return setError('VFX: Please select what was submitted to the AI tool.')
+      if (!form.vfx_output_type) return setError('VFX: Please select what the AI generated.')
+      if (form.vfx_input_type === 'Plate footage containing performers' && !form.vfx_lct_confirmed) {
+        return setError('VFX: Please confirm a valid LCT exists for all performers in this footage.')
+      }
+    }
 
     setSubmitting(true)
 
@@ -565,6 +582,91 @@ export default function ReceiptForm() {
           </div>
         )}
       </section>
+
+      {/* VFX — additional compliance fields */}
+      {form.department === 'VFX' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">VFX — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="vfx_software">Software and version used</label>
+              <input
+                id="vfx_software"
+                className="input"
+                required
+                placeholder="e.g. Nuke 14.0, Runway Gen-3, Topaz Video AI 4.2"
+                value={form.vfx_software}
+                onChange={(e) => set('vfx_software', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="vfx_data_location">Where was data processed?</label>
+              <select
+                id="vfx_data_location"
+                className="select"
+                required
+                value={form.vfx_data_location}
+                onChange={(e) => set('vfx_data_location', e.target.value)}
+              >
+                <option value="">Select location…</option>
+                {VFX_DATA_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="flex items-start gap-3">
+              <input
+                id="vfx_no_training_confirmed"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                checked={form.vfx_no_training_confirmed}
+                onChange={(e) => set('vfx_no_training_confirmed', e.target.checked)}
+              />
+              <label htmlFor="vfx_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
+              </label>
+            </div>
+            <div>
+              <label className="label" htmlFor="vfx_input_type">What was submitted to the AI tool?</label>
+              <select
+                id="vfx_input_type"
+                className="select"
+                required
+                value={form.vfx_input_type}
+                onChange={(e) => set('vfx_input_type', e.target.value)}
+              >
+                <option value="">Select input type…</option>
+                {VFX_INPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            {form.vfx_input_type === 'Plate footage containing performers' && (
+              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                <input
+                  id="vfx_lct_confirmed"
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                  checked={form.vfx_lct_confirmed}
+                  onChange={(e) => set('vfx_lct_confirmed', e.target.checked)}
+                />
+                <label htmlFor="vfx_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
+                </label>
+              </div>
+            )}
+            <div>
+              <label className="label" htmlFor="vfx_output_type">What did the AI generate?</label>
+              <select
+                id="vfx_output_type"
+                className="select"
+                required
+                value={form.vfx_output_type}
+                onChange={(e) => set('vfx_output_type', e.target.value)}
+              >
+                <option value="">Select output type…</option>
+                {VFX_OUTPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* LCT */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">

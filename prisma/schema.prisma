@@ -33,6 +33,12 @@ model Receipt {
   notes               String?
   twin_lock_hash      String?
   created_at          DateTime @default(now())
+  vfx_software        String?
+  vfx_data_location   String?
+  vfx_no_training_confirmed Boolean @default(false)
+  vfx_input_type      String?
+  vfx_output_type     String?
+  vfx_lct_confirmed   Boolean @default(false)
 }
 
 model WhitelistEntry {

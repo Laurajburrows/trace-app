@@ -336,6 +336,43 @@ export default function ReceiptLog() {
                               )}
                             </div>
                           </div>
+                          {r.department === 'VFX' && (
+                            <div className="mt-5 pt-5 border-t border-gray-100">
+                              <p className="label mb-3">VFX — Additional Compliance</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Software and version</p>
+                                  <p className="text-gray-700">{r.vfx_software || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Data processed</p>
+                                  <p className="text-gray-700">{r.vfx_data_location || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Input type</p>
+                                  <p className="text-gray-700">{r.vfx_input_type || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Output type</p>
+                                  <p className="text-gray-700">{r.vfx_output_type || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                  <p className={r.vfx_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                    {r.vfx_no_training_confirmed ? 'Confirmed' : 'Not confirmed'}
+                                  </p>
+                                </div>
+                                {r.vfx_input_type === 'Plate footage containing performers' && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">LCT verified</p>
+                                    <p className={r.vfx_lct_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                      {r.vfx_lct_confirmed ? 'Confirmed' : 'Not confirmed'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}

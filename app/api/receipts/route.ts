@@ -63,6 +63,12 @@ export async function POST(req: NextRequest) {
       lct_required: Boolean(body.lct_required),
       lct_reference: body.lct_reference || null,
       notes: body.notes || null,
+      vfx_software: body.vfx_software || null,
+      vfx_data_location: body.vfx_data_location || null,
+      vfx_no_training_confirmed: Boolean(body.vfx_no_training_confirmed),
+      vfx_input_type: body.vfx_input_type || null,
+      vfx_output_type: body.vfx_output_type || null,
+      vfx_lct_confirmed: Boolean(body.vfx_lct_confirmed),
     },
   })
 

@@ -37,6 +37,33 @@ export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
 export type ReceiptStatus = 'PENDING_AUTH' | 'AUTH_COMPLETE'
 
+export const VFX_DATA_LOCATIONS = [
+  'On-premises facility',
+  'UK cloud server',
+  'US cloud server',
+  'EU cloud server',
+  'Unknown',
+] as const
+
+export const VFX_INPUT_TYPES = [
+  'Plate footage containing performers',
+  'Plate footage no performers',
+  'Reference image',
+  'Audio',
+  'Script',
+  'Other',
+] as const
+
+export const VFX_OUTPUT_TYPES = [
+  'Background plate',
+  'Rotoscope mask',
+  'De-aged face',
+  'Voice synthesis',
+  'Upscaled image',
+  'Composite',
+  'Other',
+] as const
+
 export const SEL_REASONS = [
   'Creative direction',
   'Technical quality',
@@ -121,6 +148,12 @@ export interface Receipt {
   notes?: string | null
   twin_lock_hash?: string | null
   created_at: string
+  vfx_software?: string | null
+  vfx_data_location?: string | null
+  vfx_no_training_confirmed?: boolean
+  vfx_input_type?: string | null
+  vfx_output_type?: string | null
+  vfx_lct_confirmed?: boolean
 }
 
 export interface ReportData {
