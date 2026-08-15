@@ -207,15 +207,15 @@ export default function ReceiptLog() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide">Dept</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Dept</th>
                   <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Crew Member</th>
                   <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Scene / Asset</th>
                   <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">AI Tool</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Status</th>
                   <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Auth Signer</th>
                 </tr>
               </thead>
@@ -228,14 +228,14 @@ export default function ReceiptLog() {
                       className="border-b border-gray-100 hover:bg-trace-pale/30 cursor-pointer transition-colors"
                     >
                       <td className="px-4 py-3 whitespace-nowrap text-gray-600">{fmt(r.date)}</td>
-                      <td className="px-4 py-3 text-gray-600">{r.department}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-600">{r.department}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="font-medium text-gray-900">{r.crew_member_name}</span>
                         <span className="block text-xs text-gray-400">{r.crew_role}</span>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-gray-600">{r.scene_usid}</td>
-                      <td className="px-4 py-3 text-gray-700">{r.ai_tool_used}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-700">{r.ai_tool_used}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
                           {r.tool_status}
                         </span>
