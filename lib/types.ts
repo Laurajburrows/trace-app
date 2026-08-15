@@ -64,6 +64,24 @@ export const VFX_OUTPUT_TYPES = [
   'Other',
 ] as const
 
+export const SOUND_PROCESSING_LOCATIONS = [
+  'Local software — not uploaded',
+  'UK cloud server',
+  'US cloud server',
+  'EU cloud server',
+  'Unknown',
+] as const
+
+export const SOUND_PROCESSING_TYPES = [
+  'Noise reduction',
+  'Dialogue isolation',
+  'Breath removal',
+  'De-reverberation',
+  'Voice enhancement',
+  'Combination of the above',
+  'Other',
+] as const
+
 export const SEL_REASONS = [
   'Creative direction',
   'Technical quality',
@@ -154,6 +172,10 @@ export interface Receipt {
   vfx_input_type?: string | null
   vfx_output_type?: string | null
   vfx_lct_confirmed?: boolean
+  sound_processing_location?: string | null
+  sound_processing_type?: string | null
+  sound_performer_audio?: boolean
+  sound_no_training_confirmed?: boolean
 }
 
 export interface ReportData {

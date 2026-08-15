@@ -325,11 +325,11 @@ async function generatePDF(report: ReportData) {
     tableRow([r.scene_usid, r.crew_member_name, selOutput, selReason], [25, 35, 55, 55])
   })
 
-  // ── SECTION 7: VFX COMPLIANCE REGISTER ────────────────────────────────────
+  // ── VFX COMPLIANCE REGISTER (conditional) ─────────────────────────────────
   const vfxReceipts = report.receipts.filter((r) => r.department === 'VFX')
   if (vfxReceipts.length > 0) {
     newPage()
-    h2('7. VFX Compliance Register')
+    h2('VFX Compliance Register')
     gap(2)
     body(`${vfxReceipts.length} VFX receipt${vfxReceipts.length !== 1 ? 's' : ''} recorded on this production.`)
     gap(4)
@@ -358,9 +358,38 @@ async function generatePDF(report: ReportData) {
     })
   }
 
-  // ── SECTION 8: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
+  // ── SOUND COMPLIANCE REGISTER (conditional) ───────────────────────────────
+  const soundReceipts = report.receipts.filter((r) => r.department === 'Sound')
+  if (soundReceipts.length > 0) {
+    newPage()
+    h2('Sound Compliance Register')
+    gap(2)
+    body(`${soundReceipts.length} Sound receipt${soundReceipts.length !== 1 ? 's' : ''} recorded on this production.`)
+    gap(4)
+
+    tableRow(['Scene', 'Crew', 'Location', 'Type', 'Performer', 'Cloud Flag', 'No Train'], [20, 28, 32, 28, 18, 20, 18], true)
+    soundReceipts.forEach((r) => {
+      const cloudFlag = r.sound_performer_audio && r.sound_processing_location !== 'Local software — not uploaded'
+      tableRow(
+        [
+          r.scene_usid.substring(0, 8),
+          r.crew_member_name.substring(0, 12),
+          (r.sound_processing_location || '—').substring(0, 16),
+          (r.sound_processing_type || '—').substring(0, 14),
+          r.sound_performer_audio ? 'Yes' : 'No',
+          cloudFlag ? 'FLAGGED' : '—',
+          r.sound_no_training_confirmed ? 'Yes' : 'No',
+        ],
+        [20, 28, 32, 28, 18, 20, 18],
+        false,
+        cloudFlag ? RED_C : undefined
+      )
+    })
+  }
+
+  // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
   newPage()
-  h2('8. Platform Disclosure Summary')
+  h2('7. Platform Disclosure Summary')
   gap(4)
 
   const uniqueTools = Array.from(new Set(report.receipts.map((r) => r.ai_tool_used)))
@@ -382,9 +411,9 @@ async function generatePDF(report: ReportData) {
 
   body(disclosurePara)
 
-  // ── SECTION 9: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
+  // ── SECTION 8: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
   newPage()
-  h2('9. Delivery Support Note')
+  h2('8. Delivery Support Note')
   gap(4)
 
   const bondPara = [
@@ -833,9 +862,9 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 7: VFX Compliance Register */}
+            {/* VFX Compliance Register (conditional) */}
             {report.receipts.some((r) => r.department === 'VFX') && (
-              <ReportSection title="7. VFX Compliance Register">
+              <ReportSection title="VFX Compliance Register">
                 <p className="text-sm text-gray-600 mb-4">
                   Per-receipt VFX compliance data: software used, data processing location, input and output types, and training data confirmation.
                 </p>
@@ -884,13 +913,67 @@ export default function ComplianceReport() {
               </ReportSection>
             )}
 
-            {/* Section 8: Platform Disclosure Summary */}
-            <ReportSection title="8. Platform Disclosure Summary">
+            {/* Sound Compliance Register (conditional) */}
+            {report.receipts.some((r) => r.department === 'Sound') && (
+              <ReportSection title="Sound Compliance Register">
+                <p className="text-sm text-gray-600 mb-4">
+                  Per-receipt Sound compliance data: processing location, type of processing, performer dialogue, and training data confirmation. Receipts with a cloud-processing flag are highlighted.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-trace-pale">
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Processing Location</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Type</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Performer Dialogue</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Cloud Flag</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.receipts.filter((r) => r.department === 'Sound').map((r) => {
+                        const cloudFlag = r.sound_performer_audio && r.sound_processing_location !== 'Local software — not uploaded'
+                        return (
+                          <tr key={r.id} className={`border-t border-gray-100 align-top ${cloudFlag ? 'bg-red-50/40' : ''}`}>
+                            <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
+                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
+                            <td className="px-3 py-2 text-gray-700">{r.sound_processing_location || '—'}</td>
+                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.sound_processing_type || '—'}</td>
+                            <td className="px-3 py-2">
+                              <span className={r.sound_performer_audio ? 'text-xs font-semibold text-status-amber' : 'text-xs text-gray-500'}>
+                                {r.sound_performer_audio ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              {cloudFlag ? (
+                                <span className="text-xs font-semibold text-status-red">FLAGGED</span>
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`text-xs font-semibold ${r.sound_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                                {r.sound_no_training_confirmed ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ReportSection>
+            )}
+
+            {/* Section 7: Platform Disclosure Summary */}
+            <ReportSection title="7. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
             </ReportSection>
 
-            {/* Section 9: Delivery Support Note */}
-            <ReportSection title="9. Delivery Support Note">
+            {/* Section 8: Delivery Support Note */}
+            <ReportSection title="8. Delivery Support Note">
               <CompletionBondNote report={report} />
             </ReportSection>
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
 
@@ -32,6 +32,10 @@ const emptyForm = {
   vfx_input_type: '',
   vfx_output_type: '',
   vfx_lct_confirmed: false,
+  sound_processing_location: '',
+  sound_processing_type: '',
+  sound_performer_audio: false,
+  sound_no_training_confirmed: false,
 }
 
 type FormState = typeof emptyForm
@@ -199,6 +203,12 @@ export default function ReceiptForm() {
       if (form.vfx_input_type === 'Plate footage containing performers' && !form.vfx_lct_confirmed) {
         return setError('VFX: Please confirm a valid LCT exists for all performers in this footage.')
       }
+    }
+
+    if (form.department === 'Sound') {
+      if (!form.sound_processing_location) return setError('Sound: Please select where audio was processed.')
+      if (!form.sound_processing_type) return setError('Sound: Please select the type of processing.')
+      if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
     }
 
     setSubmitting(true)
@@ -663,6 +673,73 @@ export default function ReceiptForm() {
                 <option value="">Select output type…</option>
                 {VFX_OUTPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Sound — additional compliance fields */}
+      {form.department === 'Sound' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Sound — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="sound_processing_location">Where was audio processed?</label>
+              <select
+                id="sound_processing_location"
+                className="select"
+                required
+                value={form.sound_processing_location}
+                onChange={(e) => set('sound_processing_location', e.target.value)}
+              >
+                <option value="">Select location…</option>
+                {SOUND_PROCESSING_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="sound_processing_type">Type of processing</label>
+              <select
+                id="sound_processing_type"
+                className="select"
+                required
+                value={form.sound_processing_type}
+                onChange={(e) => set('sound_processing_type', e.target.value)}
+              >
+                <option value="">Select type…</option>
+                {SOUND_PROCESSING_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="flex items-start gap-3">
+              <input
+                id="sound_performer_audio"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                checked={form.sound_performer_audio}
+                onChange={(e) => set('sound_performer_audio', e.target.checked)}
+              />
+              <label htmlFor="sound_performer_audio" className="text-sm text-gray-700 cursor-pointer">
+                This audio contains identifiable performer dialogue
+              </label>
+            </div>
+            {form.sound_performer_audio && form.sound_processing_location !== '' && form.sound_processing_location !== 'Local software — not uploaded' && (
+              <div className="rounded border border-red-300 bg-red-50 px-4 py-3">
+                <p className="text-sm font-semibold text-red-700 mb-1">Cloud processing — consent check required</p>
+                <p className="text-xs text-red-600">
+                  This audio has been cloud-processed. Verify this is within scope of performer consent and your production data security policy. This will be flagged in the Compliance Report.
+                </p>
+              </div>
+            )}
+            <div className="flex items-start gap-3">
+              <input
+                id="sound_no_training_confirmed"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                checked={form.sound_no_training_confirmed}
+                onChange={(e) => set('sound_no_training_confirmed', e.target.checked)}
+              />
+              <label htmlFor="sound_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                I confirm this tool does not use submitted audio for model training, or I have written vendor confirmation that it does not
+              </label>
             </div>
           </div>
         </section>

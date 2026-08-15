@@ -373,6 +373,40 @@ export default function ReceiptLog() {
                               </div>
                             </div>
                           )}
+                          {r.department === 'Sound' && (() => {
+                            const cloudFlag = r.sound_performer_audio && r.sound_processing_location !== 'Local software — not uploaded'
+                            return (
+                              <div className="mt-5 pt-5 border-t border-gray-100">
+                                <p className="label mb-3">Sound — Additional Compliance</p>
+                                {cloudFlag && (
+                                  <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2">
+                                    <p className="text-xs font-semibold text-red-700">Cloud processing flag — performer dialogue</p>
+                                    <p className="text-xs text-red-600 mt-0.5">Performer audio sent to cloud. Verify consent and data security policy compliance.</p>
+                                  </div>
+                                )}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Processing location</p>
+                                    <p className="text-gray-700">{r.sound_processing_location || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Type of processing</p>
+                                    <p className="text-gray-700">{r.sound_processing_type || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Performer dialogue</p>
+                                    <p className="text-gray-700">{r.sound_performer_audio ? 'Yes' : 'No'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                    <p className={r.sound_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                      {r.sound_no_training_confirmed ? 'Confirmed' : 'Not confirmed'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </td>
                       </tr>
                     )}

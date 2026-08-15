@@ -69,6 +69,10 @@ export async function POST(req: NextRequest) {
       vfx_input_type: body.vfx_input_type || null,
       vfx_output_type: body.vfx_output_type || null,
       vfx_lct_confirmed: Boolean(body.vfx_lct_confirmed),
+      sound_processing_location: body.sound_processing_location || null,
+      sound_processing_type: body.sound_processing_type || null,
+      sound_performer_audio: Boolean(body.sound_performer_audio),
+      sound_no_training_confirmed: Boolean(body.sound_no_training_confirmed),
     },
   })
 

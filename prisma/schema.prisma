@@ -39,6 +39,10 @@ model Receipt {
   vfx_input_type      String?
   vfx_output_type     String?
   vfx_lct_confirmed   Boolean @default(false)
+  sound_processing_location   String?
+  sound_processing_type       String?
+  sound_performer_audio       Boolean @default(false)
+  sound_no_training_confirmed Boolean @default(false)
 }
 
 model WhitelistEntry {
