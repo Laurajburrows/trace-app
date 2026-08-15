@@ -407,6 +407,45 @@ export default function ReceiptLog() {
                               </div>
                             )
                           })()}
+                          {r.department === 'Writing' && (
+                            <div className="mt-5 pt-5 border-t border-gray-100">
+                              <p className="label mb-3">Writing — Additional Compliance</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Stage</p>
+                                  <p className="text-gray-700">{r.writing_stage || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Material submitted</p>
+                                  <p className="text-gray-700">{r.writing_submitted_material || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Processing location</p>
+                                  <p className="text-gray-700">{r.writing_processing_location || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guild status</p>
+                                  <p className="text-gray-700">{r.writing_guild_status || '—'}</p>
+                                </div>
+                                <div className="sm:col-span-2">
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">AI contribution</p>
+                                  <p className="text-gray-700">{r.writing_ai_contribution || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                  <p className={r.writing_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                    {r.writing_no_training_confirmed ? 'Confirmed' : 'Not confirmed — flagged'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Authorship declared</p>
+                                  <p className={r.writing_authorship_declared ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                    {r.writing_authorship_declared ? 'Confirmed' : 'Not confirmed'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}

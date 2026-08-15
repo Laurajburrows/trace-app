@@ -82,6 +82,51 @@ export const SOUND_PROCESSING_TYPES = [
   'Other',
 ] as const
 
+export const WRITING_STAGES = [
+  'Development',
+  'Treatment',
+  'First draft',
+  'Revision',
+  'Writers room session',
+  'Polish',
+  'Production rewrite',
+] as const
+
+export const WRITING_SUBMITTED_MATERIALS = [
+  'Story concept only — no script text',
+  'Treatment excerpt',
+  'Scene outline',
+  'Script pages',
+  'Dialogue excerpt',
+  'Full script draft',
+  'Research material only',
+  'Nothing submitted — AI generated from prompt only',
+  'Other',
+] as const
+
+export const WRITING_PROCESSING_LOCATIONS = [
+  'Local software — not uploaded',
+  'UK cloud server',
+  'US cloud server',
+  'EU cloud server',
+  'Unknown',
+] as const
+
+export const WRITING_GUILD_STATUSES = [
+  'WGA',
+  'WGGB',
+  'Neither',
+  'Unknown',
+] as const
+
+export const WRITING_AI_CONTRIBUTIONS = [
+  'Brainstorming and ideas only — no text used',
+  'Structural suggestions',
+  'Draft text substantially rewritten by writer',
+  'Draft text partially used',
+  'Draft text used with minor changes',
+] as const
+
 export const SEL_REASONS = [
   'Creative direction',
   'Technical quality',
@@ -176,6 +221,13 @@ export interface Receipt {
   sound_processing_type?: string | null
   sound_performer_audio?: boolean
   sound_no_training_confirmed?: boolean
+  writing_stage?: string | null
+  writing_submitted_material?: string | null
+  writing_processing_location?: string | null
+  writing_guild_status?: string | null
+  writing_ai_contribution?: string | null
+  writing_no_training_confirmed?: boolean
+  writing_authorship_declared?: boolean
 }
 
 export interface ReportData {

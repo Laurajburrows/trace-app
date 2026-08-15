@@ -43,6 +43,13 @@ model Receipt {
   sound_processing_type       String?
   sound_performer_audio       Boolean @default(false)
   sound_no_training_confirmed Boolean @default(false)
+  writing_stage               String?
+  writing_submitted_material  String?
+  writing_processing_location String?
+  writing_guild_status        String?
+  writing_ai_contribution     String?
+  writing_no_training_confirmed Boolean @default(false)
+  writing_authorship_declared Boolean @default(false)
 }
 
 model WhitelistEntry {

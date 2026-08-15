@@ -387,6 +387,35 @@ async function generatePDF(report: ReportData) {
     })
   }
 
+  // ── WRITING COMPLIANCE REGISTER (conditional) ─────────────────────────────
+  const writingReceipts = report.receipts.filter((r) => r.department === 'Writing')
+  if (writingReceipts.length > 0) {
+    newPage()
+    h2('Writing Compliance Register')
+    gap(2)
+    body(`${writingReceipts.length} Writing receipt${writingReceipts.length !== 1 ? 's' : ''} recorded on this production.`)
+    gap(4)
+
+    tableRow(['Scene', 'Writer', 'Stage', 'Guild', 'AI Contribution', 'No Train', 'Auth'], [18, 28, 24, 14, 50, 16, 14], true)
+    writingReceipts.forEach((r) => {
+      const flagged = !r.writing_no_training_confirmed
+      tableRow(
+        [
+          r.scene_usid.substring(0, 8),
+          r.crew_member_name.substring(0, 14),
+          (r.writing_stage || '—').substring(0, 12),
+          (r.writing_guild_status || '—'),
+          (r.writing_ai_contribution || '—').substring(0, 28),
+          r.writing_no_training_confirmed ? 'Yes' : 'FLAGGED',
+          r.writing_authorship_declared ? 'Yes' : 'No',
+        ],
+        [18, 28, 24, 14, 50, 16, 14],
+        false,
+        flagged ? YELLOW_C : undefined
+      )
+    })
+  }
+
   // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
   newPage()
   h2('7. Platform Disclosure Summary')
@@ -956,6 +985,56 @@ export default function ComplianceReport() {
                             <td className="px-3 py-2">
                               <span className={`text-xs font-semibold ${r.sound_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.sound_no_training_confirmed ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </ReportSection>
+            )}
+
+            {/* Writing Compliance Register (conditional) */}
+            {report.receipts.some((r) => r.department === 'Writing') && (
+              <ReportSection title="Writing Compliance Register">
+                <p className="text-sm text-gray-600 mb-4">
+                  Per-receipt Writing compliance data. Unconfirmed training data use and missing authorship declarations are highlighted.
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-trace-pale">
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Writer</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Stage</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Material</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Guild</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">AI Contribution</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Authorship</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.receipts.filter((r) => r.department === 'Writing').map((r) => {
+                        const flagged = !r.writing_no_training_confirmed || !r.writing_authorship_declared
+                        return (
+                          <tr key={r.id} className={`border-t border-gray-100 align-top ${flagged ? 'bg-yellow-50/40' : ''}`}>
+                            <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
+                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
+                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.writing_stage || '—'}</td>
+                            <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_submitted_material || '—'}</td>
+                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.writing_guild_status || '—'}</td>
+                            <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_ai_contribution || '—'}</td>
+                            <td className="px-3 py-2">
+                              <span className={`text-xs font-semibold ${r.writing_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                                {r.writing_no_training_confirmed ? 'Yes' : 'FLAGGED'}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`text-xs font-semibold ${r.writing_authorship_declared ? 'text-status-green' : 'text-status-red'}`}>
+                                {r.writing_authorship_declared ? 'Yes' : 'No'}
                               </span>
                             </td>
                           </tr>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
 
@@ -36,6 +36,13 @@ const emptyForm = {
   sound_processing_type: '',
   sound_performer_audio: false,
   sound_no_training_confirmed: false,
+  writing_stage: '',
+  writing_submitted_material: '',
+  writing_processing_location: '',
+  writing_guild_status: '',
+  writing_ai_contribution: '',
+  writing_no_training_confirmed: false,
+  writing_authorship_declared: false,
 }
 
 type FormState = typeof emptyForm
@@ -44,6 +51,7 @@ interface Confirmation {
   id: string
   hash: string
   production_name: string
+  selfAuth: boolean
 }
 
 
@@ -211,6 +219,16 @@ export default function ReceiptForm() {
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
     }
 
+    if (form.department === 'Writing') {
+      if (!form.writing_stage) return setError('Writing: Please select the stage of development.')
+      if (!form.writing_submitted_material) return setError('Writing: Please select what script material was submitted.')
+      if (!form.writing_processing_location) return setError('Writing: Please select where this was processed.')
+      if (!form.writing_guild_status) return setError('Writing: Please select writer guild status.')
+      if (!form.writing_ai_contribution) return setError('Writing: Please select what the AI contributed.')
+      if (!form.writing_no_training_confirmed) return setError('Writing: Please confirm the training data policy.')
+      if (!form.writing_authorship_declared) return setError('Writing: Please confirm your authorship declaration.')
+    }
+
     setSubmitting(true)
 
     try {
@@ -228,7 +246,8 @@ export default function ReceiptForm() {
       if (!res.ok) throw new Error('Submission failed')
 
       const receipt = await res.json()
-      setConfirmation({ id: receipt.id, hash: '', production_name: receipt.production_name })
+      const selfAuth = form.department === 'Writing' && form.writing_stage === 'Development'
+      setConfirmation({ id: receipt.id, hash: receipt.twin_lock_hash || '', production_name: receipt.production_name, selfAuth })
     } catch {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -240,31 +259,56 @@ export default function ReceiptForm() {
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-yellow-50 border border-yellow-200 flex items-center justify-center">
-            <svg className="w-5 h-5 text-status-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confirmation.selfAuth ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+            {confirmation.selfAuth ? (
+              <svg className="w-5 h-5 text-status-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-status-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
           </div>
           <div>
-            <h2 className="text-lg font-bold text-trace-forest">Receipt submitted — pending HOD sign-off</h2>
+            <h2 className="text-lg font-bold text-trace-forest">
+              {confirmation.selfAuth ? 'Receipt submitted — self-authorised' : 'Receipt submitted — pending HOD sign-off'}
+            </h2>
             <p className="text-sm text-gray-500">Production: {confirmation.production_name}</p>
           </div>
         </div>
 
-        <div className="rounded border border-yellow-200 bg-yellow-50 px-4 py-3 mb-6">
-          <p className="text-sm text-yellow-800">
-            This receipt is locked and queued for AUTH sign-off. Your HOD can review and sign it from the <strong>HOD Sign-off</strong> page.
-          </p>
-        </div>
+        {confirmation.selfAuth ? (
+          <div className="rounded border border-green-200 bg-green-50 px-4 py-3 mb-6">
+            <p className="text-sm text-green-800">
+              This Development stage receipt has been self-authorised and locked. It will be acknowledged by the OAS when the project enters production.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded border border-yellow-200 bg-yellow-50 px-4 py-3 mb-6">
+            <p className="text-sm text-yellow-800">
+              This receipt is locked and queued for AUTH sign-off. Your HOD can review and sign it from the <strong>HOD Sign-off</strong> page.
+            </p>
+          </div>
+        )}
 
         <div className="mb-8">
           <p className="label">Receipt ID</p>
           <p className="font-mono text-sm bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all">
             {confirmation.id}
           </p>
-          <p className="text-xs text-gray-400 mt-1">
-            The TRACE Twin Lock hash is generated once your HOD applies the AUTH signature.
-          </p>
+          {confirmation.selfAuth && confirmation.hash ? (
+            <>
+              <p className="label mt-4">TRACE Twin Lock — SHA-256</p>
+              <p className="font-mono text-xs bg-gray-50 border border-gray-200 rounded px-3 py-2 break-all text-gray-600 mt-1">
+                {confirmation.hash}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">
+              The TRACE Twin Lock hash is generated once your HOD applies the AUTH signature.
+            </p>
+          )}
         </div>
 
         <div className="flex gap-3">
@@ -583,6 +627,13 @@ export default function ReceiptForm() {
               This tool has not been approved for production use. Contact the OAS before proceeding.
             </p>
           </div>
+        ) : form.department === 'Writing' && form.writing_stage === 'Development' ? (
+          <div className="rounded bg-green-50 border border-green-200 px-4 py-3">
+            <p className="text-sm font-medium text-trace-forest mb-1">Self-authorised — Development stage</p>
+            <p className="text-xs text-gray-600">
+              Development stage receipts are self-authorised and will be acknowledged by the OAS when the project enters production.
+            </p>
+          </div>
         ) : (
           <div className="rounded bg-trace-pale border border-gray-200 px-4 py-3">
             <p className="text-sm font-medium text-trace-forest mb-1">Stage 1 of 2 — Crew confirmation</p>
@@ -745,6 +796,111 @@ export default function ReceiptForm() {
         </section>
       )}
 
+      {/* Writing — additional compliance fields */}
+      {form.department === 'Writing' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Writing — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="writing_stage">Stage</label>
+              <select
+                id="writing_stage"
+                className="select"
+                required
+                value={form.writing_stage}
+                onChange={(e) => set('writing_stage', e.target.value)}
+              >
+                <option value="">Select stage…</option>
+                {WRITING_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="writing_submitted_material">What script material was submitted?</label>
+              <select
+                id="writing_submitted_material"
+                className="select"
+                required
+                value={form.writing_submitted_material}
+                onChange={(e) => set('writing_submitted_material', e.target.value)}
+              >
+                <option value="">Select material…</option>
+                {WRITING_SUBMITTED_MATERIALS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="writing_processing_location">Where was this processed?</label>
+              <select
+                id="writing_processing_location"
+                className="select"
+                required
+                value={form.writing_processing_location}
+                onChange={(e) => set('writing_processing_location', e.target.value)}
+              >
+                <option value="">Select location…</option>
+                {WRITING_PROCESSING_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="writing_guild_status">Writer guild status</label>
+              <select
+                id="writing_guild_status"
+                className="select"
+                required
+                value={form.writing_guild_status}
+                onChange={(e) => set('writing_guild_status', e.target.value)}
+              >
+                <option value="">Select guild status…</option>
+                {WRITING_GUILD_STATUSES.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="writing_ai_contribution">What did the AI contribute?</label>
+              <select
+                id="writing_ai_contribution"
+                className="select"
+                required
+                value={form.writing_ai_contribution}
+                onChange={(e) => set('writing_ai_contribution', e.target.value)}
+              >
+                <option value="">Select contribution level…</option>
+                {WRITING_AI_CONTRIBUTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="flex items-start gap-3">
+                <input
+                  id="writing_no_training_confirmed"
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                  checked={form.writing_no_training_confirmed}
+                  onChange={(e) => set('writing_no_training_confirmed', e.target.checked)}
+                />
+                <label htmlFor="writing_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                  I confirm this tool does not use submitted script material for model training, or I have written vendor confirmation that it does not
+                </label>
+              </div>
+              {!form.writing_no_training_confirmed && (
+                <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2 ml-7">
+                  Unconfirmed training data use will be flagged in the Compliance Report.
+                </p>
+              )}
+            </div>
+            <div className="flex items-start gap-3">
+              <input
+                id="writing_authorship_declared"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                checked={form.writing_authorship_declared}
+                onChange={(e) => set('writing_authorship_declared', e.target.checked)}
+              />
+              <label htmlFor="writing_authorship_declared" className="text-sm text-gray-700 cursor-pointer">
+                I confirm that the material I am submitting for production represents my own creative authorship, shaped and directed by me, with AI used as a tool under my creative control
+              </label>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* LCT */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="section-heading">Likeness & Voice (LCT)</h2>
@@ -805,7 +961,7 @@ export default function ReceiptForm() {
           disabled={submitting || (authBlocked && derivedStatus !== '')}
           className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? 'Submitting…' : 'Confirm and send to HOD'}
+          {submitting ? 'Submitting…' : (form.department === 'Writing' && form.writing_stage === 'Development') ? 'Confirm and self-authorise' : 'Confirm and send to HOD'}
         </button>
       </div>
     </form>

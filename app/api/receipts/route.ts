@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
@@ -41,6 +42,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
+  const isWritingDevelopment = body.department === 'Writing' && body.writing_stage === 'Development'
+  const now = new Date()
+
   const receipt = await prisma.receipt.create({
     data: {
       production_name: body.production_name,
@@ -58,8 +62,10 @@ export async function POST(req: NextRequest) {
       sel_detail: body.sel_detail || null,
       adj_description: body.adj_description,
       whitelist_condition: body.whitelist_condition || null,
-      status: 'PENDING_AUTH',
-      crew_confirmed_at: new Date(),
+      status: isWritingDevelopment ? 'AUTH_COMPLETE' : 'PENDING_AUTH',
+      crew_confirmed_at: now,
+      auth_signer: isWritingDevelopment ? body.crew_member_name : null,
+      auth_timestamp: isWritingDevelopment ? now : null,
       lct_required: Boolean(body.lct_required),
       lct_reference: body.lct_reference || null,
       notes: body.notes || null,
@@ -73,8 +79,27 @@ export async function POST(req: NextRequest) {
       sound_processing_type: body.sound_processing_type || null,
       sound_performer_audio: Boolean(body.sound_performer_audio),
       sound_no_training_confirmed: Boolean(body.sound_no_training_confirmed),
+      writing_stage: body.writing_stage || null,
+      writing_submitted_material: body.writing_submitted_material || null,
+      writing_processing_location: body.writing_processing_location || null,
+      writing_guild_status: body.writing_guild_status || null,
+      writing_ai_contribution: body.writing_ai_contribution || null,
+      writing_no_training_confirmed: Boolean(body.writing_no_training_confirmed),
+      writing_authorship_declared: Boolean(body.writing_authorship_declared),
     },
   })
+
+  // For Writing + Development, generate the twin lock hash immediately (self-auth)
+  if (isWritingDevelopment) {
+    const hash = createHash('sha256')
+      .update(JSON.stringify(receipt, Object.keys(receipt).sort()))
+      .digest('hex')
+    const withHash = await prisma.receipt.update({
+      where: { id: receipt.id },
+      data: { twin_lock_hash: hash },
+    })
+    return NextResponse.json(withHash, { status: 201 })
+  }
 
   return NextResponse.json(receipt, { status: 201 })
 }
