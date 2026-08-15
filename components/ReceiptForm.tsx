@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason } from '@/lib/types'
 
 
@@ -24,6 +24,11 @@ const emptyForm = {
   adj_description: '',
   lct_required: false,
   lct_reference: '',
+  lct_child_performer: false,
+  lct_child_age_bracket: '',
+  lct_guardian_name: '',
+  lct_guardian_consent_ref: '',
+  lct_performance_licence_ref: '',
   notes: '',
   script_date: '',
   vfx_software: '',
@@ -43,6 +48,10 @@ const emptyForm = {
   writing_ai_contribution: '',
   writing_no_training_confirmed: false,
   writing_authorship_declared: false,
+  writing_wga_writers_count: '' as string,
+  writing_wga_registration: '',
+  writing_wggb_context: '',
+  writing_wggb_paternity: false,
 }
 
 type FormState = typeof emptyForm
@@ -227,6 +236,12 @@ export default function ReceiptForm() {
       if (!form.writing_ai_contribution) return setError('Writing: Please select what the AI contributed.')
       if (!form.writing_no_training_confirmed) return setError('Writing: Please confirm the training data policy.')
       if (!form.writing_authorship_declared) return setError('Writing: Please confirm your authorship declaration.')
+    }
+
+    if (form.lct_required && form.lct_child_performer) {
+      if (!form.lct_child_age_bracket) return setError('LCT: Please select the child performer age bracket.')
+      if (!form.lct_guardian_name.trim()) return setError('LCT: Please enter the parent or legal guardian name.')
+      if (!form.lct_guardian_consent_ref.trim()) return setError('LCT: Please enter the guardian consent reference number.')
     }
 
     setSubmitting(true)
@@ -918,17 +933,88 @@ export default function ReceiptForm() {
         </div>
 
         {form.lct_required && (
-          <div className="pl-7">
-            <label className="label" htmlFor="lct_reference">
-              LCT Token Reference <span className="normal-case font-normal">(optional)</span>
-            </label>
-            <input
-              id="lct_reference"
-              className="input"
-              placeholder="LCT token reference, if applicable"
-              value={form.lct_reference}
-              onChange={(e) => set('lct_reference', e.target.value)}
-            />
+          <div className="pl-7 space-y-4">
+            <div>
+              <label className="label" htmlFor="lct_reference">
+                LCT Token Reference <span className="normal-case font-normal">(optional)</span>
+              </label>
+              <input
+                id="lct_reference"
+                className="input"
+                placeholder="LCT token reference, if applicable"
+                value={form.lct_reference}
+                onChange={(e) => set('lct_reference', e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                id="lct_child_performer"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                checked={form.lct_child_performer}
+                onChange={(e) => set('lct_child_performer', e.target.checked)}
+              />
+              <label htmlFor="lct_child_performer" className="text-sm text-gray-700 cursor-pointer">
+                This is a child performer (under 18)
+              </label>
+            </div>
+
+            {form.lct_child_performer && (
+              <div className="space-y-4">
+                <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                  Child performer LCTs are subject to additional legal protections. All AI use flags default to restricted until explicitly authorised by production legal and guardian. This LCT expires at the end of principal photography unless explicitly extended.
+                </div>
+                <div>
+                  <label className="label" htmlFor="lct_child_age_bracket">Age bracket</label>
+                  <select
+                    id="lct_child_age_bracket"
+                    className="select"
+                    required
+                    value={form.lct_child_age_bracket}
+                    onChange={(e) => set('lct_child_age_bracket', e.target.value)}
+                  >
+                    <option value="">Select age bracket…</option>
+                    {LCT_AGE_BRACKETS.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="lct_guardian_name">Parent or legal guardian name</label>
+                  <input
+                    id="lct_guardian_name"
+                    className="input"
+                    required
+                    placeholder="Full name of parent or legal guardian"
+                    value={form.lct_guardian_name}
+                    onChange={(e) => set('lct_guardian_name', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="lct_guardian_consent_ref">Guardian consent reference number</label>
+                  <input
+                    id="lct_guardian_consent_ref"
+                    className="input"
+                    required
+                    placeholder="Consent form reference number"
+                    value={form.lct_guardian_consent_ref}
+                    onChange={(e) => set('lct_guardian_consent_ref', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="label" htmlFor="lct_performance_licence_ref">
+                    UK local authority performance licence reference <span className="normal-case font-normal">(optional)</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mb-1.5">Required for UK productions.</p>
+                  <input
+                    id="lct_performance_licence_ref"
+                    className="input"
+                    placeholder="Local authority licence reference, if applicable"
+                    value={form.lct_performance_licence_ref}
+                    onChange={(e) => set('lct_performance_licence_ref', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

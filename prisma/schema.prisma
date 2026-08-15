@@ -30,6 +30,11 @@ model Receipt {
   auth_timestamp      DateTime?
   lct_required        Boolean  @default(false)
   lct_reference       String?
+  lct_child_performer Boolean  @default(false)
+  lct_child_age_bracket        String?
+  lct_guardian_name            String?
+  lct_guardian_consent_ref     String?
+  lct_performance_licence_ref  String?
   notes               String?
   twin_lock_hash      String?
   created_at          DateTime @default(now())
@@ -50,6 +55,10 @@ model Receipt {
   writing_ai_contribution     String?
   writing_no_training_confirmed Boolean @default(false)
   writing_authorship_declared Boolean @default(false)
+  writing_wga_writers_count   Int?
+  writing_wga_registration    String?
+  writing_wggb_context        String?
+  writing_wggb_paternity      Boolean @default(false)
 }
 
 model WhitelistEntry {

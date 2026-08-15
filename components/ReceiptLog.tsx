@@ -314,6 +314,23 @@ export default function ReceiptLog() {
                                 {r.lct_required && r.lct_reference && (
                                   <p className="text-xs text-gray-500 mt-0.5">Ref: {r.lct_reference}</p>
                                 )}
+                                {r.lct_required && r.lct_child_performer && (
+                                  <div className="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2">
+                                    <p className="text-xs font-semibold text-amber-800">Child performer — under 18</p>
+                                    {r.lct_child_age_bracket && (
+                                      <p className="text-xs text-amber-700 mt-0.5">Age bracket: {r.lct_child_age_bracket}</p>
+                                    )}
+                                    {r.lct_guardian_name && (
+                                      <p className="text-xs text-amber-700">Guardian: {r.lct_guardian_name}</p>
+                                    )}
+                                    {r.lct_guardian_consent_ref && (
+                                      <p className="text-xs text-amber-700">Consent ref: {r.lct_guardian_consent_ref}</p>
+                                    )}
+                                    {r.lct_performance_licence_ref && (
+                                      <p className="text-xs text-amber-700">Licence ref: {r.lct_performance_licence_ref}</p>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               {r.notes && (
                                 <div>

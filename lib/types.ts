@@ -115,8 +115,22 @@ export const WRITING_PROCESSING_LOCATIONS = [
 export const WRITING_GUILD_STATUSES = [
   'WGA',
   'WGGB',
+  'BECTU',
   'Neither',
   'Unknown',
+] as const
+
+export const WGA_SCRIPT_REGISTRATION_STATUSES = [
+  'Registered with WGA Registry',
+  'Not yet registered',
+  'Not applicable',
+] as const
+
+export const WGGB_WRITING_CONTEXTS = [
+  'Working alone',
+  'Writers room',
+  'With script editor',
+  'Other',
 ] as const
 
 export const WRITING_AI_CONTRIBUTIONS = [
@@ -125,6 +139,12 @@ export const WRITING_AI_CONTRIBUTIONS = [
   'Draft text substantially rewritten by writer',
   'Draft text partially used',
   'Draft text used with minor changes',
+] as const
+
+export const LCT_AGE_BRACKETS = [
+  'Under 13',
+  '13–15',
+  '16–17',
 ] as const
 
 export const SEL_REASONS = [
@@ -208,6 +228,11 @@ export interface Receipt {
   auth_timestamp?: string | null
   lct_required: boolean
   lct_reference?: string | null
+  lct_child_performer?: boolean
+  lct_child_age_bracket?: string | null
+  lct_guardian_name?: string | null
+  lct_guardian_consent_ref?: string | null
+  lct_performance_licence_ref?: string | null
   notes?: string | null
   twin_lock_hash?: string | null
   created_at: string
@@ -228,6 +253,10 @@ export interface Receipt {
   writing_ai_contribution?: string | null
   writing_no_training_confirmed?: boolean
   writing_authorship_declared?: boolean
+  writing_wga_writers_count?: number | null
+  writing_wga_registration?: string | null
+  writing_wggb_context?: string | null
+  writing_wggb_paternity?: boolean
 }
 
 export interface ReportData {

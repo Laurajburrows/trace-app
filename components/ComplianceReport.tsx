@@ -277,16 +277,16 @@ async function generatePDF(report: ReportData) {
     )
     gap(4)
     tableRow(
-      ['Scene / Asset', 'Crew Member', 'Tool', 'LCT Reference'],
-      [50, 45, 45, 60],
+      ['Scene / Asset', 'Crew Member', 'Tool', 'LCT Reference', 'Child'],
+      [46, 40, 40, 50, 24],
       true
     )
     report.lct_receipts.forEach((r) => {
       tableRow(
-        [r.scene_usid, r.crew_member_name, r.ai_tool_used, r.lct_reference || '— not provided —'],
-        [50, 45, 45, 60],
+        [r.scene_usid, r.crew_member_name, r.ai_tool_used, r.lct_reference || '— not provided —', r.lct_child_performer ? 'CHILD' : '—'],
+        [46, 40, 40, 50, 24],
         false,
-        r.lct_reference ? undefined : RED_C
+        r.lct_child_performer ? YELLOW_C : (r.lct_reference ? undefined : RED_C)
       )
     })
   }
@@ -800,11 +800,12 @@ export default function ComplianceReport() {
                         <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Crew Member</th>
                         <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
                         <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">LCT Reference</th>
+                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Child Performer</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.lct_receipts.map((r) => (
-                        <tr key={r.id} className="border-t border-gray-100">
+                        <tr key={r.id} className={`border-t border-gray-100 ${r.lct_child_performer ? 'bg-amber-50/40' : ''}`}>
                           <td className="px-3 py-2 font-mono text-xs text-gray-600">{r.scene_usid}</td>
                           <td className="px-3 py-2 text-gray-700">{r.crew_member_name}</td>
                           <td className="px-3 py-2 text-gray-700">{r.ai_tool_used}</td>
@@ -813,6 +814,13 @@ export default function ComplianceReport() {
                               <span className="font-mono text-xs text-gray-600">{r.lct_reference}</span>
                             ) : (
                               <span className="text-xs text-red-600 font-medium">Not provided</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            {r.lct_child_performer ? (
+                              <span className="text-xs font-semibold text-amber-700">Yes — {r.lct_child_age_bracket || 'age not set'}</span>
+                            ) : (
+                              <span className="text-xs text-gray-400">—</span>
                             )}
                           </td>
                         </tr>
