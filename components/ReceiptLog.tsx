@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
 import type { Receipt, Department, ToolStatus } from '@/lib/types'
 
@@ -221,9 +221,8 @@ export default function ReceiptLog() {
               </thead>
               <tbody>
                 {receipts.map((r) => (
-                  <>
+                  <Fragment key={r.id}>
                     <tr
-                      key={r.id}
                       onClick={() => setExpanded(expanded === r.id ? null : r.id)}
                       className="border-b border-gray-100 hover:bg-trace-pale/30 cursor-pointer transition-colors"
                     >
@@ -233,14 +232,14 @@ export default function ReceiptLog() {
                         <span className="font-medium text-gray-900">{r.crew_member_name}</span>
                         <span className="block text-xs text-gray-400">{r.crew_role}</span>
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-600">{r.scene_usid}</td>
+                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-gray-600">{r.scene_usid}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-gray-700">{r.ai_tool_used}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
                           {r.tool_status}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {r.status === 'AUTH_COMPLETE' ? (
                           <span className="text-gray-600">{r.auth_signer}</span>
                         ) : (
@@ -253,7 +252,7 @@ export default function ReceiptLog() {
                     </tr>
 
                     {expanded === r.id && (
-                      <tr key={`${r.id}-expanded`} className="bg-trace-pale/20">
+                      <tr className="bg-trace-pale/20">
                         <td colSpan={7} className="px-6 py-5">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                             <div className="space-y-4">
@@ -466,7 +465,7 @@ export default function ReceiptLog() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
