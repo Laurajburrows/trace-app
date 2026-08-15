@@ -157,9 +157,19 @@ export default function HODQueue() {
                     </div>
                     <div>
                       <p className="label">SEL — Selection</p>
-                      {r.sel_output && <p className="text-gray-700 mb-0.5">{r.sel_output}</p>}
-                      <p className="text-xs text-gray-500">{r.sel_description || '—'}</p>
-                      {r.sel_detail && <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>}
+                      <div className="space-y-1.5 mt-1">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">What was selected</p>
+                          <p className="text-sm text-gray-700">{r.sel_output || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Why selected</p>
+                          <p className="text-sm text-gray-600">
+                            {r.sel_description || '—'}
+                            {r.sel_detail && <span className="block text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</span>}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <p className="label">ADJ — Where did you end up?</p>
