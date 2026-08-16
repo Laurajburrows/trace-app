@@ -4,191 +4,95 @@
 
 @layer base {
   html {
-    font-family: var(--font-garamond), Georgia, serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
   body {
-    background-color: #0F2419;
-    color: #D4EDE1;
+    @apply bg-gray-50 text-gray-900;
     min-height: 100vh;
   }
 
   * {
     box-sizing: border-box;
   }
-
-  /* Select option background on dark theme */
-  select option {
-    background-color: #1A3D2B;
-    color: #D4EDE1;
-  }
-
-  /* Checkbox / radio accent colour */
-  input[type="checkbox"],
-  input[type="radio"] {
-    accent-color: #C8A84B;
-  }
 }
 
 @layer components {
-
-  /* ── Labels ─────────────────────────────────────────────── */
   .label {
-    display: block;
-    font-family: var(--font-courier), 'Courier New', monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #8BB5A0;
-    margin-bottom: 0.25rem;
+    @apply block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1;
   }
 
-  /* ── Form fields ─────────────────────────────────────────── */
   .input {
-    @apply w-full rounded px-3 py-2 text-sm focus:outline-none;
-    background-color: #122E1F;
-    border: 1px solid #2D6A4F;
-    color: #D4EDE1;
-    font-family: var(--font-garamond), Georgia, serif;
-  }
-  .input::placeholder { color: #5A8A72; }
-  .input:focus {
-    border-color: #C8A84B;
-    box-shadow: 0 0 0 1px #C8A84B;
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white placeholder-gray-400;
   }
 
   .textarea {
-    @apply w-full rounded px-3 py-2 text-sm focus:outline-none resize-y;
-    background-color: #122E1F;
-    border: 1px solid #2D6A4F;
-    color: #D4EDE1;
-    font-family: var(--font-garamond), Georgia, serif;
-    line-height: 1.6;
-  }
-  .textarea::placeholder { color: #5A8A72; }
-  .textarea:focus {
-    border-color: #C8A84B;
-    box-shadow: 0 0 0 1px #C8A84B;
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white placeholder-gray-400 resize-y;
   }
 
   .select {
-    @apply w-full rounded px-3 py-2 text-sm focus:outline-none;
-    background-color: #122E1F;
-    border: 1px solid #2D6A4F;
-    color: #D4EDE1;
-    font-family: var(--font-garamond), Georgia, serif;
-  }
-  .select:focus {
-    border-color: #C8A84B;
-    box-shadow: 0 0 0 1px #C8A84B;
+    @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-900
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:border-transparent
+           bg-white;
   }
 
-  /* ── Buttons ─────────────────────────────────────────────── */
   .btn-primary {
-    @apply px-6 py-2.5 rounded text-sm font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
-    background-color: #C8A84B;
-    color: #0F2419;
-    font-family: var(--font-courier), 'Courier New', monospace;
-    letter-spacing: 0.05em;
-    --tw-ring-color: #C8A84B;
-    --tw-ring-offset-color: #0F2419;
+    @apply bg-trace-forest text-white px-6 py-2.5 rounded text-sm font-semibold
+           hover:bg-trace-moss transition-colors duration-150 focus:outline-none
+           focus:ring-2 focus:ring-trace-moss focus:ring-offset-2;
   }
-  .btn-primary:hover { background-color: #D4B862; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .btn-secondary {
-    @apply px-6 py-2.5 rounded text-sm font-semibold transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
-    background-color: transparent;
-    color: #C8A84B;
-    border: 1px solid #C8A84B;
-    font-family: var(--font-courier), 'Courier New', monospace;
-    letter-spacing: 0.05em;
-    --tw-ring-color: #C8A84B;
-    --tw-ring-offset-color: #0F2419;
+    @apply bg-white text-trace-forest border border-trace-forest px-6 py-2.5 rounded
+           text-sm font-semibold hover:bg-trace-pale transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-trace-moss focus:ring-offset-2;
   }
-  .btn-secondary:hover { background-color: rgba(200,168,75,0.08); }
 
-  /* ── Section headings ────────────────────────────────────── */
   .section-heading {
-    font-family: var(--font-courier), 'Courier New', monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: #8BB5A0;
-    border-bottom: 1px solid #2D6A4F;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  /* ── Status badges with coloured dot ────────────────────── */
-  .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.15rem 0.55rem;
-    border-radius: 0.2rem;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: var(--font-courier), 'Courier New', monospace;
+    @apply text-xs font-bold uppercase tracking-widest text-trace-moss mb-4
+           pb-2 border-b border-trace-pale;
   }
 
   .status-green {
-    background-color: rgba(74,222,128,0.08);
-    color: #4ade80;
-    border: 1px solid rgba(74,222,128,0.25);
+    @apply bg-status-green-bg text-status-green border border-green-200;
   }
-  .status-amber {
-    background-color: rgba(200,168,75,0.10);
-    color: #C8A84B;
-    border: 1px solid rgba(200,168,75,0.30);
-  }
-  .status-yellow {
-    background-color: rgba(200,168,75,0.10);
-    color: #C8A84B;
-    border: 1px solid rgba(200,168,75,0.30);
-  }
-  .status-red {
-    background-color: rgba(248,113,113,0.08);
-    color: #f87171;
-    border: 1px solid rgba(248,113,113,0.25);
-  }
-  .status-unverified {
-    background-color: rgba(248,113,113,0.08);
-    color: #f87171;
-    border: 1px solid rgba(248,113,113,0.25);
-  }
-}
 
-/* Coloured dot via ::before on combined class */
-.status-badge::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: inline-block;
+  .status-yellow {
+    @apply bg-status-yellow-bg text-status-yellow border border-yellow-200;
+  }
+
+  .status-amber {
+    @apply bg-status-amber-bg text-status-amber border border-yellow-300;
+  }
+
+  .status-unverified {
+    @apply bg-status-red-bg text-status-red border border-red-200;
+  }
+
+  .status-red {
+    @apply bg-status-red-bg text-status-red border border-red-200;
+  }
+
+  .status-badge {
+    @apply px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide;
+  }
 }
-.status-badge.status-green::before   { background-color: #4ade80; }
-.status-badge.status-amber::before,
-.status-badge.status-yellow::before  { background-color: #C8A84B; }
-.status-badge.status-red::before,
-.status-badge.status-unverified::before { background-color: #f87171; }
 
 @media print {
   nav,
   .no-print {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
   }
+
   body {
-    background: white !important;
-    color: black !important;
+    background: white;
   }
 }
-
