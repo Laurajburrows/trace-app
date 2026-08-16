@@ -514,12 +514,13 @@ export default function ReceiptForm() {
             />
           </div>
           <div>
-            <label className="lt-label" htmlFor="scene_usid">Scene / Asset Reference</label>
+            <label className="lt-label" htmlFor="scene_usid">Shot Reference</label>
+            <p className="font-courier mb-1" style={{ fontSize: '0.65rem', color: '#5A8A72', fontStyle: 'italic' }}>The VFX shot code for this work — e.g. VFX_0023, SC23_045A, or your production's shot identifier.</p>
             <input
               id="scene_usid"
               className="lt-input"
               required
-              placeholder="e.g. Scene 12B, Concept_Art_007"
+              placeholder="e.g. VFX_0023, SC23_045A"
               value={form.scene_usid}
               onChange={(e) => set('scene_usid', e.target.value)}
             />
