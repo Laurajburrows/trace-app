@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 
 const styles = `
 @page { size: A4 portrait; margin: 11mm 13mm 10mm 13mm; }
@@ -64,27 +64,73 @@ const styles = `
 .lct-sheet .flag-key { font-size: 7pt; color: var(--green-mid); margin-bottom: 2.5mm; letter-spacing: 0.02em; }
 .lct-sheet .flag-key strong { color: var(--green-dark); }
 
-/* Performer table */
+/* ── Jurisdiction notes ──────────────────────────────── */
+.lct-sheet .jur-box { background: rgba(200,168,75,0.05); border: 1px solid rgba(200,168,75,0.25); border-left: 3px solid #C8A84B; padding: 2.5mm 3.5mm; margin-bottom: 3mm; }
+.lct-sheet .jur-box-title { font-size: 7pt; font-weight: 700; color: #C8A84B; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 2mm; }
+.lct-sheet .jur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 5mm; }
+.lct-sheet .jur-col h5 { font-size: 7pt; font-weight: 700; color: var(--green-dark); margin-bottom: 0.8mm; }
+.lct-sheet .jur-col p { font-size: 6.5pt; color: var(--green-mid); margin: 0; line-height: 1.5; }
+.lct-sheet .jur-col p + p { margin-top: 1mm; }
+.lct-sheet .jur-default-note { font-size: 6.5pt; color: var(--green-mid); font-style: italic; margin-top: 1.5mm; padding-top: 1.5mm; border-top: 1px solid rgba(200,168,75,0.2); }
+
+/* ── Performer table ─────────────────────────────────── */
 .lct-sheet .performer-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.5pt; margin-bottom: 4mm; }
-.lct-sheet .performer-table col.c-name   { width: 20%; }
-.lct-sheet .performer-table col.c-lct    { width: 13%; }
-.lct-sheet .performer-table col.c-replica { width: 11%; }
-.lct-sheet .performer-table col.c-voice  { width: 11%; }
-.lct-sheet .performer-table col.c-deep   { width: 11%; }
-.lct-sheet .performer-table col.c-expiry { width: 10%; }
-.lct-sheet .performer-table col.c-init   { width: 8%; }
-.lct-sheet .performer-table col.c-scene  { width: 16%; }
+.lct-sheet .performer-table col.c-minor  { width: 7%; }
+.lct-sheet .performer-table col.c-name   { width: 17%; }
+.lct-sheet .performer-table col.c-lct    { width: 11%; }
+.lct-sheet .performer-table col.c-replica { width: 10%; }
+.lct-sheet .performer-table col.c-voice  { width: 10%; }
+.lct-sheet .performer-table col.c-deep   { width: 10%; }
+.lct-sheet .performer-table col.c-expiry { width: 9%; }
+.lct-sheet .performer-table col.c-init   { width: 7%; }
+.lct-sheet .performer-table col.c-scene  { width: 19%; }
 .lct-sheet .performer-table thead th { background-color: var(--green-dark); color: #fff; font-size: 8.5px; font-weight: 700; letter-spacing: 0.02em; padding: 2.5mm 2mm; border: none; border-right: 1px solid rgba(255,255,255,0.15); vertical-align: middle; text-align: center; line-height: 1.35; }
 .lct-sheet .performer-table thead th:last-child { border-right: none; }
 .lct-sheet .performer-table thead th.tl { text-align: left; padding-left: 2.5mm; }
+
+/* Standard performer rows */
 .lct-sheet .performer-table tbody tr.p-row td { border: none; border-bottom: 1px solid rgba(45,106,79,0.3); border-right: 1px solid rgba(45,106,79,0.15); padding: 1mm 2mm; height: 8mm; vertical-align: middle; text-align: center; color: var(--text); }
 .lct-sheet .performer-table tbody tr.p-row td:last-child { border-right: none; }
 .lct-sheet .performer-table tbody tr.p-row td.tl { text-align: left; padding-left: 2.5mm; }
-.lct-sheet .performer-table tbody tr.p-row td:nth-child(2) { font-family: 'Courier New', Courier, monospace; font-size: 7pt; letter-spacing: 0.03em; }
+.lct-sheet .performer-table tbody tr.p-row td:nth-child(3) { font-family: 'Courier New', Courier, monospace; font-size: 7pt; letter-spacing: 0.03em; }
 .lct-sheet .performer-table tbody tr.p-row td.flag { font-size: 8px; font-weight: 600; color: var(--green-mid); letter-spacing: 0.06em; }
 .lct-sheet .performer-table tbody tr.p-row.even td,
 .lct-sheet .performer-table tbody tr.n-row.even td { background-color: var(--row-alt); }
 .lct-sheet .performer-table tbody tr.n-row td { border: none; border-bottom: 1.5px solid rgba(45,106,79,0.4); padding: 1.5mm 2.5mm; height: 10mm; vertical-align: top; text-align: left; font-size: 7pt; font-style: italic; color: #888; }
+
+/* Child performer row highlighting */
+.lct-sheet .performer-table tbody tr.p-row.is-child td { background-color: rgba(200,168,75,0.09) !important; }
+.lct-sheet .performer-table tbody tr.p-row.is-child td:first-child { border-left: 3px solid #C8A84B; }
+.lct-sheet .performer-table tbody tr.n-row.is-child td { background-color: rgba(200,168,75,0.05) !important; }
+
+/* Minor badge */
+.lct-sheet .minor-badge { display: inline-flex; align-items: center; gap: 1px; background: rgba(200,168,75,0.18); border: 1px solid #C8A84B; color: #C8A84B; font-size: 5.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 0.5mm 1.5mm; border-radius: 1px; margin-left: 1.5mm; vertical-align: middle; line-height: 1.4; }
+
+/* Flag N default for child rows */
+.lct-sheet .flag-n { color: #b91c1c !important; font-weight: 700; font-size: 8px; }
+
+/* Minor checkbox cell */
+.lct-sheet .minor-cell { padding: 1mm !important; text-align: center !important; }
+.lct-sheet .minor-cell input[type="checkbox"] { width: 3.5mm; height: 3.5mm; accent-color: #C8A84B; cursor: pointer; margin: 0; display: block; margin: 0 auto; }
+
+/* ── Child detail row ───────────────────────────────── */
+.lct-sheet .child-detail-row td { padding: 2mm 3mm !important; background-color: rgba(200,168,75,0.07) !important; border-bottom: 1.5px solid #C8A84B !important; height: auto !important; font-style: normal !important; color: var(--text) !important; }
+.lct-sheet .child-detail-label { font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #C8A84B; margin-bottom: 1.5mm; display: flex; align-items: center; gap: 2mm; }
+.lct-sheet .child-detail-label::after { content: ''; flex: 1; border-top: 1px solid rgba(200,168,75,0.35); }
+.lct-sheet .child-row-grid { display: grid; grid-template-columns: 0.7fr 1.1fr 1fr 1fr; gap: 1.5mm 4mm; margin-bottom: 1.5mm; }
+.lct-sheet .child-row-grid2 { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 1.5mm 4mm; }
+.lct-sheet .cf { display: flex; flex-direction: column; gap: 0.5mm; }
+.lct-sheet .cf > label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: #C8A84B; white-space: nowrap; line-height: 1.4; }
+.lct-sheet .cf .cfl { border-bottom: 1px solid rgba(200,168,75,0.6); height: 4.5mm; display: flex; align-items: center; font-size: 8px; color: var(--text); }
+.lct-sheet .cf .cfl.editable { cursor: text; padding: 0 2px; outline: none; }
+@media screen {
+  .lct-sheet .cf .cfl.editable:focus { background: rgba(200,168,75,0.07); }
+  .lct-sheet .cf .cfl.editable:empty::before { content: 'click to type…'; color: #ccc; font-size: 7px; font-style: italic; font-weight: 400; }
+}
+@media print { .lct-sheet .cf .cfl.editable:empty::before { content: none; } }
+.lct-sheet .age-options { display: flex; gap: 3mm; align-items: center; height: 4.5mm; }
+.lct-sheet .age-options label { font-size: 7px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text); display: flex; align-items: center; gap: 1mm; cursor: pointer; white-space: nowrap; }
+.lct-sheet .age-options input[type="radio"] { width: 2.5mm; height: 2.5mm; accent-color: #C8A84B; flex-shrink: 0; }
 
 /* Footer */
 .lct-sheet .footer-row { display: flex; gap: 5mm; margin-bottom: 3mm; }
@@ -113,6 +159,9 @@ const styles = `
 const performers = ['odd', 'even', 'odd', 'even', 'odd', 'even'] as const
 
 export default function LCTSheet() {
+  const [childRows, setChildRows] = useState<Record<number, boolean>>({})
+  const [ageBrackets, setAgeBrackets] = useState<Record<number, string>>({})
+
   useEffect(() => {
     const el = document.getElementById('doc-date')
     if (el) {
@@ -201,8 +250,47 @@ export default function LCTSheet() {
             Leave blank if not applicable to today&apos;s work
           </p>
 
+          {/* Jurisdiction notes for child performers */}
+          <div className="jur-box">
+            <div className="jur-box-title">Child Performer Compliance — Jurisdiction Notes</div>
+            <div className="jur-grid">
+              <div className="jur-col">
+                <h5>UK</h5>
+                <p>
+                  Child performer consent must comply with the <strong>Children and Young Persons Act 1963</strong> and the
+                  Children (Performances and Activities) (England) Regulations 2014.
+                  <strong> Equity child performer provisions</strong> apply. A UK Local Authority performance licence
+                  is required for performers under school-leaving age.
+                </p>
+                <p>
+                  AI use — replica, voice synthesis, deepfake reconstruction — requires explicit, specific written
+                  consent from a parent or legal guardian, separate from the general performance consent.
+                </p>
+              </div>
+              <div className="jur-col">
+                <h5>US</h5>
+                <p>
+                  Minor performer consent must comply with <strong>SAG-AFTRA Minor Performer Provisions</strong> and, for
+                  California productions, <strong>California Labor Code §1308</strong> (Coogan Law) and §1700.37.
+                  A studio teacher / welfare worker is required on set whenever a minor is working under CA Labor Code.
+                </p>
+                <p>
+                  AI likeness and voice synthesis require separate, specific written consent from a parent or legal
+                  guardian, additional to the standard performance contract.
+                </p>
+              </div>
+            </div>
+            <p className="jur-default-note">
+              Child performer rows are highlighted in amber. Replica Authorised, Voice Synth Authorised, and Deepfake Recon
+              default to <strong style={{ color: '#b91c1c' }}>N</strong> (Not Authorised) for all minor performers.
+              Explicit written guardian authorisation is required before any flag may be changed from N to Y or L.
+              Tick the <strong>Minor?</strong> column to activate child performer fields for that row.
+            </p>
+          </div>
+
           <table className="performer-table">
             <colgroup>
+              <col className="c-minor" />
               <col className="c-name" />
               <col className="c-lct" />
               <col className="c-replica" />
@@ -214,6 +302,7 @@ export default function LCTSheet() {
             </colgroup>
             <thead>
               <tr>
+                <th>Minor?</th>
                 <th className="tl">Performer Name</th>
                 <th>LCT Reference</th>
                 <th>Replica<br />Authorised</th>
@@ -225,23 +314,101 @@ export default function LCTSheet() {
               </tr>
             </thead>
             <tbody>
-              {performers.map((parity, i) => (
-                <Fragment key={i}>
-                  <tr className={`p-row ${parity}`}>
-                    <td className="tl" />
-                    <td />
-                    <td className="flag" />
-                    <td className="flag" />
-                    <td className="flag" />
-                    <td className="flag" />
-                    <td />
-                    <td className="tl" />
-                  </tr>
-                  <tr className={`n-row ${parity}`}>
-                    <td colSpan={8} style={{ paddingLeft: '2.5mm', fontStyle: 'italic', color: '#aaa', fontSize: '7pt' }}>Notes:</td>
-                  </tr>
-                </Fragment>
-              ))}
+              {performers.map((parity, i) => {
+                const isChild = !!childRows[i]
+                return (
+                  <Fragment key={i}>
+                    <tr className={`p-row ${parity}${isChild ? ' is-child' : ''}`}>
+                      <td className="minor-cell">
+                        <input
+                          type="checkbox"
+                          checked={isChild}
+                          onChange={() => setChildRows(prev => ({ ...prev, [i]: !prev[i] }))}
+                          aria-label="Mark as minor performer"
+                        />
+                      </td>
+                      <td className="tl">
+                        {isChild && <span className="minor-badge">Minor</span>}
+                      </td>
+                      <td />
+                      <td className="flag">
+                        {isChild ? <span className="flag-n">N</span> : null}
+                      </td>
+                      <td className="flag">
+                        {isChild ? <span className="flag-n">N</span> : null}
+                      </td>
+                      <td className="flag">
+                        {isChild ? <span className="flag-n">N</span> : null}
+                      </td>
+                      <td className="flag" />
+                      <td />
+                      <td className="tl" />
+                    </tr>
+
+                    {isChild && (
+                      <tr className={`child-detail-row ${parity}`}>
+                        <td colSpan={9}>
+                          <div className="child-detail-label">Child Performer Details</div>
+                          <div className="child-row-grid">
+                            <div className="cf">
+                              <label>Age Bracket</label>
+                              <div className="age-options">
+                                {(['Under 13', '13–15', '16–17'] as const).map(bracket => (
+                                  <label key={bracket}>
+                                    <input
+                                      type="radio"
+                                      name={`age-${i}`}
+                                      value={bracket}
+                                      checked={ageBrackets[i] === bracket}
+                                      onChange={() => setAgeBrackets(prev => ({ ...prev, [i]: bracket }))}
+                                    />
+                                    {bracket}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="cf">
+                              <label>Parent / Legal Guardian Name</label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                            <div className="cf">
+                              <label>Guardian Consent Reference</label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                            <div className="cf">
+                              <label>Chaperone / Studio Teacher Present (Y/N)</label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                          </div>
+                          <div className="child-row-grid2">
+                            <div className="cf">
+                              <label>
+                                UK Local Authority Performance Licence Ref
+                                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: '5.5px', color: '#9a7a2e', marginLeft: '2px' }}>
+                                  (Required for UK productions)
+                                </span>
+                              </label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                            <div className="cf">
+                              <label>Guardian Signature / Date</label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                            <div className="cf">
+                              <label>Additional Notes</label>
+                              <div className="cfl editable" contentEditable spellCheck={false} />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    <tr className={`n-row ${parity}${isChild ? ' is-child' : ''}`}>
+                      <td colSpan={9} style={{ paddingLeft: '2.5mm', fontStyle: 'italic', color: '#aaa', fontSize: '7pt' }}>Notes:</td>
+                    </tr>
+                  </Fragment>
+                )
+              })}
             </tbody>
           </table>
 
@@ -267,6 +434,8 @@ export default function LCTSheet() {
             This sheet forms part of the TRACE© Compliance Log. Retain with daily production records.
             Reference against Artist Receipts for all AI-assisted work involving the above performers.
             LCT references are held in the Global Asset Library (GAL). Contact production legal if any flag is unclear before work begins.
+            Child performer rows are subject to jurisdiction-specific requirements: UK — Children and Young Persons Act 1963, Equity child performer provisions;
+            US — SAG-AFTRA minor performer provisions, California Labor Code §1308.
           </p>
 
           <div className="page-footer">TRACE© Protocol — LCT-CS-v2 — © Laura Burrows 2026</div>
