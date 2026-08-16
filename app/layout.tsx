@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from 'next'
+import { EB_Garamond } from 'next/font/google'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+
+const garamond = EB_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  style: ['normal', 'italic'],
+  variable: '--font-garamond',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'TRACE — Artist Receipt Logger',
@@ -24,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={garamond.variable}>
       <body>
         <div className="w-full bg-[#0f2318] text-[#c8ddd1] text-[11px] text-center px-4 py-2 leading-snug font-bold no-print">
           Confidential beta — for evaluation purposes only. TRACE© and all associated materials are the intellectual property of and belongs to Laura Burrows (or her licensors) © 2026. Access to this application is by invitation. Contents are confidential and may not be reproduced or disclosed without permission.{' '}
