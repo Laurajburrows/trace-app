@@ -5,6 +5,8 @@ export type Department =
   | 'Art Department'
   | 'Camera'
   | 'Cast'
+  | 'Colour / DI'
+  | 'Delivery / QC'
   | 'Directors'
   | 'Editorial'
   | 'Grip'
@@ -155,6 +157,46 @@ export const WRITING_AI_CONTRIBUTIONS = [
   'Draft text used with minor changes',
 ] as const
 
+export const COLOUR_GRADING_SYSTEMS = [
+  'DaVinci Resolve',
+  'Baselight',
+  'Scratch',
+  'Other',
+] as const
+
+export const EDITORIAL_EDITING_SYSTEMS = [
+  'Avid Media Composer',
+  'Adobe Premiere',
+  'DaVinci Cut',
+  'Other',
+] as const
+
+export const EDITORIAL_AI_TOOL_TYPES = [
+  'Scene Edit Detection',
+  'Text-Based Editing',
+  'AI-assisted assembly',
+  'AI transcription',
+  'Other',
+] as const
+
+export const DELIVERY_AI_TOOL_TYPES = [
+  'AI-assisted QC',
+  'AI upscaling',
+  'AI subtitling and captioning',
+  'AI dubbing',
+  'Other',
+] as const
+
+export const DELIVERY_FORMATS = [
+  'DCP',
+  'ProRes 4444',
+  'ProRes 422',
+  'H.264',
+  'H.265',
+  'IMF',
+  'Other',
+] as const
+
 export const LCT_AGE_BRACKETS = [
   'Under 13',
   '13–15',
@@ -179,6 +221,8 @@ export const DEPARTMENTS: Department[] = [
   'Art Department',
   'Camera',
   'Cast',
+  'Colour / DI',
+  'Delivery / QC',
   'Directors',
   'Editorial',
   'Grip',
@@ -273,6 +317,17 @@ export interface Receipt {
   writing_wga_registration?: string | null
   writing_wggb_context?: string | null
   writing_wggb_paternity?: boolean
+  colour_grading_system?: string | null
+  colour_ai_grading?: boolean
+  colour_performer_footage?: boolean
+  colour_lct_confirmed?: boolean
+  editorial_editing_system?: string | null
+  editorial_ai_tool_type?: string | null
+  editorial_performer_footage?: boolean
+  editorial_lct_confirmed?: boolean
+  delivery_ai_tool_type?: string | null
+  delivery_format?: string | null
+  delivery_no_training_confirmed?: boolean
 }
 
 export interface ReportData {

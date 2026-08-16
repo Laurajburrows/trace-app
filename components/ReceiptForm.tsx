@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -52,6 +52,17 @@ const emptyForm = {
   writing_wga_registration: '',
   writing_wggb_context: '',
   writing_wggb_paternity: false,
+  colour_grading_system: '',
+  colour_ai_grading: false,
+  colour_performer_footage: false,
+  colour_lct_confirmed: false,
+  editorial_editing_system: '',
+  editorial_ai_tool_type: '',
+  editorial_performer_footage: false,
+  editorial_lct_confirmed: false,
+  delivery_ai_tool_type: '',
+  delivery_format: '',
+  delivery_no_training_confirmed: false,
 }
 
 type FormState = typeof emptyForm
@@ -222,10 +233,31 @@ export default function ReceiptForm() {
       }
     }
 
-    if (form.department === 'Sound') {
+    if (form.department === 'Sound' || form.department === 'Sound Post') {
       if (!form.sound_processing_location) return setError('Sound: Please select where audio was processed.')
       if (!form.sound_processing_type) return setError('Sound: Please select the type of processing.')
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
+    }
+
+    if (form.department === 'Colour / DI') {
+      if (!form.colour_grading_system) return setError('Colour / DI: Please select the grading system.')
+      if (form.colour_performer_footage && !form.colour_lct_confirmed) {
+        return setError('Colour / DI: Please confirm LCT verification for footage containing performers.')
+      }
+    }
+
+    if (form.department === 'Editorial') {
+      if (!form.editorial_editing_system) return setError('Editorial: Please select the editing system.')
+      if (!form.editorial_ai_tool_type) return setError('Editorial: Please select the type of AI editing tool.')
+      if (form.editorial_performer_footage && !form.editorial_lct_confirmed) {
+        return setError('Editorial: Please confirm LCT verification for footage containing performers.')
+      }
+    }
+
+    if (form.department === 'Delivery / QC') {
+      if (!form.delivery_ai_tool_type) return setError('Delivery / QC: Please select the type of AI tool used.')
+      if (!form.delivery_format) return setError('Delivery / QC: Please select the delivery format.')
+      if (!form.delivery_no_training_confirmed) return setError('Delivery / QC: Please confirm the training data policy.')
     }
 
     if (form.department === 'Writing') {
@@ -764,10 +796,10 @@ export default function ReceiptForm() {
         </section>
       )}
 
-      {/* Sound */}
-      {form.department === 'Sound' && (
+      {/* Sound / Sound Post */}
+      {(form.department === 'Sound' || form.department === 'Sound Post') && (
         <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">Sound — Additional Compliance</h2>
+          <h2 className="section-heading">{form.department} — Additional Compliance</h2>
           <div className="space-y-5">
             <div>
               <label className="label" htmlFor="sound_processing_location">Where was audio processed?</label>
@@ -913,6 +945,102 @@ export default function ReceiptForm() {
               <input id="writing_authorship_declared" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.writing_authorship_declared} onChange={(e) => set('writing_authorship_declared', e.target.checked)} />
               <label htmlFor="writing_authorship_declared" className="text-sm text-gray-700 cursor-pointer">
                 I confirm that the material I am submitting for production represents my own creative authorship, shaped and directed by me, with AI used as a tool under my creative control
+              </label>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Colour / DI */}
+      {form.department === 'Colour / DI' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Colour / DI — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="colour_grading_system">Grading system</label>
+              <select id="colour_grading_system" className="select" required value={form.colour_grading_system} onChange={(e) => set('colour_grading_system', e.target.value)}>
+                <option value="">Select grading system…</option>
+                {COLOUR_GRADING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="flex items-start gap-3">
+              <input id="colour_ai_grading" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_ai_grading} onChange={(e) => set('colour_ai_grading', e.target.checked)} />
+              <label htmlFor="colour_ai_grading" className="text-sm text-gray-700 cursor-pointer">AI-assisted grading tools used</label>
+            </div>
+            <div className="flex items-start gap-3">
+              <input id="colour_performer_footage" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_performer_footage} onChange={(e) => set('colour_performer_footage', e.target.checked)} />
+              <label htmlFor="colour_performer_footage" className="text-sm text-gray-700 cursor-pointer">This grade was applied to footage containing performers</label>
+            </div>
+            {form.colour_performer_footage && (
+              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                <input id="colour_lct_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_lct_confirmed} onChange={(e) => set('colour_lct_confirmed', e.target.checked)} />
+                <label htmlFor="colour_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
+                </label>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Editorial */}
+      {form.department === 'Editorial' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Editorial — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="editorial_editing_system">Editing system</label>
+              <select id="editorial_editing_system" className="select" required value={form.editorial_editing_system} onChange={(e) => set('editorial_editing_system', e.target.value)}>
+                <option value="">Select editing system…</option>
+                {EDITORIAL_EDITING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="editorial_ai_tool_type">Type of AI editing tool used</label>
+              <select id="editorial_ai_tool_type" className="select" required value={form.editorial_ai_tool_type} onChange={(e) => set('editorial_ai_tool_type', e.target.value)}>
+                <option value="">Select tool type…</option>
+                {EDITORIAL_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="flex items-start gap-3">
+              <input id="editorial_performer_footage" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.editorial_performer_footage} onChange={(e) => set('editorial_performer_footage', e.target.checked)} />
+              <label htmlFor="editorial_performer_footage" className="text-sm text-gray-700 cursor-pointer">AI tool applied to footage containing performers</label>
+            </div>
+            {form.editorial_performer_footage && (
+              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                <input id="editorial_lct_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.editorial_lct_confirmed} onChange={(e) => set('editorial_lct_confirmed', e.target.checked)} />
+                <label htmlFor="editorial_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
+                </label>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Delivery / QC */}
+      {form.department === 'Delivery / QC' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Delivery / QC — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="delivery_ai_tool_type">Type of AI tool used at delivery</label>
+              <select id="delivery_ai_tool_type" className="select" required value={form.delivery_ai_tool_type} onChange={(e) => set('delivery_ai_tool_type', e.target.value)}>
+                <option value="">Select tool type…</option>
+                {DELIVERY_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="delivery_format">Delivery format</label>
+              <select id="delivery_format" className="select" required value={form.delivery_format} onChange={(e) => set('delivery_format', e.target.value)}>
+                <option value="">Select format…</option>
+                {DELIVERY_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div className="flex items-start gap-3">
+              <input id="delivery_no_training_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.delivery_no_training_confirmed} onChange={(e) => set('delivery_no_training_confirmed', e.target.checked)} />
+              <label htmlFor="delivery_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
+                I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
               </label>
             </div>
           </div>

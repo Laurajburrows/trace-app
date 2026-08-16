@@ -14,13 +14,21 @@ export async function GET(req: NextRequest) {
   const dateTo = searchParams.get('dateTo')
   const authSigner = searchParams.get('authSigner')
 
+  const viewerName = searchParams.get('viewerName')
+
   const where: Record<string, unknown> = {}
 
   if (production) where.production_name = { contains: production }
   if (department) where.department = department
   if (status) where.tool_status = status
-  if (receiptStatus) where.status = receiptStatus
+  if (receiptStatus) {
+    const statuses = receiptStatus.split(',').map((s) => s.trim()).filter(Boolean)
+    where.status = statuses.length === 1 ? statuses[0] : { in: statuses }
+  }
   if (authSigner) where.auth_signer = { contains: authSigner }
+  if (viewerName?.trim()) {
+    where.NOT = { crew_member_name: { equals: viewerName.trim(), mode: 'insensitive' } }
+  }
   if (dateFrom || dateTo) {
     where.date = {}
     if (dateFrom) (where.date as Record<string, unknown>).gte = new Date(dateFrom)
@@ -43,7 +51,25 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
 
   const isWritingDevelopment = body.department === 'Writing' && body.writing_stage === 'Development'
+  const submitterRole: string = body.submitter_role || 'crew'
   const now = new Date()
+
+  let initialStatus: string
+  let routedToTier: string
+
+  if (isWritingDevelopment) {
+    initialStatus = 'AUTH_COMPLETE'
+    routedToTier = 'self'
+  } else if (submitterRole === 'hod') {
+    initialStatus = 'PENDING_PRODUCER_AUTH'
+    routedToTier = 'producer'
+  } else if (submitterRole === 'producer') {
+    initialStatus = 'PENDING_EXEC_AUTH'
+    routedToTier = 'exec'
+  } else {
+    initialStatus = 'PENDING_HOD_AUTH'
+    routedToTier = 'hod'
+  }
 
   const receipt = await prisma.receipt.create({
     data: {
@@ -62,7 +88,9 @@ export async function POST(req: NextRequest) {
       sel_detail: body.sel_detail || null,
       adj_description: body.adj_description,
       whitelist_condition: body.whitelist_condition || null,
-      status: isWritingDevelopment ? 'AUTH_COMPLETE' : 'PENDING_AUTH',
+      status: initialStatus,
+      submitter_role: submitterRole,
+      routed_to_tier: routedToTier,
       crew_confirmed_at: now,
       auth_signer: isWritingDevelopment ? body.crew_member_name : null,
       auth_timestamp: isWritingDevelopment ? now : null,
@@ -95,6 +123,17 @@ export async function POST(req: NextRequest) {
       writing_wga_registration: body.writing_wga_registration || null,
       writing_wggb_context: body.writing_wggb_context || null,
       writing_wggb_paternity: Boolean(body.writing_wggb_paternity),
+      colour_grading_system: body.colour_grading_system || null,
+      colour_ai_grading: Boolean(body.colour_ai_grading),
+      colour_performer_footage: Boolean(body.colour_performer_footage),
+      colour_lct_confirmed: Boolean(body.colour_lct_confirmed),
+      editorial_editing_system: body.editorial_editing_system || null,
+      editorial_ai_tool_type: body.editorial_ai_tool_type || null,
+      editorial_performer_footage: Boolean(body.editorial_performer_footage),
+      editorial_lct_confirmed: Boolean(body.editorial_lct_confirmed),
+      delivery_ai_tool_type: body.delivery_ai_tool_type || null,
+      delivery_format: body.delivery_format || null,
+      delivery_no_training_confirmed: Boolean(body.delivery_no_training_confirmed),
     },
   })
 

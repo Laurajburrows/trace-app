@@ -37,6 +37,8 @@ model Receipt {
   lct_performance_licence_ref  String?
   notes               String?
   twin_lock_hash      String?
+  submitter_role      String   @default("crew")
+  routed_to_tier      String?
   created_at          DateTime @default(now())
   vfx_software        String?
   vfx_data_location   String?
@@ -59,6 +61,17 @@ model Receipt {
   writing_wga_registration    String?
   writing_wggb_context        String?
   writing_wggb_paternity      Boolean @default(false)
+  colour_grading_system       String?
+  colour_ai_grading           Boolean @default(false)
+  colour_performer_footage    Boolean @default(false)
+  colour_lct_confirmed        Boolean @default(false)
+  editorial_editing_system    String?
+  editorial_ai_tool_type      String?
+  editorial_performer_footage Boolean @default(false)
+  editorial_lct_confirmed     Boolean @default(false)
+  delivery_ai_tool_type       String?
+  delivery_format             String?
+  delivery_no_training_confirmed Boolean @default(false)
 }
 
 model WhitelistEntry {
