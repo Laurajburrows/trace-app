@@ -35,7 +35,22 @@ export type Department =
 
 export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
-export type ReceiptStatus = 'PENDING_AUTH' | 'AUTH_COMPLETE'
+export type ReceiptStatus =
+  | 'PENDING_AUTH'
+  | 'PENDING_HOD_AUTH'
+  | 'PENDING_PRODUCER_AUTH'
+  | 'PENDING_EXEC_AUTH'
+  | 'AUTH_COMPLETE'
+
+export type SubmitterRole = 'crew' | 'hod' | 'producer'
+
+export type RoutedToTier = 'hod' | 'producer' | 'exec' | 'self'
+
+export const SUBMITTER_ROLES: { value: SubmitterRole; label: string }[] = [
+  { value: 'crew', label: 'Crew member' },
+  { value: 'hod', label: 'Head of Department / Lead Creative' },
+  { value: 'producer', label: 'Producer' },
+]
 
 export const VFX_DATA_LOCATIONS = [
   'On-premises facility',
@@ -115,7 +130,6 @@ export const WRITING_PROCESSING_LOCATIONS = [
 export const WRITING_GUILD_STATUSES = [
   'WGA',
   'WGGB',
-  'BECTU',
   'Neither',
   'Unknown',
 ] as const
@@ -235,6 +249,8 @@ export interface Receipt {
   lct_performance_licence_ref?: string | null
   notes?: string | null
   twin_lock_hash?: string | null
+  submitter_role?: string | null
+  routed_to_tier?: string | null
   created_at: string
   vfx_software?: string | null
   vfx_data_location?: string | null

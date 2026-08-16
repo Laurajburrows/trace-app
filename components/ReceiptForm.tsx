@@ -923,15 +923,7 @@ export default function ReceiptForm() {
                     </label>
                   </div>
                   <p className="font-courier italic" style={{ fontSize: '0.7rem', color: '#2D6A4F' }}>
-                    By submitting this receipt I confirm transparency of AI tool use as required under the WGGB AI principles.
-                  </p>
-                </div>
-              )}
-
-              {form.writing_guild_status === 'BECTU' && (
-                <div className="rounded" style={{ background: '#FAF8F4', border: '1px solid rgba(45,106,79,0.25)', padding: '0.75rem 1rem' }}>
-                  <p className="font-courier italic" style={{ fontSize: '0.7rem', color: '#5A8A72' }}>
-                    By submitting this receipt I confirm transparency of AI tool use in accordance with BECTU guidelines.
+                    By submitting this receipt I confirm transparency of AI tool use as required under WGGB AI principles and my contractual obligations.
                   </p>
                 </div>
               )}
@@ -939,7 +931,7 @@ export default function ReceiptForm() {
               {(form.writing_guild_status === 'Neither' || form.writing_guild_status === 'Unknown') && (
                 <div className="rounded" style={{ background: '#FAF8F4', border: '1px solid rgba(45,106,79,0.25)', padding: '0.75rem 1rem' }}>
                   <p className="text-xs" style={{ color: '#5A8A72' }}>
-                    No guild disclosure obligation applies. This receipt is your forensic record of human authorship for copyright purposes.
+                    No guild disclosure obligation applies. This receipt is your forensic record of human authorship for copyright and contractual purposes.
                   </p>
                 </div>
               )}
