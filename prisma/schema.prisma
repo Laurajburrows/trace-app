@@ -72,6 +72,9 @@ model Receipt {
   delivery_ai_tool_type       String?
   delivery_format             String?
   delivery_no_training_confirmed Boolean @default(false)
+  facility_name               String?
+  render_processing_location  String?
+  facility_ai_policy_confirmed Boolean @default(false)
 }
 
 model WhitelistEntry {

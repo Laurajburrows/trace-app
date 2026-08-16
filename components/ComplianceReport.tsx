@@ -359,10 +359,10 @@ async function generatePDF(report: ReportData) {
   }
 
   // ── SOUND COMPLIANCE REGISTER (conditional) ───────────────────────────────
-  const soundReceipts = report.receipts.filter((r) => r.department === 'Sound')
+  const soundReceipts = report.receipts.filter((r) => r.department === 'Sound' || r.department === 'Sound Post')
   if (soundReceipts.length > 0) {
     newPage()
-    h2('Sound Compliance Register')
+    h2('Sound / Sound Post Compliance Register')
     gap(2)
     body(`${soundReceipts.length} Sound receipt${soundReceipts.length !== 1 ? 's' : ''} recorded on this production.`)
     gap(4)
@@ -442,6 +442,35 @@ async function generatePDF(report: ReportData) {
         )
       })
     }
+  }
+
+  // ── FACILITY AI POLICY REGISTER (conditional) ─────────────────────────────
+  const postProdDepts = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+  const facilityReceipts = report.receipts.filter((r) => postProdDepts.includes(r.department))
+  if (facilityReceipts.length > 0) {
+    newPage()
+    h2('Facility AI Policy Register')
+    gap(2)
+    const unconfirmed = facilityReceipts.filter((r) => !r.facility_ai_policy_confirmed)
+    body(
+      `${facilityReceipts.length} post-production receipt${facilityReceipts.length !== 1 ? 's' : ''} recorded. ${unconfirmed.length > 0 ? `${unconfirmed.length} receipt${unconfirmed.length !== 1 ? 's' : ''} without facility AI policy confirmation — flagged for follow-up before delivery.` : 'All post-production facilities have provided AI policy confirmation.'}`
+    )
+    gap(4)
+    tableRow(['Dept', 'Crew', 'Facility', 'Render Location', 'Policy Confirmed'], [28, 30, 32, 42, 28], true)
+    facilityReceipts.forEach((r) => {
+      tableRow(
+        [
+          r.department,
+          r.crew_member_name.substring(0, 14),
+          (r.facility_name || 'In-house / remote').substring(0, 18),
+          (r.render_processing_location || '—').substring(0, 22),
+          r.facility_ai_policy_confirmed ? 'Confirmed' : 'NOT CONFIRMED',
+        ],
+        [28, 30, 32, 42, 28],
+        false,
+        !r.facility_ai_policy_confirmed ? YELLOW_C : undefined
+      )
+    })
   }
 
   // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
@@ -570,7 +599,7 @@ export default function ComplianceReport() {
   return (
     <div>
       {/* Production Selector + Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 no-print">
+      <div className="rounded-lg p-6 mb-6 no-print" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         <div className="mb-4">
           <label className="label" htmlFor="production-select">Select Production</label>
           {productions.length > 0 ? (
@@ -590,9 +619,9 @@ export default function ComplianceReport() {
               ))}
             </select>
           ) : (
-            <div className="input text-gray-400">
+            <div className="input" style={{ color: '#5A8A72' }}>
               No productions logged yet.{' '}
-              <a href="/receipt/new" className="text-trace-moss hover:underline">
+              <a href="/receipt/new" className="hover:underline" style={{ color: '#C8A84B' }}>
                 Submit a receipt first.
               </a>
             </div>
@@ -601,8 +630,8 @@ export default function ComplianceReport() {
 
         {selected && (
           <>
-            <div className="border-t border-gray-100 pt-4 mb-4">
-              <p className="label mb-3">Filter Report <span className="normal-case font-normal text-gray-400">(optional — leave blank for full production report)</span></p>
+            <div className="pt-4 mb-4" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+              <p className="label mb-3">Filter Report <span className="normal-case font-normal" style={{ color: '#5A8A72' }}>(optional — leave blank for full production report)</span></p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="label" htmlFor="filter-dept">Department</label>
@@ -629,7 +658,7 @@ export default function ComplianceReport() {
                     <option value="">All statuses</option>
                     <option value="GREEN">GREEN</option>
                     <option value="AMBER">AMBER</option>
-                <option value="YELLOW">YELLOW (legacy)</option>
+                    <option value="YELLOW">YELLOW (legacy)</option>
                     <option value="RED">RED</option>
                   </select>
                 </div>
@@ -657,7 +686,8 @@ export default function ComplianceReport() {
               {(filterDept || filterStatus || filterDateFrom || filterDateTo) && (
                 <button
                   onClick={() => { setFilterDept(''); setFilterStatus(''); setFilterDateFrom(''); setFilterDateTo(''); setReport(null) }}
-                  className="mt-2 text-xs text-trace-moss hover:underline"
+                  className="mt-2 font-courier text-xs hover:underline"
+                  style={{ color: '#C8A84B' }}
                 >
                   Clear filters
                 </button>
@@ -676,7 +706,7 @@ export default function ComplianceReport() {
             {loading ? 'Generating…' : 'Generate Report'}
           </button>
         </div>
-        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+        {error && <p className="font-courier text-sm mt-3" style={{ color: '#f87171' }}>{error}</p>}
       </div>
 
       {/* Report */}
@@ -694,16 +724,16 @@ export default function ComplianceReport() {
 
           <div ref={reportRef} className="space-y-6">
             {/* Cover */}
-            <div className="bg-trace-forest text-white rounded-lg p-8">
-              <p className="text-xs font-bold uppercase tracking-widest text-trace-pale mb-2">
+            <div className="rounded-lg p-8" style={{ backgroundColor: '#122E1F', border: '1px solid #2D6A4F', borderLeft: '3px solid #C8A84B' }}>
+              <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#8BB5A0' }}>
                 TRACE Compliance Report
               </p>
-              <h2 className="text-2xl font-bold mb-1">{report.production_name}</h2>
-              <p className="text-trace-pale text-sm">
+              <h2 className="font-garamond text-3xl mb-1" style={{ color: '#F0EBE0' }}>{report.production_name}</h2>
+              <p className="font-courier text-xs" style={{ color: '#8BB5A0' }}>
                 {fmt(report.date_range.from)} — {fmt(report.date_range.to)}
               </p>
               {report.filter_description && (
-                <p className="mt-2 text-xs bg-white/10 rounded px-3 py-1.5 text-trace-pale inline-block">
+                <p className="mt-2 font-courier text-xs inline-block rounded px-3 py-1.5" style={{ background: 'rgba(45,106,79,0.3)', color: '#8BB5A0' }}>
                   Filtered: {report.filter_description}
                 </p>
               )}
@@ -714,9 +744,9 @@ export default function ComplianceReport() {
                   { label: 'GREEN Tool Use', value: `${report.green_pct}%` },
                   { label: 'Departments', value: Object.keys(report.by_department).length },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white/10 rounded p-3">
-                    <p className="text-xs text-trace-pale uppercase tracking-wide">{s.label}</p>
-                    <p className="text-xl font-bold">{s.value}</p>
+                  <div key={s.label} className="rounded p-3" style={{ backgroundColor: '#0F2419', border: '1px solid #2D6A4F' }}>
+                    <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#8BB5A0' }}>{s.label}</p>
+                    <p className="font-garamond text-2xl" style={{ color: '#F0EBE0' }}>{s.value}</p>
                   </div>
                 ))}
               </div>
@@ -724,25 +754,25 @@ export default function ComplianceReport() {
 
             {/* Section 1: Chain of Title Summary */}
             <ReportSection title="1. Chain of Title Summary">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 {report.receipts.length} Artist Receipt{report.receipts.length !== 1 ? 's' : ''} logged across {Object.keys(report.by_department).length} department{Object.keys(report.by_department).length !== 1 ? 's' : ''}. All {report.auth_signed_count} receipts carry AUTH sign-off. {report.green_pct}% record use of GREEN-status tools.
               </p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-trace-pale">
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Department</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold uppercase text-trace-moss">Receipts</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold uppercase text-trace-moss">%</th>
+                  <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Department</th>
+                    <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Receipts</th>
+                    <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>%</th>
                   </tr>
                 </thead>
                 <tbody>
                   {Object.entries(report.by_department)
                     .sort((a, b) => b[1] - a[1])
                     .map(([dept, count]) => (
-                      <tr key={dept} className="border-t border-gray-100">
-                        <td className="px-3 py-2 text-gray-700">{dept}</td>
-                        <td className="px-3 py-2 text-right text-gray-700">{count}</td>
-                        <td className="px-3 py-2 text-right text-gray-500">
+                      <tr key={dept} style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                        <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{dept}</td>
+                        <td className="px-3 py-2 text-right" style={{ color: '#D4EDE1' }}>{count}</td>
+                        <td className="px-3 py-2 text-right" style={{ color: '#8BB5A0' }}>
                           {Math.round((count / report.receipts.length) * 100)}%
                         </td>
                       </tr>
@@ -753,30 +783,33 @@ export default function ComplianceReport() {
 
             {/* Section 2: Guild Compliance Register */}
             <ReportSection title="2. Guild Compliance Register">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Every AI tool used on this production, its status, and department usage. RED and YELLOW status tools are flagged.
               </p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-trace-pale">
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Status</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold uppercase text-trace-moss">Uses</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Departments</th>
+                  <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Status</th>
+                    <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Uses</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Departments</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.by_tool.map((t) => (
                     <tr
                       key={t.tool}
-                      className={`border-t border-gray-100 ${t.status !== 'GREEN' ? 'bg-red-50/30' : ''}`}
+                      style={{
+                        borderTop: '1px solid rgba(45,106,79,0.3)',
+                        backgroundColor: t.status !== 'GREEN' ? 'rgba(248,113,113,0.05)' : 'transparent',
+                      }}
                     >
-                      <td className="px-3 py-2 text-gray-800 font-medium">{t.tool}</td>
+                      <td className="px-3 py-2 font-medium" style={{ color: '#F0EBE0' }}>{t.tool}</td>
                       <td className="px-3 py-2">
                         <span className={`status-badge ${STATUS_COLORS[t.status]}`}>{t.status}</span>
                       </td>
-                      <td className="px-3 py-2 text-right text-gray-600">{t.count}</td>
-                      <td className="px-3 py-2 text-gray-500 text-xs">{t.departments.join(', ')}</td>
+                      <td className="px-3 py-2 text-right" style={{ color: '#8BB5A0' }}>{t.count}</td>
+                      <td className="px-3 py-2 text-xs" style={{ color: '#8BB5A0' }}>{t.departments.join(', ')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -785,25 +818,25 @@ export default function ComplianceReport() {
 
             {/* Section 3: AI Tool Audit */}
             <ReportSection title="3. AI Tool Audit">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 {report.by_tool.length} unique AI tool{report.by_tool.length !== 1 ? 's' : ''} used across this production.
               </p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-trace-pale">
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Status</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold uppercase text-trace-moss">Total Uses</th>
+                  <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Status</th>
+                    <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Total Uses</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.by_tool.map((t) => (
-                    <tr key={t.tool} className="border-t border-gray-100">
-                      <td className="px-3 py-2 text-gray-800">{t.tool}</td>
+                    <tr key={t.tool} style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                      <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{t.tool}</td>
                       <td className="px-3 py-2">
                         <span className={`status-badge ${STATUS_COLORS[t.status]}`}>{t.status}</span>
                       </td>
-                      <td className="px-3 py-2 text-right text-gray-600">{t.count}</td>
+                      <td className="px-3 py-2 text-right" style={{ color: '#8BB5A0' }}>{t.count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -813,42 +846,45 @@ export default function ComplianceReport() {
             {/* Section 4: LCT Coverage Report */}
             <ReportSection title="4. LCT Coverage Report">
               {report.lct_receipts.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm" style={{ color: '#5A8A72' }}>
                   No receipts on this production flagged performer likeness or voice (LCT) use.
                 </p>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                     {report.lct_receipts.length} receipt{report.lct_receipts.length !== 1 ? 's' : ''} involve performer likeness or voice.
                   </p>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-trace-pale">
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Scene / Asset</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Crew Member</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">LCT Reference</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Child Performer</th>
+                      <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>LCT Reference</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Child</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.lct_receipts.map((r) => (
-                        <tr key={r.id} className={`border-t border-gray-100 ${r.lct_child_performer ? 'bg-amber-50/40' : ''}`}>
-                          <td className="px-3 py-2 font-mono text-xs text-gray-600">{r.scene_usid}</td>
-                          <td className="px-3 py-2 text-gray-700">{r.crew_member_name}</td>
-                          <td className="px-3 py-2 text-gray-700">{r.ai_tool_used}</td>
+                        <tr key={r.id} style={{
+                          borderTop: '1px solid rgba(45,106,79,0.3)',
+                          backgroundColor: r.lct_child_performer ? 'rgba(200,168,75,0.06)' : 'transparent',
+                        }}>
+                          <td className="px-3 py-2 font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</td>
                           <td className="px-3 py-2">
                             {r.lct_reference ? (
-                              <span className="font-mono text-xs text-gray-600">{r.lct_reference}</span>
+                              <span className="font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.lct_reference}</span>
                             ) : (
-                              <span className="text-xs text-red-600 font-medium">Not provided</span>
+                              <span className="font-courier text-xs font-medium" style={{ color: '#f87171' }}>Not provided</span>
                             )}
                           </td>
                           <td className="px-3 py-2">
                             {r.lct_child_performer ? (
-                              <span className="text-xs font-semibold text-amber-700">Yes — {r.lct_child_age_bracket || 'age not set'}</span>
+                              <span className="font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>Yes — {r.lct_child_age_bracket || 'age not set'}</span>
                             ) : (
-                              <span className="text-xs text-gray-400">—</span>
+                              <span className="text-xs" style={{ color: '#2D6A4F' }}>—</span>
                             )}
                           </td>
                         </tr>
@@ -861,31 +897,34 @@ export default function ComplianceReport() {
 
             {/* Section 5: Whitelist Compliance Register */}
             <ReportSection title="5. Whitelist Compliance Register">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Whitelist status of each AI tool at the time of submission.
               </p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-trace-pale">
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Status</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Condition at Submission</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Date</th>
+                  <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Status</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Condition at Submission</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Date</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.receipts.map((r) => (
-                    <tr key={r.id} className={`border-t border-gray-100 ${r.tool_status !== 'GREEN' ? 'bg-yellow-50/30' : ''}`}>
-                      <td className="px-3 py-2 text-gray-800 font-medium">{r.ai_tool_used}</td>
+                    <tr key={r.id} style={{
+                      borderTop: '1px solid rgba(45,106,79,0.3)',
+                      backgroundColor: r.tool_status !== 'GREEN' ? 'rgba(200,168,75,0.05)' : 'transparent',
+                    }}>
+                      <td className="px-3 py-2 font-medium" style={{ color: '#F0EBE0' }}>{r.ai_tool_used}</td>
                       <td className="px-3 py-2">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status] || 'status-red'}`}>
                           {r.tool_status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-xs text-gray-500 italic">
+                      <td className="px-3 py-2 text-xs italic" style={{ color: '#8BB5A0' }}>
                         {r.whitelist_condition || '—'}
                       </td>
-                      <td className="px-3 py-2 text-xs text-gray-500">{fmt(r.date)}</td>
+                      <td className="px-3 py-2 font-courier text-xs" style={{ color: '#5A8A72' }}>{fmt(r.date)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -894,31 +933,31 @@ export default function ComplianceReport() {
 
             {/* Section 6: Selection Register */}
             <ReportSection title="6. Selection Register">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Per-receipt record of what was selected from each AI output and the stated reason for that selection.
               </p>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-trace-pale">
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">What was selected</th>
-                    <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Why selected</th>
+                  <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>What was selected</th>
+                    <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Why selected</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.receipts.map((r) => (
-                    <tr key={r.id} className="border-t border-gray-100 align-top">
-                      <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
-                      <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                    <tr key={r.id} className="align-top" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                      <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>
                         {r.crew_member_name}
-                        <span className="block text-xs text-gray-400">{r.crew_role}</span>
+                        <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>{r.crew_role}</span>
                       </td>
-                      <td className="px-3 py-2 text-gray-700">{r.sel_output || '—'}</td>
-                      <td className="px-3 py-2 text-gray-600">
+                      <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.sel_output || '—'}</td>
+                      <td className="px-3 py-2" style={{ color: '#8BB5A0' }}>
                         {r.sel_description || '—'}
                         {r.sel_detail && (
-                          <span className="block text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</span>
+                          <span className="block text-xs italic mt-0.5" style={{ color: '#5A8A72' }}>{r.sel_detail}</span>
                         )}
                       </td>
                     </tr>
@@ -930,44 +969,44 @@ export default function ComplianceReport() {
             {/* VFX Compliance Register (conditional) */}
             {report.receipts.some((r) => r.department === 'VFX') && (
               <ReportSection title="VFX Compliance Register">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                   Per-receipt VFX compliance data: software used, data processing location, input and output types, and training data confirmation.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="bg-trace-pale">
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Software</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Data Location</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Input</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Output</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">LCT</th>
+                      <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Software</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Data Location</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Input</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Output</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>No Training</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>LCT</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.receipts.filter((r) => r.department === 'VFX').map((r) => (
-                        <tr key={r.id} className="border-t border-gray-100 align-top">
-                          <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
-                          <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
-                          <td className="px-3 py-2 text-gray-700">{r.vfx_software || '—'}</td>
-                          <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.vfx_data_location || '—'}</td>
-                          <td className="px-3 py-2 text-gray-700">{r.vfx_input_type || '—'}</td>
-                          <td className="px-3 py-2 text-gray-700">{r.vfx_output_type || '—'}</td>
+                        <tr key={r.id} className="align-top" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                          <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                          <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.vfx_software || '—'}</td>
+                          <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.vfx_data_location || '—'}</td>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.vfx_input_type || '—'}</td>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.vfx_output_type || '—'}</td>
                           <td className="px-3 py-2">
-                            <span className={`text-xs font-semibold ${r.vfx_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                            <span className={`font-courier text-xs font-semibold ${r.vfx_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                               {r.vfx_no_training_confirmed ? 'Yes' : 'No'}
                             </span>
                           </td>
                           <td className="px-3 py-2">
                             {r.vfx_input_type === 'Plate footage containing performers' ? (
-                              <span className={`text-xs font-semibold ${r.vfx_lct_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                              <span className={`font-courier text-xs font-semibold ${r.vfx_lct_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.vfx_lct_confirmed ? 'Yes' : 'No'}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-400">N/A</span>
+                              <span className="font-courier text-xs" style={{ color: '#2D6A4F' }}>N/A</span>
                             )}
                           </td>
                         </tr>
@@ -978,48 +1017,51 @@ export default function ComplianceReport() {
               </ReportSection>
             )}
 
-            {/* Sound Compliance Register (conditional) */}
-            {report.receipts.some((r) => r.department === 'Sound') && (
-              <ReportSection title="Sound Compliance Register">
-                <p className="text-sm text-gray-600 mb-4">
+            {/* Sound / Sound Post Compliance Register (conditional) */}
+            {report.receipts.some((r) => r.department === 'Sound' || r.department === 'Sound Post') && (
+              <ReportSection title="Sound / Sound Post Compliance Register">
+                <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                   Per-receipt Sound compliance data: processing location, type of processing, performer dialogue, and training data confirmation. Receipts with a cloud-processing flag are highlighted.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="bg-trace-pale">
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Crew Member</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Processing Location</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Type</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Performer Dialogue</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Cloud Flag</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
+                      <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Processing Location</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Type</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Performer Dialogue</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Cloud Flag</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>No Training</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {report.receipts.filter((r) => r.department === 'Sound').map((r) => {
+                      {report.receipts.filter((r) => r.department === 'Sound' || r.department === 'Sound Post').map((r) => {
                         const cloudFlag = r.sound_performer_audio && r.sound_processing_location !== 'Local software — not uploaded'
                         return (
-                          <tr key={r.id} className={`border-t border-gray-100 align-top ${cloudFlag ? 'bg-red-50/40' : ''}`}>
-                            <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
-                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
-                            <td className="px-3 py-2 text-gray-700">{r.sound_processing_location || '—'}</td>
-                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.sound_processing_type || '—'}</td>
+                          <tr key={r.id} className="align-top" style={{
+                            borderTop: '1px solid rgba(45,106,79,0.3)',
+                            backgroundColor: cloudFlag ? 'rgba(248,113,113,0.06)' : 'transparent',
+                          }}>
+                            <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                            <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.sound_processing_location || '—'}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.sound_processing_type || '—'}</td>
                             <td className="px-3 py-2">
-                              <span className={r.sound_performer_audio ? 'text-xs font-semibold text-status-amber' : 'text-xs text-gray-500'}>
+                              <span className={`font-courier text-xs font-semibold ${r.sound_performer_audio ? 'text-status-amber' : ''}`} style={!r.sound_performer_audio ? { color: '#5A8A72' } : {}}>
                                 {r.sound_performer_audio ? 'Yes' : 'No'}
                               </span>
                             </td>
                             <td className="px-3 py-2">
                               {cloudFlag ? (
-                                <span className="text-xs font-semibold text-status-red">FLAGGED</span>
+                                <span className="font-courier text-xs font-semibold text-status-red">FLAGGED</span>
                               ) : (
-                                <span className="text-xs text-gray-400">—</span>
+                                <span className="font-courier text-xs" style={{ color: '#2D6A4F' }}>—</span>
                               )}
                             </td>
                             <td className="px-3 py-2">
-                              <span className={`text-xs font-semibold ${r.sound_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                              <span className={`font-courier text-xs font-semibold ${r.sound_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.sound_no_training_confirmed ? 'Yes' : 'No'}
                               </span>
                             </td>
@@ -1035,55 +1077,58 @@ export default function ComplianceReport() {
             {/* Writing Compliance Register (conditional) */}
             {report.receipts.some((r) => r.department === 'Writing') && (
               <ReportSection title="Writing Compliance Register">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                   Per-receipt Writing compliance data. Unconfirmed training data use and missing authorship declarations are highlighted.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
-                      <tr className="bg-trace-pale">
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Scene / Asset</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Writer</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Stage</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Material</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Guild</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">AI Contribution</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">No Training</th>
-                        <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss whitespace-nowrap">Authorship</th>
+                      <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Writer</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Stage</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Material</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Guild</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>AI Contribution</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>No Training</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Authorship</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.receipts.filter((r) => r.department === 'Writing').map((r) => {
                         const flagged = !r.writing_no_training_confirmed || !r.writing_authorship_declared
                         return (
-                          <tr key={r.id} className={`border-t border-gray-100 align-top ${flagged ? 'bg-yellow-50/40' : ''}`}>
-                            <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">{r.scene_usid}</td>
-                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.crew_member_name}</td>
-                            <td className="px-3 py-2 text-gray-700 whitespace-nowrap">{r.writing_stage || '—'}</td>
-                            <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_submitted_material || '—'}</td>
-                            <td className="px-3 py-2 text-gray-700">
+                          <tr key={r.id} className="align-top" style={{
+                            borderTop: '1px solid rgba(45,106,79,0.3)',
+                            backgroundColor: flagged ? 'rgba(200,168,75,0.05)' : 'transparent',
+                          }}>
+                            <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.writing_stage || '—'}</td>
+                            <td className="px-3 py-2 text-xs" style={{ color: '#D4EDE1' }}>{r.writing_submitted_material || '—'}</td>
+                            <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>
                               <span className="whitespace-nowrap">{r.writing_guild_status || '—'}</span>
                               {r.writing_guild_status === 'WGA' && (
-                                <span className="block text-xs text-gray-400 mt-0.5">
+                                <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>
                                   {r.writing_wga_writers_count != null ? `${r.writing_wga_writers_count} writer${Number(r.writing_wga_writers_count) !== 1 ? 's' : ''}` : ''}
                                   {r.writing_wga_registration ? ` · ${r.writing_wga_registration}` : ''}
                                 </span>
                               )}
                               {r.writing_guild_status === 'WGGB' && (
-                                <span className="block text-xs text-gray-400 mt-0.5">
+                                <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>
                                   {r.writing_wggb_context || ''}
                                   {r.writing_wggb_paternity ? ' · Paternity asserted' : ' · Paternity not asserted'}
                                 </span>
                               )}
                             </td>
-                            <td className="px-3 py-2 text-gray-700 text-xs">{r.writing_ai_contribution || '—'}</td>
+                            <td className="px-3 py-2 text-xs" style={{ color: '#D4EDE1' }}>{r.writing_ai_contribution || '—'}</td>
                             <td className="px-3 py-2">
-                              <span className={`text-xs font-semibold ${r.writing_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                              <span className={`font-courier text-xs font-semibold ${r.writing_no_training_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.writing_no_training_confirmed ? 'Yes' : 'FLAGGED'}
                               </span>
                             </td>
                             <td className="px-3 py-2">
-                              <span className={`text-xs font-semibold ${r.writing_authorship_declared ? 'text-status-green' : 'text-status-red'}`}>
+                              <span className={`font-courier text-xs font-semibold ${r.writing_authorship_declared ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.writing_authorship_declared ? 'Yes' : 'No'}
                               </span>
                             </td>
@@ -1096,6 +1141,63 @@ export default function ComplianceReport() {
               </ReportSection>
             )}
 
+            {/* Facility AI Policy Register (conditional) */}
+            {report.receipts.some((r) => ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department)) && (() => {
+              const ppReceipts = report.receipts.filter((r) => ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department))
+              const unconfirmed = ppReceipts.filter((r) => !r.facility_ai_policy_confirmed)
+              return (
+                <ReportSection title="Facility AI Policy Register">
+                  {unconfirmed.length > 0 && (
+                    <div className="mb-4 rounded px-4 py-3" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)', borderLeft: '3px solid #C8A84B' }}>
+                      <p className="font-courier text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#C8A84B' }}>
+                        {unconfirmed.length} unconfirmed facility AI {unconfirmed.length === 1 ? 'policy' : 'policies'}
+                      </p>
+                      <p className="text-xs" style={{ color: '#C8A84B', opacity: 0.85 }}>
+                        Obtain written AI policy confirmation from {unconfirmed.length === 1 ? 'this facility' : 'these facilities'} before delivery. Unconfirmed items are highlighted below.
+                      </p>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Dept</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Facility</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Render / Processing Location</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Policy Confirmed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ppReceipts.map((r) => (
+                          <tr
+                            key={r.id}
+                            className="align-top"
+                            style={{
+                              borderTop: '1px solid rgba(45,106,79,0.3)',
+                              backgroundColor: !r.facility_ai_policy_confirmed ? 'rgba(200,168,75,0.05)' : 'transparent',
+                            }}
+                          >
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.department}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                            <td className="px-3 py-2 text-xs" style={{ color: r.facility_name ? '#D4EDE1' : '#5A8A72' }}>
+                              {r.facility_name || 'In-house / remote'}
+                            </td>
+                            <td className="px-3 py-2 text-xs" style={{ color: '#D4EDE1' }}>{r.render_processing_location || '—'}</td>
+                            <td className="px-3 py-2">
+                              <span className={`font-courier text-xs font-semibold ${r.facility_ai_policy_confirmed ? 'text-status-green' : 'text-status-red'}`}>
+                                {r.facility_ai_policy_confirmed ? 'Confirmed' : 'NOT CONFIRMED'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </ReportSection>
+              )
+            })()}
+
             {/* Section 7: Platform Disclosure Summary */}
             <ReportSection title="7. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
@@ -1107,7 +1209,7 @@ export default function ComplianceReport() {
             </ReportSection>
 
             {/* Footer */}
-            <div className="text-center text-xs text-gray-400 py-4 border-t border-gray-200">
+            <div className="text-center font-courier text-xs py-4" style={{ color: '#5A8A72', borderTop: '1px solid rgba(45,106,79,0.4)' }}>
               TRACE Compliance Report generated {fmt(report.generated_at)} &bull; Laura Burrows, NFTS AI Diploma, April 2026
             </div>
           </div>
@@ -1119,9 +1221,9 @@ export default function ComplianceReport() {
 
 function ReportSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="bg-trace-pale px-6 py-3 border-b border-trace-pale-dark">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-trace-forest">{title}</h3>
+    <div className="rounded-lg overflow-hidden" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
+      <div className="px-6 py-3" style={{ backgroundColor: '#122E1F', borderBottom: '1px solid #2D6A4F' }}>
+        <h3 className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>{title}</h3>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -1135,19 +1237,19 @@ function PlatformDisclosure({ report }: { report: ReportData }) {
   const nonGreenTools = report.by_tool.filter((t) => t.status !== 'GREEN')
 
   return (
-    <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+    <div className="space-y-3 text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
       <p>
-        During the production of <strong>{report.production_name}</strong>, a total of{' '}
-        <strong>{report.receipts.length}</strong> AI-assisted creative decision{report.receipts.length !== 1 ? 's' : ''} were
+        During the production of <strong style={{ color: '#F0EBE0' }}>{report.production_name}</strong>, a total of{' '}
+        <strong style={{ color: '#F0EBE0' }}>{report.receipts.length}</strong> AI-assisted creative decision{report.receipts.length !== 1 ? 's' : ''} were
         logged via the TRACE Artist Receipt system, spanning{' '}
-        <strong>{depts.length}</strong> department{depts.length !== 1 ? 's' : ''}: {depts.join(', ')}.
+        <strong style={{ color: '#F0EBE0' }}>{depts.length}</strong> department{depts.length !== 1 ? 's' : ''}: {depts.join(', ')}.
       </p>
       <p>
         The following AI tools were used:{' '}
-        <strong>{uniqueTools.join(', ')}</strong>.{' '}
+        <strong style={{ color: '#F0EBE0' }}>{uniqueTools.join(', ')}</strong>.{' '}
         {greenTools.length > 0 ? (
           <>
-            Of these, <strong>{greenTools.join(', ')}</strong>{' '}
+            Of these, <strong style={{ color: '#F0EBE0' }}>{greenTools.join(', ')}</strong>{' '}
             {greenTools.length === 1 ? 'was' : 'were'} classified as GREEN (vetted for production use)
             and all uses are fully documented with four-point Artist Receipts.
           </>
@@ -1157,7 +1259,7 @@ function PlatformDisclosure({ report }: { report: ReportData }) {
       </p>
       {nonGreenTools.length > 0 && (
         <p>
-          <strong>{nonGreenTools.map((t) => `${t.tool} (${t.status})`).join(', ')}</strong>{' '}
+          <strong style={{ color: '#F0EBE0' }}>{nonGreenTools.map((t) => `${t.tool} (${t.status})`).join(', ')}</strong>{' '}
           {nonGreenTools.length === 1 ? 'was' : 'were'} used under restricted or flagged status.
           All such uses carry full TRACE documentation and AUTH sign-off from the relevant Head of
           Department.
@@ -1180,30 +1282,30 @@ function CompletionBondNote({ report }: { report: ReportData }) {
   const signers = Array.from(new Set(report.receipts.map((r) => r.auth_signer).filter((s): s is string => !!s)))
 
   return (
-    <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
-      <p className="font-semibold text-gray-900">TO WHOM IT MAY CONCERN</p>
+    <div className="space-y-3 text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
+      <p className="font-courier text-xs font-semibold uppercase tracking-widest" style={{ color: '#F0EBE0' }}>TO WHOM IT MAY CONCERN</p>
       <p>
         This note is issued in support of Delivery documentation for the production{' '}
-        <strong>{report.production_name}</strong>.
+        <strong style={{ color: '#F0EBE0' }}>{report.production_name}</strong>.
       </p>
       <p>
         The TRACE Artist Receipt Logger has recorded a total of{' '}
-        <strong>{report.receipts.length}</strong> Artist Receipt{report.receipts.length !== 1 ? 's' : ''} for this
+        <strong style={{ color: '#F0EBE0' }}>{report.receipts.length}</strong> Artist Receipt{report.receipts.length !== 1 ? 's' : ''} for this
         production, covering AI-assisted creative decisions made between{' '}
-        <strong>{fmt(report.date_range.from)}</strong> and{' '}
-        <strong>{fmt(report.date_range.to)}</strong>.
+        <strong style={{ color: '#F0EBE0' }}>{fmt(report.date_range.from)}</strong> and{' '}
+        <strong style={{ color: '#F0EBE0' }}>{fmt(report.date_range.to)}</strong>.
       </p>
       <p>
-        All <strong>{report.auth_signed_count}</strong> receipts carry an Authorial Control (AUTH)
+        All <strong style={{ color: '#F0EBE0' }}>{report.auth_signed_count}</strong> receipts carry an Authorial Control (AUTH)
         sign-off from a named Head of Department or Lead Creative, confirming that a qualified human
         professional exercised creative control over each AI-assisted decision. Authorising
-        signatories include: <strong>{signers.join(', ')}</strong>.
+        signatories include: <strong style={{ color: '#F0EBE0' }}>{signers.join(', ')}</strong>.
       </p>
       <p>
         These records demonstrate that all AI-assisted creative work on this production was
         conducted under documented human authorial oversight.
       </p>
-      <p className="text-gray-500 text-xs pt-2 border-t border-gray-100">
+      <p className="font-courier text-xs pt-2" style={{ color: '#5A8A72', borderTop: '1px solid rgba(45,106,79,0.4)' }}>
         This report is issued by the TRACE Artist Receipt Logger on {fmt(report.generated_at)}.
       </p>
     </div>

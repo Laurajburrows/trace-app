@@ -106,7 +106,7 @@ export default function ReceiptLog() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="rounded-lg p-4" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <div>
             <label className="label">Production</label>
@@ -168,7 +168,11 @@ export default function ReceiptLog() {
           </div>
         </div>
         {hasFilters && (
-          <button onClick={clearFilters} className="mt-3 text-xs text-trace-moss hover:underline">
+          <button
+            onClick={clearFilters}
+            className="mt-3 font-courier text-xs hover:underline"
+            style={{ color: '#C8A84B' }}
+          >
             Clear all filters
           </button>
         )}
@@ -176,7 +180,7 @@ export default function ReceiptLog() {
 
       {/* Table actions */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+        <p className="font-courier text-xs" style={{ color: '#5A8A72' }}>
           {loading ? 'Loading…' : `${receipts.length} receipt${receipts.length !== 1 ? 's' : ''}`}
         </p>
         <button
@@ -189,18 +193,18 @@ export default function ReceiptLog() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-400">Loading receipts…</div>
+          <div className="py-16 text-center font-courier text-sm" style={{ color: '#5A8A72' }}>Loading receipts…</div>
         ) : receipts.length === 0 ? (
-          <div className="py-16 text-center text-sm text-gray-400">
+          <div className="py-16 text-center font-courier text-sm" style={{ color: '#5A8A72' }}>
             No receipts found.{' '}
             {hasFilters ? (
-              <button onClick={clearFilters} className="text-trace-moss hover:underline">
+              <button onClick={clearFilters} className="hover:underline" style={{ color: '#C8A84B' }}>
                 Clear filters
               </button>
             ) : (
-              <a href="/receipt/new" className="text-trace-moss hover:underline">
+              <a href="/receipt/new" className="hover:underline" style={{ color: '#C8A84B' }}>
                 Submit the first receipt.
               </a>
             )}
@@ -209,14 +213,14 @@ export default function ReceiptLog() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Dept</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Crew Member</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Scene / Asset</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">AI Tool</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Status</th>
-                  <th className="text-left px-4 py-3 font-semibold text-xs text-gray-500 uppercase tracking-wide whitespace-nowrap">Auth Signer</th>
+                <tr style={{ borderBottom: '1px solid #2D6A4F', backgroundColor: '#122E1F' }}>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Date</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Dept</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>AI Tool</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Status</th>
+                  <th className="text-left px-4 py-3 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Auth Signer</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,16 +228,19 @@ export default function ReceiptLog() {
                   <Fragment key={r.id}>
                     <tr
                       onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                      className="border-b border-gray-100 hover:bg-trace-pale/30 cursor-pointer transition-colors"
+                      className="cursor-pointer transition-colors"
+                      style={{ borderBottom: '1px solid rgba(45,106,79,0.4)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(45,106,79,0.15)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-600">{fmt(r.date)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-600">{r.department}</td>
+                      <td className="px-4 py-3 whitespace-nowrap font-courier text-xs" style={{ color: '#8BB5A0' }}>{fmt(r.date)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.department}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="font-medium text-gray-900">{r.crew_member_name}</span>
-                        <span className="block text-xs text-gray-400">{r.crew_role}</span>
+                        <span className="font-garamond text-base" style={{ color: '#F0EBE0' }}>{r.crew_member_name}</span>
+                        <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>{r.crew_role}</span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap font-mono text-xs text-gray-600">{r.scene_usid}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-gray-700">{r.ai_tool_used}</td>
+                      <td className="px-4 py-3 whitespace-nowrap font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
                           {r.tool_status}
@@ -241,10 +248,10 @@ export default function ReceiptLog() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {r.status === 'AUTH_COMPLETE' ? (
-                          <span className="text-gray-600">{r.auth_signer}</span>
+                          <span className="text-sm" style={{ color: '#D4EDE1' }}>{r.auth_signer}</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-status-amber">
-                            <span className="w-2 h-2 rounded-full bg-status-amber flex-shrink-0" />
+                          <span className="inline-flex items-center gap-1 font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#C8A84B' }} />
                             Pending sign-off
                           </span>
                         )}
@@ -252,44 +259,44 @@ export default function ReceiptLog() {
                     </tr>
 
                     {expanded === r.id && (
-                      <tr className="bg-trace-pale/20">
+                      <tr style={{ backgroundColor: '#0F2419' }}>
                         <td colSpan={7} className="px-6 py-5">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                             <div className="space-y-4">
                               <div>
                                 <p className="label">Receipt ID</p>
-                                <p className="font-mono text-xs text-gray-500 break-all">{r.id}</p>
+                                <p className="font-courier text-xs break-all mt-1" style={{ color: '#5A8A72' }}>{r.id}</p>
                               </div>
                               <div>
                                 <p className="label">POR — Point of Record</p>
-                                <p className="text-gray-700 whitespace-pre-wrap">{r.por_description}</p>
+                                <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.por_description}</p>
                               </div>
                               <div>
                                 <p className="label">SEL — Selection</p>
-                                <div className="space-y-2">
+                                <div className="space-y-2 mt-1">
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">What was selected</p>
-                                    <p className="text-sm text-gray-700">{r.sel_output || '—'}</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>What was selected</p>
+                                    <p style={{ color: '#D4EDE1' }}>{r.sel_output || '—'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Why selected</p>
-                                    <p className="text-sm text-gray-600">{r.sel_description || '—'}</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Why selected</p>
+                                    <p style={{ color: '#8BB5A0' }}>{r.sel_description || '—'}</p>
                                     {r.sel_detail && (
-                                      <p className="text-xs text-gray-500 italic mt-0.5">{r.sel_detail}</p>
+                                      <p className="text-xs italic mt-0.5" style={{ color: '#5A8A72' }}>{r.sel_detail}</p>
                                     )}
                                   </div>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-2">Recorded: {fmtDateTime(r.created_at)}</p>
+                                <p className="font-courier text-xs mt-2" style={{ color: '#5A8A72' }}>Recorded: {fmtDateTime(r.created_at)}</p>
                               </div>
                               <div>
-                                <p className="label">ADJ — Adjustment</p>
-                                <p className="text-gray-700 whitespace-pre-wrap">{r.adj_description}</p>
+                                <p className="label">ADJ — Where did you end up?</p>
+                                <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.adj_description}</p>
                               </div>
                             </div>
                             <div className="space-y-4">
                               <div>
                                 <p className="label">Stage 1 — Crew Confirmed</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="font-courier text-xs mt-1" style={{ color: '#5A8A72' }}>
                                   {r.crew_confirmed_at ? fmtDateTime(r.crew_confirmed_at) : fmtDateTime(r.created_at)}
                                 </p>
                               </div>
@@ -297,36 +304,36 @@ export default function ReceiptLog() {
                                 <p className="label">Stage 2 — AUTH Signature</p>
                                 {r.status === 'AUTH_COMPLETE' ? (
                                   <>
-                                    <p className="text-gray-700">{r.auth_signer}</p>
-                                    <p className="text-xs text-gray-400">{r.auth_timestamp ? fmtDateTime(r.auth_timestamp) : '—'}</p>
+                                    <p className="mt-1" style={{ color: '#D4EDE1' }}>{r.auth_signer}</p>
+                                    <p className="font-courier text-xs" style={{ color: '#5A8A72' }}>{r.auth_timestamp ? fmtDateTime(r.auth_timestamp) : '—'}</p>
                                   </>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-status-amber">
-                                    <span className="w-2 h-2 rounded-full bg-status-amber" />
+                                  <span className="inline-flex items-center gap-1 font-courier text-xs font-semibold mt-1" style={{ color: '#C8A84B' }}>
+                                    <span className="w-2 h-2 rounded-full" style={{ background: '#C8A84B' }} />
                                     Pending HOD sign-off
                                   </span>
                                 )}
                               </div>
                               <div>
                                 <p className="label">LCT Required</p>
-                                <p className="text-gray-700">{r.lct_required ? 'Yes' : 'No'}</p>
+                                <p className="mt-1" style={{ color: '#D4EDE1' }}>{r.lct_required ? 'Yes' : 'No'}</p>
                                 {r.lct_required && r.lct_reference && (
-                                  <p className="text-xs text-gray-500 mt-0.5">Ref: {r.lct_reference}</p>
+                                  <p className="font-courier text-xs mt-0.5" style={{ color: '#5A8A72' }}>Ref: {r.lct_reference}</p>
                                 )}
                                 {r.lct_required && r.lct_child_performer && (
-                                  <div className="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2">
-                                    <p className="text-xs font-semibold text-amber-800">Child performer — under 18</p>
+                                  <div className="mt-2 rounded px-3 py-2" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)' }}>
+                                    <p className="font-courier text-xs font-semibold uppercase tracking-wide" style={{ color: '#C8A84B' }}>Child performer — under 18</p>
                                     {r.lct_child_age_bracket && (
-                                      <p className="text-xs text-amber-700 mt-0.5">Age bracket: {r.lct_child_age_bracket}</p>
+                                      <p className="text-xs mt-0.5" style={{ color: '#C8A84B', opacity: 0.85 }}>Age bracket: {r.lct_child_age_bracket}</p>
                                     )}
                                     {r.lct_guardian_name && (
-                                      <p className="text-xs text-amber-700">Guardian: {r.lct_guardian_name}</p>
+                                      <p className="text-xs" style={{ color: '#C8A84B', opacity: 0.85 }}>Guardian: {r.lct_guardian_name}</p>
                                     )}
                                     {r.lct_guardian_consent_ref && (
-                                      <p className="text-xs text-amber-700">Consent ref: {r.lct_guardian_consent_ref}</p>
+                                      <p className="text-xs" style={{ color: '#C8A84B', opacity: 0.85 }}>Consent ref: {r.lct_guardian_consent_ref}</p>
                                     )}
                                     {r.lct_performance_licence_ref && (
-                                      <p className="text-xs text-amber-700">Licence ref: {r.lct_performance_licence_ref}</p>
+                                      <p className="text-xs" style={{ color: '#C8A84B', opacity: 0.85 }}>Licence ref: {r.lct_performance_licence_ref}</p>
                                     )}
                                   </div>
                                 )}
@@ -334,53 +341,55 @@ export default function ReceiptLog() {
                               {r.notes && (
                                 <div>
                                   <p className="label">Notes</p>
-                                  <p className="text-gray-700 whitespace-pre-wrap">{r.notes}</p>
+                                  <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.notes}</p>
                                 </div>
                               )}
                               {r.twin_lock_hash ? (
                                 <div>
                                   <p className="label">TRACE Twin Lock — SHA-256</p>
-                                  <p className="font-mono text-xs text-gray-500 break-all bg-gray-50 border border-gray-200 rounded px-2 py-1.5">
-                                    {r.twin_lock_hash}
-                                  </p>
+                                  <div className="rounded px-3 py-2 mt-1" style={{ background: '#0A1C10', border: '1px solid #2D6A4F' }}>
+                                    <p className="font-courier text-xs break-all" style={{ color: '#F0EBE0', lineHeight: 1.7 }}>
+                                      {r.twin_lock_hash}
+                                    </p>
+                                  </div>
                                 </div>
                               ) : (
                                 <div>
                                   <p className="label">TRACE Twin Lock — SHA-256</p>
-                                  <p className="text-xs text-gray-400 italic">Generated on HOD sign-off</p>
+                                  <p className="font-courier text-xs italic mt-1" style={{ color: '#5A8A72' }}>Generated on HOD sign-off</p>
                                 </div>
                               )}
                             </div>
                           </div>
                           {r.department === 'VFX' && (
-                            <div className="mt-5 pt-5 border-t border-gray-100">
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">VFX — Additional Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Software and version</p>
-                                  <p className="text-gray-700">{r.vfx_software || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Software and version</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.vfx_software || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Data processed</p>
-                                  <p className="text-gray-700">{r.vfx_data_location || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Data processed</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.vfx_data_location || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Input type</p>
-                                  <p className="text-gray-700">{r.vfx_input_type || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Input type</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.vfx_input_type || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Output type</p>
-                                  <p className="text-gray-700">{r.vfx_output_type || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Output type</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.vfx_output_type || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>No model training confirmed</p>
                                   <p className={r.vfx_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                     {r.vfx_no_training_confirmed ? 'Confirmed' : 'Not confirmed'}
                                   </p>
                                 </div>
                                 {r.vfx_input_type === 'Plate footage containing performers' && (
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">LCT verified</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>LCT verified</p>
                                     <p className={r.vfx_lct_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                       {r.vfx_lct_confirmed ? 'Confirmed' : 'Not confirmed'}
                                     </p>
@@ -389,32 +398,32 @@ export default function ReceiptLog() {
                               </div>
                             </div>
                           )}
-                          {r.department === 'Sound' && (() => {
+                          {(r.department === 'Sound' || r.department === 'Sound Post') && (() => {
                             const cloudFlag = r.sound_performer_audio && r.sound_processing_location !== 'Local software — not uploaded'
                             return (
-                              <div className="mt-5 pt-5 border-t border-gray-100">
-                                <p className="label mb-3">Sound — Additional Compliance</p>
+                              <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                                <p className="label mb-3">{r.department} — Additional Compliance</p>
                                 {cloudFlag && (
-                                  <div className="mb-3 rounded border border-red-300 bg-red-50 px-3 py-2">
-                                    <p className="text-xs font-semibold text-red-700">Cloud processing flag — performer dialogue</p>
-                                    <p className="text-xs text-red-600 mt-0.5">Performer audio sent to cloud. Verify consent and data security policy compliance.</p>
+                                  <div className="mb-3 rounded px-3 py-2" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.35)' }}>
+                                    <p className="font-courier text-xs font-semibold uppercase tracking-wide" style={{ color: '#f87171' }}>Cloud processing flag — performer dialogue</p>
+                                    <p className="text-xs mt-0.5" style={{ color: '#f87171', opacity: 0.85 }}>Performer audio sent to cloud. Verify consent and data security policy compliance.</p>
                                   </div>
                                 )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Processing location</p>
-                                    <p className="text-gray-700">{r.sound_processing_location || '—'}</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Processing location</p>
+                                    <p style={{ color: '#D4EDE1' }}>{r.sound_processing_location || '—'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Type of processing</p>
-                                    <p className="text-gray-700">{r.sound_processing_type || '—'}</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Type of processing</p>
+                                    <p style={{ color: '#D4EDE1' }}>{r.sound_processing_type || '—'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Performer dialogue</p>
-                                    <p className="text-gray-700">{r.sound_performer_audio ? 'Yes' : 'No'}</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Performer dialogue</p>
+                                    <p style={{ color: '#D4EDE1' }}>{r.sound_performer_audio ? 'Yes' : 'No'}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>No model training confirmed</p>
                                     <p className={r.sound_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                       {r.sound_no_training_confirmed ? 'Confirmed' : 'Not confirmed'}
                                     </p>
@@ -424,45 +433,45 @@ export default function ReceiptLog() {
                             )
                           })()}
                           {r.department === 'Writing' && (
-                            <div className="mt-5 pt-5 border-t border-gray-100">
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">Writing — Additional Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Stage</p>
-                                  <p className="text-gray-700">{r.writing_stage || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Stage</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.writing_stage || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Material submitted</p>
-                                  <p className="text-gray-700">{r.writing_submitted_material || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Material submitted</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.writing_submitted_material || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Processing location</p>
-                                  <p className="text-gray-700">{r.writing_processing_location || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Processing location</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.writing_processing_location || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guild status</p>
-                                  <p className="text-gray-700">{r.writing_guild_status || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Guild status</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.writing_guild_status || '—'}</p>
                                 </div>
                                 {r.writing_guild_status === 'WGA' && (
                                   <>
                                     <div>
-                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Writers in session</p>
-                                      <p className="text-gray-700">{r.writing_wga_writers_count ?? '—'}</p>
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Writers in session</p>
+                                      <p style={{ color: '#D4EDE1' }}>{r.writing_wga_writers_count ?? '—'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">WGA registration</p>
-                                      <p className="text-gray-700">{r.writing_wga_registration || '—'}</p>
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>WGA registration</p>
+                                      <p style={{ color: '#D4EDE1' }}>{r.writing_wga_registration || '—'}</p>
                                     </div>
                                   </>
                                 )}
                                 {r.writing_guild_status === 'WGGB' && (
                                   <>
                                     <div>
-                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Writing context</p>
-                                      <p className="text-gray-700">{r.writing_wggb_context || '—'}</p>
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Writing context</p>
+                                      <p style={{ color: '#D4EDE1' }}>{r.writing_wggb_context || '—'}</p>
                                     </div>
                                     <div>
-                                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Paternity asserted (CDPA s.77)</p>
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Paternity asserted (CDPA s.77)</p>
                                       <p className={r.writing_wggb_paternity ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                         {r.writing_wggb_paternity ? 'Confirmed' : 'Not confirmed'}
                                       </p>
@@ -470,19 +479,48 @@ export default function ReceiptLog() {
                                   </>
                                 )}
                                 <div className="sm:col-span-2">
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">AI contribution</p>
-                                  <p className="text-gray-700">{r.writing_ai_contribution || '—'}</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>AI contribution</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.writing_ai_contribution || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">No model training confirmed</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>No model training confirmed</p>
                                   <p className={r.writing_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                     {r.writing_no_training_confirmed ? 'Confirmed' : 'Not confirmed — flagged'}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Authorship declared</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Authorship declared</p>
                                   <p className={r.writing_authorship_declared ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                     {r.writing_authorship_declared ? 'Confirmed' : 'Not confirmed'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department) && (
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                              <p className="label mb-3">Post-Production Facility</p>
+                              {!r.facility_ai_policy_confirmed && (
+                                <div className="mb-3 rounded px-3 py-2" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)' }}>
+                                  <p className="font-courier text-xs font-semibold uppercase tracking-wide" style={{ color: '#C8A84B' }}>Facility AI policy — unconfirmed</p>
+                                  <p className="text-xs mt-0.5" style={{ color: '#C8A84B', opacity: 0.85 }}>No written AI policy confirmation on record. Obtain written confirmation from the facility before delivery.</p>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                {r.facility_name && (
+                                  <div>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Facility</p>
+                                    <p style={{ color: '#D4EDE1' }}>{r.facility_name}</p>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Render / processing location</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.render_processing_location || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Facility AI policy confirmed</p>
+                                  <p className={r.facility_ai_policy_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                    {r.facility_ai_policy_confirmed ? 'Confirmed' : 'Not confirmed — flagged'}
                                   </p>
                                 </div>
                               </div>

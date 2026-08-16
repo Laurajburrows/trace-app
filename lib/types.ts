@@ -157,6 +157,16 @@ export const WRITING_AI_CONTRIBUTIONS = [
   'Draft text used with minor changes',
 ] as const
 
+export const RENDER_PROCESSING_LOCATIONS = [
+  'Local workstation',
+  'On-premises render farm',
+  'Cloud render farm — AWS',
+  'Cloud render farm — Google Cloud',
+  'Cloud render farm — other',
+  'External facility',
+  'Unknown',
+] as const
+
 export const COLOUR_GRADING_SYSTEMS = [
   'DaVinci Resolve',
   'Baselight',
@@ -328,6 +338,9 @@ export interface Receipt {
   delivery_ai_tool_type?: string | null
   delivery_format?: string | null
   delivery_no_training_confirmed?: boolean
+  facility_name?: string | null
+  render_processing_location?: string | null
+  facility_ai_policy_confirmed?: boolean
 }
 
 export interface ReportData {

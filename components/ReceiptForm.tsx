@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -63,6 +63,9 @@ const emptyForm = {
   delivery_ai_tool_type: '',
   delivery_format: '',
   delivery_no_training_confirmed: false,
+  facility_name: '',
+  render_processing_location: '',
+  facility_ai_policy_confirmed: false,
 }
 
 type FormState = typeof emptyForm
@@ -239,6 +242,10 @@ export default function ReceiptForm() {
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
     }
 
+    if (isPostProd && !form.render_processing_location) {
+      return setError('Please select the render / processing location.')
+    }
+
     if (form.department === 'Colour / DI') {
       if (!form.colour_grading_system) return setError('Colour / DI: Please select the grading system.')
       if (form.colour_performer_footage && !form.colour_lct_confirmed) {
@@ -408,6 +415,9 @@ export default function ReceiptForm() {
     )
   }
 
+  const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+  const isPostProd = POST_PROD_DEPTS.includes(form.department)
+
   const routingLabel = form.submitter_role === 'hod'
     ? 'Producer'
     : form.submitter_role === 'producer'
@@ -570,6 +580,67 @@ export default function ReceiptForm() {
               </p>
             )}
           </div>
+
+          {isPostProd && (
+            <>
+              <div className="sm:col-span-2 pt-4" style={{ borderTop: '1px solid #E5E7EB' }}>
+                <label className="label" htmlFor="facility_name">
+                  Facility name <span className="normal-case font-normal text-gray-400">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-400 mb-1.5">
+                  The post production facility where this work was carried out — leave blank if working remotely or in-house.
+                </p>
+                <input
+                  id="facility_name"
+                  className="input"
+                  placeholder="e.g. Framestore, Goldcrest, or leave blank if in-house"
+                  value={form.facility_name}
+                  onChange={(e) => set('facility_name', e.target.value)}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="render_processing_location">Render / processing location</label>
+                <select
+                  id="render_processing_location"
+                  className="select"
+                  required
+                  value={form.render_processing_location}
+                  onChange={(e) => set('render_processing_location', e.target.value)}
+                >
+                  <option value="">Select location…</option>
+                  {RENDER_PROCESSING_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <div className="flex items-start gap-3">
+                  <input
+                    id="facility_ai_policy_confirmed"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss"
+                    checked={form.facility_ai_policy_confirmed}
+                    onChange={(e) => set('facility_ai_policy_confirmed', e.target.checked)}
+                  />
+                  <div>
+                    <label htmlFor="facility_ai_policy_confirmed" className="text-sm text-gray-700 cursor-pointer font-medium">
+                      Facility AI policy confirmed
+                    </label>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Confirm the facility has provided written confirmation of their AI tool use policy — including which tools are used on production materials, where data is processed and stored, and that production material will not be used for model training. If no written confirmation has been obtained, leave unchecked — this will be flagged in the Compliance Report.
+                    </p>
+                  </div>
+                </div>
+                {!form.facility_ai_policy_confirmed && (
+                  <div className="mt-2 ml-7 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                    <p className="text-xs text-yellow-800">
+                      No facility AI policy confirmation on record. This will appear as an unconfirmed item in the Compliance Report. Obtain written confirmation from the facility before delivery.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </section>
 

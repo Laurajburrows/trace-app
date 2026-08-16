@@ -134,6 +134,9 @@ export async function POST(req: NextRequest) {
       delivery_ai_tool_type: body.delivery_ai_tool_type || null,
       delivery_format: body.delivery_format || null,
       delivery_no_training_confirmed: Boolean(body.delivery_no_training_confirmed),
+      facility_name: body.facility_name || null,
+      render_processing_location: body.render_processing_location || null,
+      facility_ai_policy_confirmed: Boolean(body.facility_ai_policy_confirmed),
     },
   })
 
