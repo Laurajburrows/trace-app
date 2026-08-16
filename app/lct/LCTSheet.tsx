@@ -19,13 +19,34 @@ const styles = `
   --green-mid: #2D6A4F;
   --text: #1C1C1C;
   --row-alt: rgba(45, 106, 79, 0.08);
-  font-family: 'Calibri', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-garamond), Georgia, serif;
   font-size: 9.5pt;
   color: var(--text);
   background: var(--bg);
   width: 210mm;
   margin: 0 auto;
   padding: 11mm 13mm 10mm 13mm;
+}
+
+/* Courier Prime for all labels, indicators, references, and the wordmark */
+.lct-sheet .logo-name,
+.lct-sheet .logo-tagline,
+.lct-sheet .prod-ref,
+.lct-sheet .section-label,
+.lct-sheet .flag-key,
+.lct-sheet .fld label,
+.lct-sheet .fline-date,
+.lct-sheet .performer-table thead th,
+.lct-sheet .performer-table tbody tr.p-row td.flag,
+.lct-sheet .footer-box h3,
+.lct-sheet .sg label,
+.lct-sheet .fine-print,
+.lct-sheet .page-footer,
+.lct-sheet .jur-box-title,
+.lct-sheet .jur-col h5,
+.lct-sheet .child-detail-label,
+.lct-sheet .cf > label {
+  font-family: var(--font-courier), 'Courier New', monospace;
 }
 
 @media screen { .lct-sheet { min-height: 297mm; box-shadow: 0 2px 24px rgba(0,0,0,0.18); } }
@@ -92,7 +113,7 @@ const styles = `
 .lct-sheet .performer-table tbody tr.p-row td { border: none; border-bottom: 1px solid rgba(45,106,79,0.3); border-right: 1px solid rgba(45,106,79,0.15); padding: 1mm 2mm; height: 8mm; vertical-align: middle; text-align: center; color: var(--text); }
 .lct-sheet .performer-table tbody tr.p-row td:last-child { border-right: none; }
 .lct-sheet .performer-table tbody tr.p-row td.tl { text-align: left; padding-left: 2.5mm; }
-.lct-sheet .performer-table tbody tr.p-row td:nth-child(3) { font-family: 'Courier New', Courier, monospace; font-size: 7pt; letter-spacing: 0.03em; }
+.lct-sheet .performer-table tbody tr.p-row td:nth-child(3) { font-family: var(--font-courier), 'Courier New', monospace; font-size: 7pt; letter-spacing: 0.03em; }
 .lct-sheet .performer-table tbody tr.p-row td.flag { font-size: 8px; font-weight: 600; color: var(--green-mid); letter-spacing: 0.06em; }
 .lct-sheet .performer-table tbody tr.p-row.even td,
 .lct-sheet .performer-table tbody tr.n-row.even td { background-color: var(--row-alt); }
