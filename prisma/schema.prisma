@@ -75,6 +75,8 @@ model Receipt {
   facility_name               String?
   render_processing_location  String?
   facility_ai_policy_confirmed Boolean @default(false)
+  input_file_version          String?
+  output_file_version         String?
 }
 
 model WhitelistEntry {

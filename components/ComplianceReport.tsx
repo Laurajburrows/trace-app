@@ -456,17 +456,19 @@ async function generatePDF(report: ReportData) {
       `${facilityReceipts.length} post-production receipt${facilityReceipts.length !== 1 ? 's' : ''} recorded. ${unconfirmed.length > 0 ? `${unconfirmed.length} receipt${unconfirmed.length !== 1 ? 's' : ''} without facility AI policy confirmation — flagged for follow-up before delivery.` : 'All post-production facilities have provided AI policy confirmation.'}`
     )
     gap(4)
-    tableRow(['Dept', 'Crew', 'Facility', 'Render Location', 'Policy Confirmed'], [28, 30, 32, 42, 28], true)
+    tableRow(['Dept', 'Crew', 'Facility', 'Render Location', 'Input Ver.', 'Output Ver.', 'Policy'], [26, 28, 28, 36, 20, 20, 22], true)
     facilityReceipts.forEach((r) => {
       tableRow(
         [
           r.department,
-          r.crew_member_name.substring(0, 14),
-          (r.facility_name || 'In-house / remote').substring(0, 18),
-          (r.render_processing_location || '—').substring(0, 22),
-          r.facility_ai_policy_confirmed ? 'Confirmed' : 'NOT CONFIRMED',
+          r.crew_member_name.substring(0, 12),
+          (r.facility_name || 'In-house / remote').substring(0, 16),
+          (r.render_processing_location || '—').substring(0, 20),
+          r.input_file_version || '—',
+          r.output_file_version || '—',
+          r.facility_ai_policy_confirmed ? 'Yes' : 'NO',
         ],
-        [28, 30, 32, 42, 28],
+        [26, 28, 28, 36, 20, 20, 22],
         false,
         !r.facility_ai_policy_confirmed ? YELLOW_C : undefined
       )
@@ -1165,6 +1167,8 @@ export default function ComplianceReport() {
                           <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
                           <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Facility</th>
                           <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Render / Processing Location</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Input Version</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Output Version</th>
                           <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Policy Confirmed</th>
                         </tr>
                       </thead>
@@ -1184,6 +1188,12 @@ export default function ComplianceReport() {
                               {r.facility_name || 'In-house / remote'}
                             </td>
                             <td className="px-3 py-2 text-xs" style={{ color: '#D4EDE1' }}>{r.render_processing_location || '—'}</td>
+                            <td className="px-3 py-2 font-courier text-xs" style={{ color: r.input_file_version ? '#D4EDE1' : '#5A8A72' }}>
+                              {r.input_file_version || '—'}
+                            </td>
+                            <td className="px-3 py-2 font-courier text-xs" style={{ color: r.output_file_version ? '#D4EDE1' : '#5A8A72' }}>
+                              {r.output_file_version || '—'}
+                            </td>
                             <td className="px-3 py-2">
                               <span className={`font-courier text-xs font-semibold ${r.facility_ai_policy_confirmed ? 'text-status-green' : 'text-status-red'}`}>
                                 {r.facility_ai_policy_confirmed ? 'Confirmed' : 'NOT CONFIRMED'}

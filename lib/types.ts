@@ -341,6 +341,8 @@ export interface Receipt {
   facility_name?: string | null
   render_processing_location?: string | null
   facility_ai_policy_confirmed?: boolean
+  input_file_version?: string | null
+  output_file_version?: string | null
 }
 
 export interface ReportData {

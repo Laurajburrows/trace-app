@@ -523,6 +523,22 @@ export default function ReceiptLog() {
                                     {r.facility_ai_policy_confirmed ? 'Confirmed' : 'Not confirmed — flagged'}
                                   </p>
                                 </div>
+                                {(r.input_file_version || r.output_file_version) && (
+                                  <>
+                                    {r.input_file_version && (
+                                      <div>
+                                        <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Input file version</p>
+                                        <p className="font-courier text-xs mt-0.5" style={{ color: '#D4EDE1' }}>{r.input_file_version}</p>
+                                      </div>
+                                    )}
+                                    {r.output_file_version && (
+                                      <div>
+                                        <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Output file version</p>
+                                        <p className="font-courier text-xs mt-0.5" style={{ color: '#D4EDE1' }}>{r.output_file_version}</p>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </div>
                           )}

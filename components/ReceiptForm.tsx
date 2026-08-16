@@ -66,6 +66,8 @@ const emptyForm = {
   facility_name: '',
   render_processing_location: '',
   facility_ai_policy_confirmed: false,
+  input_file_version: '',
+  output_file_version: '',
 }
 
 type FormState = typeof emptyForm
@@ -706,6 +708,37 @@ export default function ReceiptForm() {
             </div>
           )}
         </div>
+
+        {isPostProd && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4" style={{ borderTop: '1px solid #E5E7EB' }}>
+            <div>
+              <label className="label" htmlFor="input_file_version">
+                Input file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
+              </label>
+              <p className="text-xs text-gray-400 mb-1.5">The version of the file submitted to the AI tool — e.g. v003, VFX_0023_comp_v012.</p>
+              <input
+                id="input_file_version"
+                className="input"
+                placeholder="e.g. v003, VFX_0023_comp_v012"
+                value={form.input_file_version}
+                onChange={(e) => set('input_file_version', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="output_file_version">
+                Output file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
+              </label>
+              <p className="text-xs text-gray-400 mb-1.5">The version produced after AI processing — e.g. v004, VFX_0023_comp_v013.</p>
+              <input
+                id="output_file_version"
+                className="input"
+                placeholder="e.g. v004, VFX_0023_comp_v013"
+                value={form.output_file_version}
+                onChange={(e) => set('output_file_version', e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* TRACE Four-Point Log */}

@@ -137,6 +137,8 @@ export async function POST(req: NextRequest) {
       facility_name: body.facility_name || null,
       render_processing_location: body.render_processing_location || null,
       facility_ai_policy_confirmed: Boolean(body.facility_ai_policy_confirmed),
+      input_file_version: body.input_file_version || null,
+      output_file_version: body.output_file_version || null,
     },
   })
 
