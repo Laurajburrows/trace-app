@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 const links = [
   { href: '/receipt/new', label: 'Receipt Form' },
@@ -14,10 +15,26 @@ const links = [
   { href: '/admin', label: 'OAS Admin' },
 ]
 
-const signoffHrefs = ['/hod', '/producer', '/exec']
-
 export default function Navigation() {
   const pathname = usePathname()
+  const [hodCount, setHodCount] = useState(0)
+
+  useEffect(() => {
+    async function fetchCount() {
+      try {
+        const res = await fetch('/api/receipts?receiptStatus=PENDING_HOD_AUTH')
+        if (res.ok) {
+          const data = await res.json()
+          setHodCount(Array.isArray(data) ? data.length : 0)
+        }
+      } catch {
+        // silent fail — badge just won't show
+      }
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <nav
@@ -72,7 +89,7 @@ export default function Navigation() {
                   )}
                   <Link
                     href={link.href}
-                    className="px-3 py-1.5 rounded font-courier font-medium transition-colors duration-150"
+                    className="relative px-3 py-1.5 rounded font-courier font-medium transition-colors duration-150"
                     style={{
                       fontSize: '0.65rem',
                       letterSpacing: '0.08em',
@@ -94,6 +111,25 @@ export default function Navigation() {
                     }}
                   >
                     {link.label}
+                    {link.href === '/hod' && hodCount > 0 && (
+                      <span
+                        className="absolute flex items-center justify-center font-courier font-bold"
+                        style={{
+                          top: '2px',
+                          right: '2px',
+                          minWidth: '14px',
+                          height: '14px',
+                          fontSize: '0.5rem',
+                          lineHeight: 1,
+                          padding: '0 3px',
+                          borderRadius: '999px',
+                          backgroundColor: '#C8A84B',
+                          color: '#122E1F',
+                        }}
+                      >
+                        {hodCount > 99 ? '99+' : hodCount}
+                      </span>
+                    )}
                   </Link>
                   {isLastSignoff && (
                     <div className="flex items-center ml-0.5" style={{ borderLeft: '1px solid rgba(45,106,79,0.6)', height: '1.5rem', marginRight: '4px' }} />
