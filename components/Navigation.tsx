@@ -3,6 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import type { Receipt } from '@/lib/types'
+
+const POST_PROD = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+
+function isComplianceFlagged(r: Receipt): boolean {
+  const cloudSound = Boolean(r.sound_performer_audio) &&
+    !!r.sound_processing_location &&
+    r.sound_processing_location !== 'Local software — not uploaded'
+  return (
+    r.tool_status === 'RED' ||
+    (r.department === 'VFX' && !r.vfx_no_training_confirmed) ||
+    ((r.department === 'Sound' || r.department === 'Sound Post') && !r.sound_no_training_confirmed) ||
+    (r.department === 'Writing' && !r.writing_no_training_confirmed) ||
+    (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
+    cloudSound ||
+    (POST_PROD.includes(r.department) && !r.facility_ai_policy_confirmed)
+  )
+}
 
 const links = [
   { href: '/receipt/new', label: 'Receipt Form' },
@@ -15,24 +33,47 @@ const links = [
   { href: '/admin', label: 'OAS Admin' },
 ]
 
+function NavBadge({ count }: { count: number }) {
+  if (count === 0) return null
+  return (
+    <span
+      className="flex-shrink-0 flex items-center justify-center font-courier font-bold"
+      style={{
+        minWidth: '14px',
+        height: '14px',
+        fontSize: '0.5rem',
+        lineHeight: 1,
+        padding: '0 3px',
+        borderRadius: '999px',
+        backgroundColor: '#C8A84B',
+        color: '#122E1F',
+      }}
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
 export default function Navigation() {
   const pathname = usePathname()
   const [hodCount, setHodCount] = useState(0)
+  const [flagCount, setFlagCount] = useState(0)
 
   useEffect(() => {
-    async function fetchCount() {
+    async function fetchCounts() {
       try {
-        const res = await fetch('/api/receipts?receiptStatus=PENDING_HOD_AUTH')
+        const res = await fetch('/api/receipts')
         if (res.ok) {
-          const data = await res.json()
-          setHodCount(Array.isArray(data) ? data.length : 0)
+          const data: Receipt[] = await res.json()
+          setHodCount(data.filter((r) => r.status === 'PENDING_HOD_AUTH').length)
+          setFlagCount(data.filter(isComplianceFlagged).length)
         }
       } catch {
-        // silent fail — badge just won't show
+        // silent fail
       }
     }
-    fetchCount()
-    const interval = setInterval(fetchCount, 30000)
+    fetchCounts()
+    const interval = setInterval(fetchCounts, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -79,6 +120,9 @@ export default function Navigation() {
               const isFirstSignoff = link.href === '/hod'
               const isLastSignoff = link.href === '/exec'
 
+              const showHodBadge = (link.href === '/hod' || link.href === '/producer') && hodCount > 0
+              const showAdminBadges = link.href === '/admin' && (hodCount > 0 || flagCount > 0)
+
               return (
                 <div key={link.href} className="flex items-center">
                   {isFirstSignoff && (
@@ -89,7 +133,7 @@ export default function Navigation() {
                   )}
                   <Link
                     href={link.href}
-                    className="relative px-3 py-1.5 rounded font-courier font-medium transition-colors duration-150"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded font-courier font-medium transition-colors duration-150"
                     style={{
                       fontSize: '0.65rem',
                       letterSpacing: '0.08em',
@@ -110,25 +154,13 @@ export default function Navigation() {
                       }
                     }}
                   >
-                    {link.label}
-                    {(link.href === '/hod' || link.href === '/producer') && hodCount > 0 && (
-                      <span
-                        className="absolute flex items-center justify-center font-courier font-bold"
-                        style={{
-                          top: '2px',
-                          right: '2px',
-                          minWidth: '14px',
-                          height: '14px',
-                          fontSize: '0.5rem',
-                          lineHeight: 1,
-                          padding: '0 3px',
-                          borderRadius: '999px',
-                          backgroundColor: '#C8A84B',
-                          color: '#122E1F',
-                        }}
-                      >
-                        {hodCount > 99 ? '99+' : hodCount}
-                      </span>
+                    <span>{link.label}</span>
+                    {showHodBadge && <NavBadge count={hodCount} />}
+                    {showAdminBadges && (
+                      <>
+                        <NavBadge count={hodCount} />
+                        <NavBadge count={flagCount} />
+                      </>
                     )}
                   </Link>
                   {isLastSignoff && (

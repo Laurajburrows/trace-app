@@ -725,6 +725,49 @@ export default function ComplianceReport() {
           </div>
 
           <div ref={reportRef} className="space-y-6">
+            {/* Summary stat row */}
+            {(() => {
+              const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+              const pendingHod = report.receipts.filter((r) => r.status === 'PENDING_HOD_AUTH').length
+              const flagged = report.receipts.filter((r) => {
+                const cloudSound = Boolean(r.sound_performer_audio) &&
+                  !!r.sound_processing_location &&
+                  r.sound_processing_location !== 'Local software — not uploaded'
+                return (
+                  r.tool_status === 'RED' ||
+                  (r.department === 'VFX' && !r.vfx_no_training_confirmed) ||
+                  ((r.department === 'Sound' || r.department === 'Sound Post') && !r.sound_no_training_confirmed) ||
+                  (r.department === 'Writing' && !r.writing_no_training_confirmed) ||
+                  (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
+                  cloudSound ||
+                  (POST_PROD_DEPTS.includes(r.department) && !r.facility_ai_policy_confirmed)
+                )
+              }).length
+              const stats = [
+                { label: 'Total Receipts', value: report.receipts.length, alert: false },
+                { label: 'Fully Authorised', value: report.auth_signed_count, alert: false },
+                { label: 'Pending HOD AUTH', value: pendingHod, alert: pendingHod > 0 },
+                { label: 'Compliance Flags', value: flagged, alert: flagged > 0 },
+              ]
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {stats.map((s) => (
+                    <div
+                      key={s.label}
+                      className="rounded-lg p-4"
+                      style={{
+                        backgroundColor: '#1A3D2B',
+                        border: s.alert ? '1px solid rgba(200,168,75,0.5)' : '1px solid #2D6A4F',
+                      }}
+                    >
+                      <p className="font-courier text-[9px] uppercase tracking-widest mb-1" style={{ color: s.alert ? '#C8A84B' : '#8BB5A0' }}>{s.label}</p>
+                      <p className="font-garamond text-3xl" style={{ color: s.alert ? '#C8A84B' : '#F0EBE0' }}>{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+
             {/* Cover */}
             <div className="rounded-lg p-8" style={{ backgroundColor: '#122E1F', border: '1px solid #2D6A4F', borderLeft: '3px solid #C8A84B' }}>
               <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#8BB5A0' }}>
