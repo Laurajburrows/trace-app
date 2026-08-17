@@ -111,7 +111,7 @@ export default function Navigation() {
                     }}
                   >
                     {link.label}
-                    {link.href === '/hod' && hodCount > 0 && (
+                    {(link.href === '/hod' || link.href === '/producer') && hodCount > 0 && (
                       <span
                         className="absolute flex items-center justify-center font-courier font-bold"
                         style={{
