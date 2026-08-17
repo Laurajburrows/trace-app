@@ -24,31 +24,48 @@ function isComplianceFlagged(r: Receipt): boolean {
 interface StatCardProps {
   label: string
   value: number
-  amberBorderWhenNonZero?: boolean
+  amberLeftBorder?: boolean
   sub?: string
 }
 
-function StatCard({ label, value, amberBorderWhenNonZero, sub }: StatCardProps) {
-  const flagged = amberBorderWhenNonZero && value > 0
+function StatCard({ label, value, amberLeftBorder, sub }: StatCardProps) {
+  const showAmber = amberLeftBorder && value > 0
   return (
     <div
-      className="bg-white rounded-lg p-5 flex flex-col gap-1"
       style={{
+        backgroundColor: '#FFFFFF',
         border: '1px solid #E5E7EB',
-        borderLeft: flagged ? '4px solid #B8860B' : '1px solid #E5E7EB',
+        borderLeft: showAmber ? '4px solid #B8860B' : '1px solid #E5E7EB',
+        borderRadius: '8px',
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '4px',
       }}
     >
-      <span className="text-xs font-bold uppercase tracking-widest text-trace-moss">
+      <span
+        style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: '#2D6A4F',
+        }}
+      >
         {label}
       </span>
       <span
-        className="font-garamond leading-none"
-        style={{ fontSize: '2.4rem', color: '#111827' }}
+        style={{
+          fontSize: '2.4rem',
+          lineHeight: 1,
+          color: '#111827',
+          fontFamily: 'var(--font-garamond), Georgia, serif',
+        }}
       >
         {value}
       </span>
       {sub && (
-        <span className="text-xs text-gray-400">{sub}</span>
+        <span style={{ fontSize: '12px', color: '#9CA3AF' }}>{sub}</span>
       )}
     </div>
   )
@@ -103,16 +120,24 @@ export default function ProducerOverview() {
 
   if (loading) {
     return (
-      <div className="py-16 text-center text-sm text-gray-400">
+      <div style={{ padding: '64px 0', textAlign: 'center', fontSize: '14px', color: '#9CA3AF' }}>
         Loading production data…
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+      {/* Stat cards */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '16px',
+        }}
+        className="sm:grid-cols-4-override"
+      >
         <StatCard label="Total Receipts" value={total} />
         <StatCard label="Fully Authorised" value={authorised} />
         <StatCard
@@ -123,34 +148,64 @@ export default function ProducerOverview() {
         <StatCard
           label="Compliance Flags"
           value={flagged}
-          amberBorderWhenNonZero
+          amberLeftBorder
           sub={flagged > 0 ? 'require attention' : undefined}
         />
       </div>
 
       {/* Department breakdown */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-6 pt-5 pb-3 border-b border-trace-pale">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-trace-moss">
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E5E7EB',
+          borderRadius: '8px',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Section header */}
+        <div
+          style={{
+            padding: '16px 24px 12px',
+            borderBottom: '1px solid #E5E7EB',
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: '#2D6A4F',
+              margin: 0,
+            }}
+          >
             By Department
           </h2>
         </div>
 
         {deptRows.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-gray-700 font-medium mb-1">No receipts yet</p>
-            <p className="text-sm text-gray-400">
+          <div style={{ padding: '64px 24px', textAlign: 'center' }}>
+            <p style={{ color: '#374151', fontWeight: 500, marginBottom: '4px' }}>No receipts yet</p>
+            <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
               Receipts will appear here once crew members begin submitting.
             </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+              <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                 {['Department', 'Total', 'Pending HOD', 'Flags', 'Authorised'].map((h) => (
                   <th
                     key={h}
-                    className="text-xs font-bold uppercase tracking-widest text-trace-moss text-left px-6 py-3"
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      color: '#2D6A4F',
+                      textAlign: 'left',
+                      padding: '10px 24px',
+                    }}
                   >
                     {h}
                   </th>
@@ -158,45 +213,54 @@ export default function ProducerOverview() {
               </tr>
             </thead>
             <tbody>
-              {deptRows.map((row) => (
+              {deptRows.map((row, i) => (
                 <tr
                   key={row.department}
-                  className="border-b border-gray-100 last:border-b-0"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderBottom: i < deptRows.length - 1 ? '1px solid #F3F4F6' : 'none',
+                  }}
                 >
-                  <td className="px-6 py-3 text-gray-900 font-medium">
+                  <td style={{ padding: '12px 24px', color: '#111827', fontWeight: 500 }}>
                     {row.department}
                   </td>
-                  <td className="px-6 py-3 text-gray-600">
+                  <td style={{ padding: '12px 24px', color: '#6B7280' }}>
                     {row.total}
                   </td>
-                  <td className="px-6 py-3">
+                  <td style={{ padding: '12px 24px' }}>
                     {row.pendingHod > 0 ? (
                       <span
-                        className="inline-flex items-center justify-center text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: '#FFF8E1', color: '#B8860B', border: '1px solid #e5c46a' }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '9999px',
+                          backgroundColor: '#FFF8E1',
+                          color: '#B8860B',
+                          border: '1px solid #E5C46A',
+                        }}
                       >
                         {row.pendingHod}
                       </span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span style={{ color: '#D1D5DB' }}>—</span>
                     )}
                   </td>
-                  <td className="px-6 py-3">
+                  <td style={{ padding: '12px 24px' }}>
                     {row.flagged > 0 ? (
-                      <span className="font-semibold text-status-red">
-                        {row.flagged}
-                      </span>
+                      <span style={{ color: '#C62828', fontWeight: 600 }}>{row.flagged}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span style={{ color: '#D1D5DB' }}>—</span>
                     )}
                   </td>
-                  <td className="px-6 py-3">
+                  <td style={{ padding: '12px 24px' }}>
                     {row.authorised > 0 ? (
-                      <span className="font-semibold text-status-green">
-                        {row.authorised}
-                      </span>
+                      <span style={{ color: '#2E7D32', fontWeight: 600 }}>{row.authorised}</span>
                     ) : (
-                      <span className="text-gray-300">—</span>
+                      <span style={{ color: '#D1D5DB' }}>—</span>
                     )}
                   </td>
                 </tr>
