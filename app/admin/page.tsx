@@ -42,15 +42,15 @@ export default function AdminPage() {
   if (!unlocked) {
     return (
       <div className="max-w-sm mx-auto mt-24">
-        <div className="bg-white border border-gray-200 rounded-lg p-8">
+        <div className="rounded-lg p-8" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
           <div className="text-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-trace-pale flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-trace-forest" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.3)' }}>
+              <svg className="w-6 h-6" style={{ color: '#C8A84B' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-lg font-bold text-trace-forest">OAS / Production Admin</h1>
-            <p className="text-sm text-gray-500 mt-1">Enter the admin PIN to manage the production whitelist.</p>
+            <h1 className="font-garamond text-xl" style={{ color: '#F0EBE0' }}>OAS / Production Admin</h1>
+            <p className="font-courier text-xs mt-1" style={{ color: '#8BB5A0' }}>Enter the admin PIN to manage the production whitelist.</p>
           </div>
 
           <form onSubmit={handleUnlock} className="space-y-4">
@@ -69,15 +69,15 @@ export default function AdminPage() {
                 autoComplete="off"
                 autoFocus
               />
-              {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+              {error && <p className="font-courier text-xs mt-1" style={{ color: '#f87171' }}>{error}</p>}
             </div>
             <button type="submit" className="btn-primary w-full">
               Unlock
             </button>
           </form>
 
-          <p className="text-xs text-gray-400 text-center mt-6">
-            Default PIN: 1234 — change per production via <code className="bg-gray-100 px-1 rounded">NEXT_PUBLIC_ADMIN_PIN</code> env var.
+          <p className="font-courier text-xs text-center mt-6" style={{ color: '#5A8A72' }}>
+            Default PIN: 1234 — change per production via <code className="px-1 rounded" style={{ background: '#122E1F', color: '#8BB5A0' }}>NEXT_PUBLIC_ADMIN_PIN</code> env var.
           </p>
         </div>
       </div>

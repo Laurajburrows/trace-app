@@ -35,6 +35,12 @@ export async function PATCH(
   if (existing.status === 'AUTH_COMPLETE') {
     return NextResponse.json({ error: 'Receipt already signed off' }, { status: 409 })
   }
+  if (!existing.status.startsWith('PENDING_')) {
+    return NextResponse.json({ error: 'Receipt is not in a pending state' }, { status: 409 })
+  }
+  if (auth_signer.trim().toLowerCase() === existing.crew_member_name.toLowerCase()) {
+    return NextResponse.json({ error: 'You cannot sign off your own receipt.' }, { status: 403 })
+  }
 
   const updated = await prisma.receipt.update({
     where: { id: params.id },

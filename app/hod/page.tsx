@@ -6,8 +6,8 @@ export default function HODPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-trace-forest">HOD Sign-off Queue</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="font-garamond text-3xl" style={{ color: '#F0EBE0' }}>HOD Sign-off Queue</h1>
+        <p className="text-sm mt-1" style={{ color: '#8BB5A0' }}>
           Review receipts submitted by crew and apply the AUTH signature to finalise each record.
         </p>
       </div>
