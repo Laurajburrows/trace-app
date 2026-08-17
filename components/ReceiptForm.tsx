@@ -80,6 +80,58 @@ interface Confirmation {
   routedTo: 'hod' | 'producer' | 'exec' | 'self'
 }
 
+// --- Session log mode types ---
+
+interface ToolEntryFormState {
+  // UI state (not persisted)
+  toolQuery: string
+  selectedEntry: WhitelistEntry | null
+  suggestions: WhitelistEntry[]
+  showSuggestions: boolean
+  // Persisted fields
+  input_file_version: string
+  output_file_version: string
+  vfx_software: string
+  vfx_data_location: string
+  vfx_no_training_confirmed: boolean
+  vfx_input_type: string
+  vfx_output_type: string
+  vfx_lct_confirmed: boolean
+  colour_grading_system: string
+  colour_ai_grading: boolean
+  colour_performer_footage: boolean
+  colour_lct_confirmed: boolean
+  editorial_editing_system: string
+  editorial_ai_tool_type: string
+  editorial_performer_footage: boolean
+  editorial_lct_confirmed: boolean
+  sound_processing_location: string
+  sound_processing_type: string
+  sound_performer_audio: boolean
+  sound_no_training_confirmed: boolean
+  delivery_ai_tool_type: string
+  delivery_format: string
+  delivery_no_training_confirmed: boolean
+}
+
+function makeEmptyEntry(): ToolEntryFormState {
+  return {
+    toolQuery: '', selectedEntry: null, suggestions: [], showSuggestions: false,
+    input_file_version: '', output_file_version: '',
+    vfx_software: '', vfx_data_location: '', vfx_no_training_confirmed: false,
+    vfx_input_type: '', vfx_output_type: '', vfx_lct_confirmed: false,
+    colour_grading_system: '', colour_ai_grading: false,
+    colour_performer_footage: false, colour_lct_confirmed: false,
+    editorial_editing_system: '', editorial_ai_tool_type: '',
+    editorial_performer_footage: false, editorial_lct_confirmed: false,
+    sound_processing_location: '', sound_processing_type: '',
+    sound_performer_audio: false, sound_no_training_confirmed: false,
+    delivery_ai_tool_type: '', delivery_format: '', delivery_no_training_confirmed: false,
+  }
+}
+
+// --- StatusBadge ---
+
 function StatusBadge({ status, condition, requiresLCT }: {
   status: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | ''
   condition?: string | null
@@ -159,16 +211,34 @@ export default function ReceiptForm() {
   const [selectedEntry, setSelectedEntry] = useState<WhitelistEntry | null>(null)
   const toolRef = useRef<HTMLDivElement>(null)
 
+  // Session log mode state
+  const [toolEntries, setToolEntries] = useState<ToolEntryFormState[]>([makeEmptyEntry()])
+  const toolRefs = useRef<(HTMLDivElement | null)[]>([])
+
   useEffect(() => {
     fetch('/api/productions').then((r) => r.json()).then(setProductions).catch(() => {})
     fetch('/api/whitelist').then((r) => r.json()).then(setWhitelist).catch(() => {})
   }, [])
 
+  // Reset toolEntries when department changes
+  useEffect(() => {
+    setToolEntries([makeEmptyEntry()])
+  }, [form.department])
+
+  // Click-outside: handles both single toolRef and all session toolRefs
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (toolRef.current && !toolRef.current.contains(e.target as Node)) {
         setShowSuggestions(false)
       }
+      toolRefs.current.forEach((ref, i) => {
+        if (ref && !ref.contains(e.target as Node)) {
+          setToolEntries(prev => {
+            if (!prev[i]?.showSuggestions) return prev
+            return prev.map((entry, idx) => idx === i ? { ...entry, showSuggestions: false } : entry)
+          })
+        }
+      })
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -208,6 +278,32 @@ export default function ReceiptForm() {
     setShowSuggestions(false)
   }
 
+  // Session log helpers
+  function updateEntry(index: number, updates: Partial<ToolEntryFormState>) {
+    setToolEntries(prev => prev.map((e, i) => i === index ? { ...e, ...updates } : e))
+  }
+
+  function handleEntryToolInput(index: number, value: string) {
+    const q = value.toLowerCase()
+    const matches = value.trim().length >= 1
+      ? whitelist.filter(e => e.displayName.toLowerCase().includes(q) || e.toolName.includes(q))
+      : []
+    updateEntry(index, { toolQuery: value, selectedEntry: null, suggestions: matches, showSuggestions: matches.length > 0 && value.trim().length >= 1 })
+  }
+
+  function selectEntryFromWhitelist(index: number, entry: WhitelistEntry) {
+    updateEntry(index, { toolQuery: entry.displayName, selectedEntry: entry, suggestions: [], showSuggestions: false })
+  }
+
+  function addEntry() {
+    if (toolEntries.length < 10) setToolEntries(prev => [...prev, makeEmptyEntry()])
+  }
+
+  function removeEntry(index: number) {
+    setToolEntries(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Derived values — single tool (non-post-prod)
   const derivedStatus: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' = selectedEntry
     ? (selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
     : toolQuery.trim().length >= 3
@@ -219,54 +315,202 @@ export default function ReceiptForm() {
     derivedStatus === 'UNVERIFIED' ||
     derivedStatus === ''
 
+  // Derived values — session log mode
+  function entryDerivedStatus(e: ToolEntryFormState): 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' {
+    return e.selectedEntry
+      ? (e.selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
+      : e.toolQuery.trim().length >= 3 ? 'UNVERIFIED' : ''
+  }
+
+  const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+  const isPostProd = POST_PROD_DEPTS.includes(form.department)
+
+  const sessionAuthBlocked = toolEntries.some(e => {
+    const s = entryDerivedStatus(e)
+    return s === 'RED' || s === 'UNVERIFIED' || s === ''
+  })
+
+  const sessionHasInput = toolEntries.some(e => e.toolQuery.trim().length >= 1)
+
+  const effectiveAuthBlockedForDisplay = isPostProd
+    ? (sessionAuthBlocked && sessionHasInput)
+    : (authBlocked && derivedStatus !== '')
+
+  const routingLabel = form.submitter_role === 'hod'
+    ? 'Producer'
+    : form.submitter_role === 'producer'
+    ? 'Exec / OAS'
+    : 'HOD'
+  const isWritingDev = form.department === 'Writing' && form.writing_stage === 'Development'
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
     if (!form.department) return setError('Please select a department.')
+
+    if (isPostProd) {
+      // a. Validate render/processing location
+      if (!form.render_processing_location) {
+        return setError('Please select the render / processing location.')
+      }
+
+      // b. Per-entry validation
+      for (let i = 0; i < toolEntries.length; i++) {
+        const entry = toolEntries[i]
+        const label = toolEntries.length > 1 ? ` (Tool ${i + 1})` : ''
+        const eStatus = entryDerivedStatus(entry)
+
+        if (!entry.toolQuery.trim()) return setError(`Please enter the AI tool name${label}.`)
+        if (eStatus === 'RED' || eStatus === 'UNVERIFIED' || eStatus === '') {
+          return setError(`Cannot submit: tool${label} is not approved. Resolve tool status before proceeding.`)
+        }
+
+        if (form.department === 'VFX') {
+          if (!entry.vfx_software.trim()) return setError(`VFX: Please enter the software name and version${label}.`)
+          if (!entry.vfx_data_location) return setError(`VFX: Please select where data was processed${label}.`)
+          if (!entry.vfx_no_training_confirmed) return setError(`VFX: Please confirm the training data policy${label}.`)
+          if (!entry.vfx_input_type) return setError(`VFX: Please select what was submitted to the AI tool${label}.`)
+          if (!entry.vfx_output_type) return setError(`VFX: Please select what the AI generated${label}.`)
+          if (entry.vfx_input_type === 'Plate footage containing performers' && !entry.vfx_lct_confirmed) {
+            return setError(`VFX: Please confirm a valid LCT exists for all performers in this footage${label}.`)
+          }
+        }
+
+        if (form.department === 'Sound Post') {
+          if (!entry.sound_processing_location) return setError(`Sound Post: Please select where audio was processed${label}.`)
+          if (!entry.sound_processing_type) return setError(`Sound Post: Please select the type of processing${label}.`)
+          if (!entry.sound_no_training_confirmed) return setError(`Sound Post: Please confirm the training data policy${label}.`)
+        }
+
+        if (form.department === 'Colour / DI') {
+          if (!entry.colour_grading_system) return setError(`Colour / DI: Please select the grading system${label}.`)
+          if (entry.colour_performer_footage && !entry.colour_lct_confirmed) {
+            return setError(`Colour / DI: Please confirm LCT verification for footage containing performers${label}.`)
+          }
+        }
+
+        if (form.department === 'Editorial') {
+          if (!entry.editorial_editing_system) return setError(`Editorial: Please select the editing system${label}.`)
+          if (!entry.editorial_ai_tool_type) return setError(`Editorial: Please select the type of AI editing tool${label}.`)
+          if (entry.editorial_performer_footage && !entry.editorial_lct_confirmed) {
+            return setError(`Editorial: Please confirm LCT verification for footage containing performers${label}.`)
+          }
+        }
+
+        if (form.department === 'Delivery / QC') {
+          if (!entry.delivery_ai_tool_type) return setError(`Delivery / QC: Please select the type of AI tool used${label}.`)
+          if (!entry.delivery_format) return setError(`Delivery / QC: Please select the delivery format${label}.`)
+          if (!entry.delivery_no_training_confirmed) return setError(`Delivery / QC: Please confirm the training data policy${label}.`)
+        }
+      }
+
+      // c. Validate LCT (form-level)
+      if (form.lct_required && form.lct_child_performer) {
+        if (!form.lct_child_age_bracket) return setError('LCT: Please select the child performer age bracket.')
+        if (!form.lct_guardian_name.trim()) return setError('LCT: Please enter the parent or legal guardian name.')
+        if (!form.lct_guardian_consent_ref.trim()) return setError('LCT: Please enter the guardian consent reference number.')
+      }
+
+      setSubmitting(true)
+
+      try {
+        // d. Build payload with first entry in flat columns, is_session and session_tool_entries
+        const first = toolEntries[0]
+        const isSession = toolEntries.length > 1
+        const payload = {
+          ...form,
+          ai_tool_used: first.selectedEntry!.displayName,
+          tool_status: first.selectedEntry!.status,
+          whitelist_condition: first.selectedEntry?.condition || null,
+          input_file_version: first.input_file_version || null,
+          output_file_version: first.output_file_version || null,
+          vfx_software: first.vfx_software || null,
+          vfx_data_location: first.vfx_data_location || null,
+          vfx_no_training_confirmed: first.vfx_no_training_confirmed,
+          vfx_input_type: first.vfx_input_type || null,
+          vfx_output_type: first.vfx_output_type || null,
+          vfx_lct_confirmed: first.vfx_lct_confirmed,
+          colour_grading_system: first.colour_grading_system || null,
+          colour_ai_grading: first.colour_ai_grading,
+          colour_performer_footage: first.colour_performer_footage,
+          colour_lct_confirmed: first.colour_lct_confirmed,
+          editorial_editing_system: first.editorial_editing_system || null,
+          editorial_ai_tool_type: first.editorial_ai_tool_type || null,
+          editorial_performer_footage: first.editorial_performer_footage,
+          editorial_lct_confirmed: first.editorial_lct_confirmed,
+          sound_processing_location: first.sound_processing_location || null,
+          sound_processing_type: first.sound_processing_type || null,
+          sound_performer_audio: first.sound_performer_audio,
+          sound_no_training_confirmed: first.sound_no_training_confirmed,
+          delivery_ai_tool_type: first.delivery_ai_tool_type || null,
+          delivery_format: first.delivery_format || null,
+          delivery_no_training_confirmed: first.delivery_no_training_confirmed,
+          is_session: isSession,
+          session_tool_entries: isSession ? toolEntries.map(e => ({
+            ai_tool_used: e.selectedEntry!.displayName,
+            tool_status: e.selectedEntry!.status,
+            whitelist_condition: e.selectedEntry?.condition || null,
+            input_file_version: e.input_file_version || null,
+            output_file_version: e.output_file_version || null,
+            vfx_software: e.vfx_software || null,
+            vfx_data_location: e.vfx_data_location || null,
+            vfx_no_training_confirmed: e.vfx_no_training_confirmed,
+            vfx_input_type: e.vfx_input_type || null,
+            vfx_output_type: e.vfx_output_type || null,
+            vfx_lct_confirmed: e.vfx_lct_confirmed,
+            colour_grading_system: e.colour_grading_system || null,
+            colour_ai_grading: e.colour_ai_grading,
+            colour_performer_footage: e.colour_performer_footage,
+            colour_lct_confirmed: e.colour_lct_confirmed,
+            editorial_editing_system: e.editorial_editing_system || null,
+            editorial_ai_tool_type: e.editorial_ai_tool_type || null,
+            editorial_performer_footage: e.editorial_performer_footage,
+            editorial_lct_confirmed: e.editorial_lct_confirmed,
+            sound_processing_location: e.sound_processing_location || null,
+            sound_processing_type: e.sound_processing_type || null,
+            sound_performer_audio: e.sound_performer_audio,
+            sound_no_training_confirmed: e.sound_no_training_confirmed,
+            delivery_ai_tool_type: e.delivery_ai_tool_type || null,
+            delivery_format: e.delivery_format || null,
+            delivery_no_training_confirmed: e.delivery_no_training_confirmed,
+          })) : null,
+        }
+
+        // e. Submit
+        const res = await fetch('/api/receipts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!res.ok) throw new Error('Submission failed')
+
+        const receipt = await res.json()
+        const selfAuth = false
+        const routedTo: Confirmation['routedTo'] = form.submitter_role === 'hod'
+          ? 'producer'
+          : form.submitter_role === 'producer'
+          ? 'exec'
+          : 'hod'
+        setConfirmation({ id: receipt.id, hash: receipt.twin_lock_hash || '', production_name: receipt.production_name, selfAuth, routedTo })
+      } catch {
+        setError('Something went wrong. Please try again.')
+      } finally {
+        setSubmitting(false)
+      }
+
+      return
+    }
+
+    // Non-post-prod path
     if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
     if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before proceeding.')
 
-    if (form.department === 'VFX') {
-      if (!form.vfx_software.trim()) return setError('VFX: Please enter the software name and version.')
-      if (!form.vfx_data_location) return setError('VFX: Please select where data was processed.')
-      if (!form.vfx_no_training_confirmed) return setError('VFX: Please confirm the training data policy.')
-      if (!form.vfx_input_type) return setError('VFX: Please select what was submitted to the AI tool.')
-      if (!form.vfx_output_type) return setError('VFX: Please select what the AI generated.')
-      if (form.vfx_input_type === 'Plate footage containing performers' && !form.vfx_lct_confirmed) {
-        return setError('VFX: Please confirm a valid LCT exists for all performers in this footage.')
-      }
-    }
-
-    if (form.department === 'Sound' || form.department === 'Sound Post') {
+    if (form.department === 'Sound') {
       if (!form.sound_processing_location) return setError('Sound: Please select where audio was processed.')
       if (!form.sound_processing_type) return setError('Sound: Please select the type of processing.')
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
-    }
-
-    if (isPostProd && !form.render_processing_location) {
-      return setError('Please select the render / processing location.')
-    }
-
-    if (form.department === 'Colour / DI') {
-      if (!form.colour_grading_system) return setError('Colour / DI: Please select the grading system.')
-      if (form.colour_performer_footage && !form.colour_lct_confirmed) {
-        return setError('Colour / DI: Please confirm LCT verification for footage containing performers.')
-      }
-    }
-
-    if (form.department === 'Editorial') {
-      if (!form.editorial_editing_system) return setError('Editorial: Please select the editing system.')
-      if (!form.editorial_ai_tool_type) return setError('Editorial: Please select the type of AI editing tool.')
-      if (form.editorial_performer_footage && !form.editorial_lct_confirmed) {
-        return setError('Editorial: Please confirm LCT verification for footage containing performers.')
-      }
-    }
-
-    if (form.department === 'Delivery / QC') {
-      if (!form.delivery_ai_tool_type) return setError('Delivery / QC: Please select the type of AI tool used.')
-      if (!form.delivery_format) return setError('Delivery / QC: Please select the delivery format.')
-      if (!form.delivery_no_training_confirmed) return setError('Delivery / QC: Please confirm the training data policy.')
     }
 
     if (form.department === 'Writing') {
@@ -300,6 +544,8 @@ export default function ReceiptForm() {
         ...form,
         tool_status: selectedEntry?.status || 'RED',
         whitelist_condition: selectedEntry?.condition || null,
+        is_session: false,
+        session_tool_entries: null,
       }
       const res = await fetch('/api/receipts', {
         method: 'POST',
@@ -402,6 +648,7 @@ export default function ReceiptForm() {
               setNewProduction(false)
               setToolQuery('')
               setSelectedEntry(null)
+              setToolEntries([makeEmptyEntry()])
               setForm({ ...emptyForm, production_name: form.production_name })
               fetch('/api/productions').then(r => r.json()).then(setProductions).catch(() => {})
             }}
@@ -416,16 +663,6 @@ export default function ReceiptForm() {
       </div>
     )
   }
-
-  const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
-  const isPostProd = POST_PROD_DEPTS.includes(form.department)
-
-  const routingLabel = form.submitter_role === 'hod'
-    ? 'Producer'
-    : form.submitter_role === 'producer'
-    ? 'Exec / OAS'
-    : 'HOD'
-  const isWritingDev = form.department === 'Writing' && form.writing_stage === 'Development'
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -646,100 +883,364 @@ export default function ReceiptForm() {
         </div>
       </section>
 
-      {/* AI Tool */}
-      <section className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="section-heading">AI Tool</h2>
+      {/* AI Tool — session log mode for post-prod, single tool for all others */}
+      {isPostProd ? (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="section-heading">AI Tool{toolEntries.length > 1 ? 's' : ''}</h2>
+            {toolEntries.length > 1 && (
+              <span className="text-xs font-semibold text-trace-forest bg-trace-pale px-2.5 py-0.5 rounded-full">
+                Session — {toolEntries.length} tools
+              </span>
+            )}
+          </div>
+          {toolEntries.length > 1 && (
+            <p className="text-xs text-gray-400 mb-5">
+              Session receipt — logging {toolEntries.length} tool interactions. The POR, SEL, ADJ, and AUTH fields below apply to this session as a whole.
+            </p>
+          )}
 
-        <div className="mb-4" ref={toolRef}>
-          <label className="label" htmlFor="ai_tool_used">Tool Name</label>
-          <p className="text-xs text-gray-400 mb-1.5">Start typing to search the production whitelist. Status is set automatically.</p>
-          <div className="relative">
-            <input
-              id="ai_tool_used"
-              className="input"
-              required
-              autoComplete="off"
-              placeholder="e.g. Adobe Firefly, Runway Gen-3, Eleven Labs…"
-              value={toolQuery}
-              onChange={(e) => handleToolInput(e.target.value)}
-              onFocus={() => toolQuery.length >= 1 && setShowSuggestions(suggestions.length > 0)}
-            />
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                {suggestions.map((entry) => (
-                  <li key={entry.id}>
-                    <button
-                      type="button"
-                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-trace-pale text-left transition-colors"
-                      onMouseDown={(e) => { e.preventDefault(); selectEntry(entry) }}
-                    >
-                      <span className="text-sm font-medium text-gray-800">{entry.displayName}</span>
-                      <span className={`status-badge ml-3 flex-shrink-0 ${
-                        entry.status === 'GREEN' ? 'status-green' :
-                        entry.status === 'AMBER' ? 'status-amber' : 'status-red'
-                      }`}>
-                        {entry.status}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+          {toolEntries.map((entry, index) => {
+            const eStatus = entryDerivedStatus(entry)
+            return (
+              <div key={index} className={index > 0 ? 'mt-8 pt-6 border-t-2 border-dashed border-gray-200' : ''}>
+                {toolEntries.length > 1 && (
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Tool {index + 1}</p>
+                    {index > 0 && (
+                      <button type="button" onClick={() => removeEntry(index)} className="text-xs text-red-400 hover:text-red-600 transition-colors">
+                        Remove this tool
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Tool Name */}
+                <div className="mb-4" ref={(el) => { toolRefs.current[index] = el }}>
+                  <label className="label" htmlFor={`ai_tool_${index}`}>Tool Name</label>
+                  <p className="text-xs text-gray-400 mb-1.5">Start typing to search the production whitelist. Status is set automatically.</p>
+                  <div className="relative">
+                    <input
+                      id={`ai_tool_${index}`}
+                      className="input"
+                      autoComplete="off"
+                      placeholder="e.g. Adobe Firefly, Runway Gen-3, Eleven Labs…"
+                      value={entry.toolQuery}
+                      onChange={(e) => handleEntryToolInput(index, e.target.value)}
+                      onFocus={() => entry.toolQuery.length >= 1 && updateEntry(index, { showSuggestions: entry.suggestions.length > 0 })}
+                    />
+                    {entry.showSuggestions && entry.suggestions.length > 0 && (
+                      <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                        {entry.suggestions.map((sug) => (
+                          <li key={sug.id}>
+                            <button
+                              type="button"
+                              className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-trace-pale text-left transition-colors"
+                              onMouseDown={(e) => { e.preventDefault(); selectEntryFromWhitelist(index, sug) }}
+                            >
+                              <span className="text-sm font-medium text-gray-800">{sug.displayName}</span>
+                              <span className={`status-badge ml-3 flex-shrink-0 ${sug.status === 'GREEN' ? 'status-green' : sug.status === 'AMBER' ? 'status-amber' : 'status-red'}`}>
+                                {sug.status}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  {entry.toolQuery.trim().length >= 3 && !entry.selectedEntry && entry.suggestions.length === 0 && (
+                    <p className="text-xs text-red-600 mt-2 font-medium">Tool not found on production whitelist — refer to OAS before proceeding.</p>
+                  )}
+                </div>
+
+                {/* Tool Status */}
+                <div className="mb-4">
+                  <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
+                  {eStatus ? (
+                    <StatusBadge status={eStatus} condition={entry.selectedEntry?.condition} requiresLCT={entry.selectedEntry?.requiresLCT} />
+                  ) : (
+                    <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
+                      Enter a tool name above to check whitelist status.
+                    </div>
+                  )}
+                </div>
+
+                {/* File versions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
+                  <div>
+                    <label className="label" htmlFor={`input_ver_${index}`}>
+                      Input file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
+                    </label>
+                    <p className="text-xs text-gray-400 mb-1.5">The version of the file submitted to the AI tool.</p>
+                    <input
+                      id={`input_ver_${index}`}
+                      className="input"
+                      placeholder="e.g. v003, VFX_0023_comp_v012"
+                      value={entry.input_file_version}
+                      onChange={(e) => updateEntry(index, { input_file_version: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor={`output_ver_${index}`}>
+                      Output file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
+                    </label>
+                    <p className="text-xs text-gray-400 mb-1.5">The version produced after AI processing.</p>
+                    <input
+                      id={`output_ver_${index}`}
+                      className="input"
+                      placeholder="e.g. v004, VFX_0023_comp_v013"
+                      value={entry.output_file_version}
+                      onChange={(e) => updateEntry(index, { output_file_version: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* VFX-specific fields */}
+                {form.department === 'VFX' && (
+                  <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">VFX — Tool Compliance</p>
+                    <div>
+                      <label className="label" htmlFor={`vfx_sw_${index}`}>Software and version used</label>
+                      <input id={`vfx_sw_${index}`} className="input" placeholder="e.g. Nuke 14.0, Runway Gen-3, Topaz Video AI 4.2" value={entry.vfx_software} onChange={(e) => updateEntry(index, { vfx_software: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`vfx_loc_${index}`}>Where was data processed?</label>
+                      <select id={`vfx_loc_${index}`} className="select" value={entry.vfx_data_location} onChange={(e) => updateEntry(index, { vfx_data_location: e.target.value })}>
+                        <option value="">Select location…</option>
+                        {VFX_DATA_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`vfx_train_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.vfx_no_training_confirmed} onChange={(e) => updateEntry(index, { vfx_no_training_confirmed: e.target.checked })} />
+                      <label htmlFor={`vfx_train_${index}`} className="text-sm text-gray-700 cursor-pointer">
+                        I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
+                      </label>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`vfx_in_${index}`}>What was submitted to the AI tool?</label>
+                      <select id={`vfx_in_${index}`} className="select" value={entry.vfx_input_type} onChange={(e) => updateEntry(index, { vfx_input_type: e.target.value, vfx_lct_confirmed: false })}>
+                        <option value="">Select input type…</option>
+                        {VFX_INPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    {entry.vfx_input_type === 'Plate footage containing performers' && (
+                      <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                        <input id={`vfx_lct_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.vfx_lct_confirmed} onChange={(e) => updateEntry(index, { vfx_lct_confirmed: e.target.checked })} />
+                        <label htmlFor={`vfx_lct_${index}`} className="text-sm text-gray-700 cursor-pointer">
+                          I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
+                        </label>
+                      </div>
+                    )}
+                    <div>
+                      <label className="label" htmlFor={`vfx_out_${index}`}>What did the AI generate?</label>
+                      <select id={`vfx_out_${index}`} className="select" value={entry.vfx_output_type} onChange={(e) => updateEntry(index, { vfx_output_type: e.target.value })}>
+                        <option value="">Select output type…</option>
+                        {VFX_OUTPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sound Post specific */}
+                {form.department === 'Sound Post' && (
+                  <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Sound Post — Tool Compliance</p>
+                    <div>
+                      <label className="label" htmlFor={`snd_loc_${index}`}>Where was audio processed?</label>
+                      <select id={`snd_loc_${index}`} className="select" value={entry.sound_processing_location} onChange={(e) => updateEntry(index, { sound_processing_location: e.target.value })}>
+                        <option value="">Select location…</option>
+                        {SOUND_PROCESSING_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`snd_type_${index}`}>Type of processing</label>
+                      <select id={`snd_type_${index}`} className="select" value={entry.sound_processing_type} onChange={(e) => updateEntry(index, { sound_processing_type: e.target.value })}>
+                        <option value="">Select type…</option>
+                        {SOUND_PROCESSING_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`snd_perf_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.sound_performer_audio} onChange={(e) => updateEntry(index, { sound_performer_audio: e.target.checked })} />
+                      <label htmlFor={`snd_perf_${index}`} className="text-sm text-gray-700 cursor-pointer">This audio contains identifiable performer dialogue</label>
+                    </div>
+                    {entry.sound_performer_audio && entry.sound_processing_location !== '' && entry.sound_processing_location !== 'Local software — not uploaded' && (
+                      <div className="rounded border border-red-300 bg-red-50 px-4 py-3">
+                        <p className="text-sm font-semibold text-red-700 mb-1">Cloud processing — consent check required</p>
+                        <p className="text-xs text-red-600">This audio has been cloud-processed. Verify this is within scope of performer consent and your production data security policy.</p>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-3">
+                      <input id={`snd_train_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.sound_no_training_confirmed} onChange={(e) => updateEntry(index, { sound_no_training_confirmed: e.target.checked })} />
+                      <label htmlFor={`snd_train_${index}`} className="text-sm text-gray-700 cursor-pointer">I confirm this tool does not use submitted audio for model training, or I have written vendor confirmation that it does not</label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Colour/DI specific */}
+                {form.department === 'Colour / DI' && (
+                  <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Colour / DI — Tool Compliance</p>
+                    <div>
+                      <label className="label" htmlFor={`col_sys_${index}`}>Grading system</label>
+                      <select id={`col_sys_${index}`} className="select" value={entry.colour_grading_system} onChange={(e) => updateEntry(index, { colour_grading_system: e.target.value })}>
+                        <option value="">Select grading system…</option>
+                        {COLOUR_GRADING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`col_ai_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.colour_ai_grading} onChange={(e) => updateEntry(index, { colour_ai_grading: e.target.checked })} />
+                      <label htmlFor={`col_ai_${index}`} className="text-sm text-gray-700 cursor-pointer">AI-assisted grading tools used</label>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`col_perf_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.colour_performer_footage} onChange={(e) => updateEntry(index, { colour_performer_footage: e.target.checked, colour_lct_confirmed: false })} />
+                      <label htmlFor={`col_perf_${index}`} className="text-sm text-gray-700 cursor-pointer">This grade was applied to footage containing performers</label>
+                    </div>
+                    {entry.colour_performer_footage && (
+                      <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                        <input id={`col_lct_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.colour_lct_confirmed} onChange={(e) => updateEntry(index, { colour_lct_confirmed: e.target.checked })} />
+                        <label htmlFor={`col_lct_${index}`} className="text-sm text-gray-700 cursor-pointer">I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt</label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Editorial specific */}
+                {form.department === 'Editorial' && (
+                  <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Editorial — Tool Compliance</p>
+                    <div>
+                      <label className="label" htmlFor={`ed_sys_${index}`}>Editing system</label>
+                      <select id={`ed_sys_${index}`} className="select" value={entry.editorial_editing_system} onChange={(e) => updateEntry(index, { editorial_editing_system: e.target.value })}>
+                        <option value="">Select editing system…</option>
+                        {EDITORIAL_EDITING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`ed_tool_${index}`}>Type of AI editing tool used</label>
+                      <select id={`ed_tool_${index}`} className="select" value={entry.editorial_ai_tool_type} onChange={(e) => updateEntry(index, { editorial_ai_tool_type: e.target.value })}>
+                        <option value="">Select tool type…</option>
+                        {EDITORIAL_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`ed_perf_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.editorial_performer_footage} onChange={(e) => updateEntry(index, { editorial_performer_footage: e.target.checked, editorial_lct_confirmed: false })} />
+                      <label htmlFor={`ed_perf_${index}`} className="text-sm text-gray-700 cursor-pointer">AI tool applied to footage containing performers</label>
+                    </div>
+                    {entry.editorial_performer_footage && (
+                      <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                        <input id={`ed_lct_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.editorial_lct_confirmed} onChange={(e) => updateEntry(index, { editorial_lct_confirmed: e.target.checked })} />
+                        <label htmlFor={`ed_lct_${index}`} className="text-sm text-gray-700 cursor-pointer">I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt</label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Delivery/QC specific */}
+                {form.department === 'Delivery / QC' && (
+                  <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery / QC — Tool Compliance</p>
+                    <div>
+                      <label className="label" htmlFor={`del_tool_${index}`}>Type of AI tool used at delivery</label>
+                      <select id={`del_tool_${index}`} className="select" value={entry.delivery_ai_tool_type} onChange={(e) => updateEntry(index, { delivery_ai_tool_type: e.target.value })}>
+                        <option value="">Select tool type…</option>
+                        {DELIVERY_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`del_fmt_${index}`}>Delivery format</label>
+                      <select id={`del_fmt_${index}`} className="select" value={entry.delivery_format} onChange={(e) => updateEntry(index, { delivery_format: e.target.value })}>
+                        <option value="">Select format…</option>
+                        {DELIVERY_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <input id={`del_train_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.delivery_no_training_confirmed} onChange={(e) => updateEntry(index, { delivery_no_training_confirmed: e.target.checked })} />
+                      <label htmlFor={`del_train_${index}`} className="text-sm text-gray-700 cursor-pointer">I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not</label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Add another tool button */}
+          {toolEntries.length < 10 ? (
+            <button
+              type="button"
+              onClick={addEntry}
+              className="mt-6 w-full py-3 rounded border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-trace-moss hover:text-trace-moss transition-colors"
+            >
+              + Add another tool to this session
+            </button>
+          ) : (
+            <p className="mt-4 text-xs text-gray-400 text-center">Maximum of 10 tools per session reached.</p>
+          )}
+        </section>
+      ) : (
+        /* Single tool — non-post-prod */
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">AI Tool</h2>
+
+          <div className="mb-4" ref={toolRef}>
+            <label className="label" htmlFor="ai_tool_used">Tool Name</label>
+            <p className="text-xs text-gray-400 mb-1.5">Start typing to search the production whitelist. Status is set automatically.</p>
+            <div className="relative">
+              <input
+                id="ai_tool_used"
+                className="input"
+                required
+                autoComplete="off"
+                placeholder="e.g. Adobe Firefly, Runway Gen-3, Eleven Labs…"
+                value={toolQuery}
+                onChange={(e) => handleToolInput(e.target.value)}
+                onFocus={() => toolQuery.length >= 1 && setShowSuggestions(suggestions.length > 0)}
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                  {suggestions.map((entry) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-trace-pale text-left transition-colors"
+                        onMouseDown={(e) => { e.preventDefault(); selectEntry(entry) }}
+                      >
+                        <span className="text-sm font-medium text-gray-800">{entry.displayName}</span>
+                        <span className={`status-badge ml-3 flex-shrink-0 ${
+                          entry.status === 'GREEN' ? 'status-green' :
+                          entry.status === 'AMBER' ? 'status-amber' : 'status-red'
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {toolQuery.trim().length >= 3 && !selectedEntry && suggestions.length === 0 && (
+              <p className="text-xs text-red-600 mt-2 font-medium">
+                Tool not found on production whitelist — refer to OAS before proceeding.
+              </p>
             )}
           </div>
 
-          {toolQuery.trim().length >= 3 && !selectedEntry && suggestions.length === 0 && (
-            <p className="text-xs text-red-600 mt-2 font-medium">
-              Tool not found on production whitelist — refer to OAS before proceeding.
-            </p>
-          )}
-        </div>
-
-        <div>
-          <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
-          {derivedStatus ? (
-            <StatusBadge
-              status={derivedStatus}
-              condition={selectedEntry?.condition}
-              requiresLCT={selectedEntry?.requiresLCT}
-            />
-          ) : (
-            <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
-              Enter a tool name above to check whitelist status.
-            </div>
-          )}
-        </div>
-
-        {isPostProd && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4" style={{ borderTop: '1px solid #E5E7EB' }}>
-            <div>
-              <label className="label" htmlFor="input_file_version">
-                Input file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
-              </label>
-              <p className="text-xs text-gray-400 mb-1.5">The version of the file submitted to the AI tool — e.g. v003, VFX_0023_comp_v012.</p>
-              <input
-                id="input_file_version"
-                className="input"
-                placeholder="e.g. v003, VFX_0023_comp_v012"
-                value={form.input_file_version}
-                onChange={(e) => set('input_file_version', e.target.value)}
+          <div>
+            <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
+            {derivedStatus ? (
+              <StatusBadge
+                status={derivedStatus}
+                condition={selectedEntry?.condition}
+                requiresLCT={selectedEntry?.requiresLCT}
               />
-            </div>
-            <div>
-              <label className="label" htmlFor="output_file_version">
-                Output file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
-              </label>
-              <p className="text-xs text-gray-400 mb-1.5">The version produced after AI processing — e.g. v004, VFX_0023_comp_v013.</p>
-              <input
-                id="output_file_version"
-                className="input"
-                placeholder="e.g. v004, VFX_0023_comp_v013"
-                value={form.output_file_version}
-                onChange={(e) => set('output_file_version', e.target.value)}
-              />
-            </div>
+            ) : (
+              <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
+                Enter a tool name above to check whitelist status.
+              </div>
+            )}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* TRACE Four-Point Log */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
@@ -821,18 +1322,16 @@ export default function ReceiptForm() {
       </section>
 
       {/* AUTH */}
-      <section className={`bg-white rounded-lg p-6 ${
-        authBlocked && derivedStatus !== ''
-          ? 'border-2 border-red-400'
-          : 'border border-gray-200'
-      }`}>
+      <section className={`bg-white rounded-lg p-6 ${effectiveAuthBlockedForDisplay ? 'border-2 border-red-400' : 'border border-gray-200'}`}>
         <h2 className="section-heading">AUTH — Authorial Control</h2>
 
-        {authBlocked && derivedStatus !== '' ? (
+        {effectiveAuthBlockedForDisplay ? (
           <div className="rounded bg-red-50 border border-red-300 px-4 py-3">
             <p className="text-sm font-semibold text-red-700 mb-1">Cannot proceed.</p>
             <p className="text-xs text-red-600">
-              This tool has not been approved for production use. Contact the OAS before proceeding.
+              {isPostProd
+                ? 'One or more tools have not been approved for production use. Resolve all tool statuses before proceeding.'
+                : 'This tool has not been approved for production use. Contact the OAS before proceeding.'}
             </p>
           </div>
         ) : isWritingDev ? (
@@ -852,58 +1351,10 @@ export default function ReceiptForm() {
         )}
       </section>
 
-      {/* VFX */}
-      {form.department === 'VFX' && (
+      {/* Sound — non-post-prod Sound only */}
+      {form.department === 'Sound' && (
         <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">VFX — Additional Compliance</h2>
-          <div className="space-y-5">
-            <div>
-              <label className="label" htmlFor="vfx_software">Software and version used</label>
-              <input id="vfx_software" className="input" required placeholder="e.g. Nuke 14.0, Runway Gen-3, Topaz Video AI 4.2" value={form.vfx_software} onChange={(e) => set('vfx_software', e.target.value)} />
-            </div>
-            <div>
-              <label className="label" htmlFor="vfx_data_location">Where was data processed?</label>
-              <select id="vfx_data_location" className="select" required value={form.vfx_data_location} onChange={(e) => set('vfx_data_location', e.target.value)}>
-                <option value="">Select location…</option>
-                {VFX_DATA_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </div>
-            <div className="flex items-start gap-3">
-              <input id="vfx_no_training_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.vfx_no_training_confirmed} onChange={(e) => set('vfx_no_training_confirmed', e.target.checked)} />
-              <label htmlFor="vfx_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
-                I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
-              </label>
-            </div>
-            <div>
-              <label className="label" htmlFor="vfx_input_type">What was submitted to the AI tool?</label>
-              <select id="vfx_input_type" className="select" required value={form.vfx_input_type} onChange={(e) => set('vfx_input_type', e.target.value)}>
-                <option value="">Select input type…</option>
-                {VFX_INPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            {form.vfx_input_type === 'Plate footage containing performers' && (
-              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
-                <input id="vfx_lct_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.vfx_lct_confirmed} onChange={(e) => set('vfx_lct_confirmed', e.target.checked)} />
-                <label htmlFor="vfx_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
-                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
-                </label>
-              </div>
-            )}
-            <div>
-              <label className="label" htmlFor="vfx_output_type">What did the AI generate?</label>
-              <select id="vfx_output_type" className="select" required value={form.vfx_output_type} onChange={(e) => set('vfx_output_type', e.target.value)}>
-                <option value="">Select output type…</option>
-                {VFX_OUTPUT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Sound / Sound Post */}
-      {(form.department === 'Sound' || form.department === 'Sound Post') && (
-        <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">{form.department} — Additional Compliance</h2>
+          <h2 className="section-heading">Sound — Additional Compliance</h2>
           <div className="space-y-5">
             <div>
               <label className="label" htmlFor="sound_processing_location">Where was audio processed?</label>
@@ -1055,102 +1506,6 @@ export default function ReceiptForm() {
         </section>
       )}
 
-      {/* Colour / DI */}
-      {form.department === 'Colour / DI' && (
-        <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">Colour / DI — Additional Compliance</h2>
-          <div className="space-y-5">
-            <div>
-              <label className="label" htmlFor="colour_grading_system">Grading system</label>
-              <select id="colour_grading_system" className="select" required value={form.colour_grading_system} onChange={(e) => set('colour_grading_system', e.target.value)}>
-                <option value="">Select grading system…</option>
-                {COLOUR_GRADING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div className="flex items-start gap-3">
-              <input id="colour_ai_grading" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_ai_grading} onChange={(e) => set('colour_ai_grading', e.target.checked)} />
-              <label htmlFor="colour_ai_grading" className="text-sm text-gray-700 cursor-pointer">AI-assisted grading tools used</label>
-            </div>
-            <div className="flex items-start gap-3">
-              <input id="colour_performer_footage" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_performer_footage} onChange={(e) => set('colour_performer_footage', e.target.checked)} />
-              <label htmlFor="colour_performer_footage" className="text-sm text-gray-700 cursor-pointer">This grade was applied to footage containing performers</label>
-            </div>
-            {form.colour_performer_footage && (
-              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
-                <input id="colour_lct_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.colour_lct_confirmed} onChange={(e) => set('colour_lct_confirmed', e.target.checked)} />
-                <label htmlFor="colour_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
-                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
-                </label>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Editorial */}
-      {form.department === 'Editorial' && (
-        <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">Editorial — Additional Compliance</h2>
-          <div className="space-y-5">
-            <div>
-              <label className="label" htmlFor="editorial_editing_system">Editing system</label>
-              <select id="editorial_editing_system" className="select" required value={form.editorial_editing_system} onChange={(e) => set('editorial_editing_system', e.target.value)}>
-                <option value="">Select editing system…</option>
-                {EDITORIAL_EDITING_SYSTEMS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="editorial_ai_tool_type">Type of AI editing tool used</label>
-              <select id="editorial_ai_tool_type" className="select" required value={form.editorial_ai_tool_type} onChange={(e) => set('editorial_ai_tool_type', e.target.value)}>
-                <option value="">Select tool type…</option>
-                {EDITORIAL_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="flex items-start gap-3">
-              <input id="editorial_performer_footage" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.editorial_performer_footage} onChange={(e) => set('editorial_performer_footage', e.target.checked)} />
-              <label htmlFor="editorial_performer_footage" className="text-sm text-gray-700 cursor-pointer">AI tool applied to footage containing performers</label>
-            </div>
-            {form.editorial_performer_footage && (
-              <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
-                <input id="editorial_lct_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.editorial_lct_confirmed} onChange={(e) => set('editorial_lct_confirmed', e.target.checked)} />
-                <label htmlFor="editorial_lct_confirmed" className="text-sm text-gray-700 cursor-pointer">
-                  I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
-                </label>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Delivery / QC */}
-      {form.department === 'Delivery / QC' && (
-        <section className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="section-heading">Delivery / QC — Additional Compliance</h2>
-          <div className="space-y-5">
-            <div>
-              <label className="label" htmlFor="delivery_ai_tool_type">Type of AI tool used at delivery</label>
-              <select id="delivery_ai_tool_type" className="select" required value={form.delivery_ai_tool_type} onChange={(e) => set('delivery_ai_tool_type', e.target.value)}>
-                <option value="">Select tool type…</option>
-                {DELIVERY_AI_TOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="delivery_format">Delivery format</label>
-              <select id="delivery_format" className="select" required value={form.delivery_format} onChange={(e) => set('delivery_format', e.target.value)}>
-                <option value="">Select format…</option>
-                {DELIVERY_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </div>
-            <div className="flex items-start gap-3">
-              <input id="delivery_no_training_confirmed" type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={form.delivery_no_training_confirmed} onChange={(e) => set('delivery_no_training_confirmed', e.target.checked)} />
-              <label htmlFor="delivery_no_training_confirmed" className="text-sm text-gray-700 cursor-pointer">
-                I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
-              </label>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* LCT */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="section-heading">Likeness &amp; Voice (LCT)</h2>
@@ -1231,7 +1586,7 @@ export default function ReceiptForm() {
         </p>
         <button
           type="submit"
-          disabled={submitting || (authBlocked && derivedStatus !== '')}
+          disabled={submitting || effectiveAuthBlockedForDisplay}
           className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting

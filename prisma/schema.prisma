@@ -77,6 +77,8 @@ model Receipt {
   facility_ai_policy_confirmed Boolean @default(false)
   input_file_version          String?
   output_file_version         String?
+  is_session                  Boolean @default(false)
+  session_tool_entries        Json?
 }
 
 model WhitelistEntry {

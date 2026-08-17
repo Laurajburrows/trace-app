@@ -1182,7 +1182,12 @@ export default function ComplianceReport() {
                               backgroundColor: !r.facility_ai_policy_confirmed ? 'rgba(200,168,75,0.05)' : 'transparent',
                             }}
                           >
-                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.department}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>
+                              {r.department}
+                              {r.is_session && (
+                                <span className="ml-1.5 font-courier text-[9px] uppercase tracking-wide rounded-full px-1.5 py-0.5" style={{ background: 'rgba(45,106,79,0.3)', color: '#8BB5A0' }}>session</span>
+                              )}
+                            </td>
                             <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
                             <td className="px-3 py-2 text-xs" style={{ color: r.facility_name ? '#D4EDE1' : '#5A8A72' }}>
                               {r.facility_name || 'In-house / remote'}

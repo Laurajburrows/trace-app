@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
-import type { Receipt, Department, ToolStatus } from '@/lib/types'
+import type { Receipt, Department, ToolStatus, SessionToolEntry } from '@/lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
@@ -240,7 +240,16 @@ export default function ReceiptLog() {
                         <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>{r.crew_role}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: '#D4EDE1' }}>
+                        {r.is_session && Array.isArray(r.session_tool_entries) && (r.session_tool_entries as SessionToolEntry[]).length > 1 ? (
+                          <span className="flex items-center gap-2">
+                            <span>{r.ai_tool_used}</span>
+                            <span className="font-courier text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5" style={{ background: 'rgba(45,106,79,0.3)', color: '#8BB5A0' }}>
+                              +{(r.session_tool_entries as SessionToolEntry[]).length - 1}
+                            </span>
+                          </span>
+                        ) : r.ai_tool_used}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
                           {r.tool_status}
@@ -361,6 +370,38 @@ export default function ReceiptLog() {
                               )}
                             </div>
                           </div>
+                          {r.is_session && Array.isArray(r.session_tool_entries) && (r.session_tool_entries as SessionToolEntry[]).length > 1 && (
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                              <p className="label mb-3">Session Tool Log — {(r.session_tool_entries as SessionToolEntry[]).length} tools</p>
+                              <div className="space-y-3">
+                                {(r.session_tool_entries as SessionToolEntry[]).map((entry, i) => (
+                                  <div key={i} className="rounded px-4 py-3" style={{ background: '#0F2419', border: '1px solid rgba(45,106,79,0.4)' }}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Tool {i + 1}</p>
+                                      <span className={`status-badge ${STATUS_COLORS[entry.tool_status] || 'status-red'}`}>{entry.tool_status}</span>
+                                    </div>
+                                    <p className="text-sm font-medium mb-2" style={{ color: '#F0EBE0' }}>{entry.ai_tool_used}</p>
+                                    {(entry.input_file_version || entry.output_file_version) && (
+                                      <div className="flex gap-6 mt-1">
+                                        {entry.input_file_version && (
+                                          <div>
+                                            <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Input version</p>
+                                            <p className="font-courier text-xs mt-0.5" style={{ color: '#8BB5A0' }}>{entry.input_file_version}</p>
+                                          </div>
+                                        )}
+                                        {entry.output_file_version && (
+                                          <div>
+                                            <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Output version</p>
+                                            <p className="font-courier text-xs mt-0.5" style={{ color: '#8BB5A0' }}>{entry.output_file_version}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           {r.department === 'VFX' && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">VFX — Additional Compliance</p>

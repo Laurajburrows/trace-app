@@ -343,6 +343,37 @@ export interface Receipt {
   facility_ai_policy_confirmed?: boolean
   input_file_version?: string | null
   output_file_version?: string | null
+  is_session?: boolean
+  session_tool_entries?: SessionToolEntry[] | null
+}
+
+export interface SessionToolEntry {
+  ai_tool_used: string
+  tool_status: string
+  whitelist_condition?: string | null
+  input_file_version?: string | null
+  output_file_version?: string | null
+  vfx_software?: string | null
+  vfx_data_location?: string | null
+  vfx_no_training_confirmed?: boolean
+  vfx_input_type?: string | null
+  vfx_output_type?: string | null
+  vfx_lct_confirmed?: boolean
+  colour_grading_system?: string | null
+  colour_ai_grading?: boolean
+  colour_performer_footage?: boolean
+  colour_lct_confirmed?: boolean
+  editorial_editing_system?: string | null
+  editorial_ai_tool_type?: string | null
+  editorial_performer_footage?: boolean
+  editorial_lct_confirmed?: boolean
+  sound_processing_location?: string | null
+  sound_processing_type?: string | null
+  sound_performer_audio?: boolean
+  sound_no_training_confirmed?: boolean
+  delivery_ai_tool_type?: string | null
+  delivery_format?: string | null
+  delivery_no_training_confirmed?: boolean
 }
 
 export interface ReportData {

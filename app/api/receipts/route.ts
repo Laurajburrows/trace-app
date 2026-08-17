@@ -139,6 +139,8 @@ export async function POST(req: NextRequest) {
       facility_ai_policy_confirmed: Boolean(body.facility_ai_policy_confirmed),
       input_file_version: body.input_file_version || null,
       output_file_version: body.output_file_version || null,
+      is_session: Boolean(body.is_session),
+      session_tool_entries: body.session_tool_entries ?? null,
     },
   })
 
