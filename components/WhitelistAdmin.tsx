@@ -13,6 +13,7 @@ const STATUS_LABEL: Record<Status, string> = {
 
 const emptyForm = {
   displayName: '',
+  department: 'General',
   status: 'GREEN' as Status,
   condition: '',
   requiresLCT: false,
@@ -30,6 +31,7 @@ function EntryRow({
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     displayName: entry.displayName,
+    department: entry.department || 'General',
     status: entry.status as Status,
     condition: entry.condition || '',
     requiresLCT: entry.requiresLCT,
@@ -48,15 +50,24 @@ function EntryRow({
 
   if (editing) {
     return (
-      <tr className="border-t border-gray-100 bg-trace-pale/30">
-        <td className="px-3 py-3" colSpan={5}>
+      <tr style={{ borderTop: '1px solid rgba(45,106,79,0.4)', backgroundColor: '#122E1F' }}>
+        <td className="px-3 py-3" colSpan={6}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="label text-xs">Display Name</label>
+              <label className="label text-xs">Tool Name</label>
               <input
                 className="input text-sm"
                 value={form.displayName}
                 onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="label text-xs">Department</label>
+              <input
+                className="input text-sm"
+                placeholder="e.g. VFX, Writing, Sound Post"
+                value={form.department}
+                onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
               />
             </div>
             <div>
@@ -72,10 +83,10 @@ function EntryRow({
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="label text-xs">Condition <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+              <label className="label text-xs">Rationale / Condition <span className="normal-case font-normal" style={{ color: '#5A8A72' }}>(shown to crew when tool is selected)</span></label>
               <input
                 className="input text-sm"
-                placeholder="e.g. LCT required. Voice synthesis consent must be verified before use."
+                placeholder="e.g. Local deployment only. No cloud upload of production data."
                 value={form.condition}
                 onChange={(e) => setForm((f) => ({ ...f, condition: e.target.value }))}
               />
@@ -84,11 +95,12 @@ function EntryRow({
               <input
                 type="checkbox"
                 id={`lct-${entry.id}`}
-                className="h-4 w-4 rounded border-gray-300 text-trace-moss"
+                className="h-4 w-4 rounded"
+                style={{ accentColor: '#C8A84B' }}
                 checked={form.requiresLCT}
                 onChange={(e) => setForm((f) => ({ ...f, requiresLCT: e.target.checked }))}
               />
-              <label htmlFor={`lct-${entry.id}`} className="text-sm text-gray-700 cursor-pointer">
+              <label htmlFor={`lct-${entry.id}`} className="text-sm cursor-pointer" style={{ color: '#D4EDE1' }}>
                 Requires LCT token
               </label>
             </div>
@@ -107,38 +119,45 @@ function EntryRow({
   }
 
   return (
-    <tr className="border-t border-gray-100 hover:bg-gray-50">
-      <td className="px-3 py-2.5 text-sm font-medium text-gray-800">{entry.displayName}</td>
+    <tr
+      style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(45,106,79,0.1)')}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+    >
+      <td className="px-3 py-2.5 text-sm font-medium" style={{ color: '#F0EBE0' }}>{entry.displayName}</td>
+      <td className="px-3 py-2.5 font-courier text-xs" style={{ color: '#8BB5A0' }}>{entry.department || '—'}</td>
       <td className="px-3 py-2.5">
         <span className={`status-badge ${STATUS_LABEL[entry.status as Status] || 'status-red'}`}>
           {entry.status}
         </span>
       </td>
-      <td className="px-3 py-2.5 text-xs text-gray-500 max-w-xs">
+      <td className="px-3 py-2.5 text-xs max-w-xs" style={{ color: '#8BB5A0' }}>
         {entry.condition ? (
           <span className="italic">{entry.condition}</span>
         ) : (
-          <span className="text-gray-300">—</span>
+          <span style={{ color: '#2D6A4F' }}>—</span>
         )}
       </td>
       <td className="px-3 py-2.5 text-center">
         {entry.requiresLCT ? (
-          <span className="text-status-amber text-xs font-semibold">⚠ LCT</span>
+          <span className="font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>⚠ LCT</span>
         ) : (
-          <span className="text-gray-300 text-xs">—</span>
+          <span className="text-xs" style={{ color: '#2D6A4F' }}>—</span>
         )}
       </td>
       <td className="px-3 py-2.5">
         <div className="flex gap-2 justify-end">
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-trace-moss hover:underline"
+            className="font-courier text-xs hover:underline"
+            style={{ color: '#C8A84B' }}
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(entry.id)}
-            className="text-xs text-red-500 hover:underline"
+            className="font-courier text-xs hover:underline"
+            style={{ color: '#f87171' }}
           >
             Remove
           </button>
@@ -156,6 +175,7 @@ export default function WhitelistAdmin() {
   const [saving, setSaving] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
+  const [filterDept, setFilterDept] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
@@ -177,6 +197,7 @@ export default function WhitelistAdmin() {
       body: JSON.stringify({
         toolName: newForm.displayName,
         displayName: newForm.displayName,
+        department: newForm.department,
         status: newForm.status,
         condition: newForm.condition || null,
         requiresLCT: newForm.requiresLCT,
@@ -204,7 +225,7 @@ export default function WhitelistAdmin() {
   }
 
   async function handleSeedDefaults() {
-    if (!confirm('This will replace the entire whitelist with the default entries. Continue?')) return
+    if (!confirm('This will replace the entire whitelist with the TRACE default entries. Continue?')) return
     setSeeding(true)
     await fetch('/api/whitelist', {
       method: 'POST',
@@ -253,21 +274,35 @@ export default function WhitelistAdmin() {
     reader.readAsText(file)
   }
 
+  // Group entries by department
+  const departments = Array.from(new Set(entries.map((e) => e.department || 'General'))).sort()
+  const filtered = filterDept
+    ? entries.filter((e) => (e.department || 'General') === filterDept)
+    : entries
+
+  // Group filtered entries by department
+  const grouped: Record<string, WhitelistEntry[]> = {}
+  filtered.forEach((e) => {
+    const dept = e.department || 'General'
+    if (!grouped[dept]) grouped[dept] = []
+    grouped[dept].push(e)
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-trace-forest text-white rounded-lg px-6 py-5">
-        <p className="text-xs font-bold uppercase tracking-widest text-trace-pale mb-1">
+      <div className="rounded-lg px-6 py-5" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', borderLeft: '3px solid #C8A84B' }}>
+        <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#8BB5A0' }}>
           OAS / Production Admin
         </p>
-        <h1 className="text-xl font-bold">Whitelist Management</h1>
-        <p className="text-sm text-trace-pale mt-2">
-          Changes to the whitelist take effect immediately for all users on this production.
+        <h1 className="font-garamond text-2xl" style={{ color: '#F0EBE0' }}>Whitelist Management</h1>
+        <p className="font-courier text-xs mt-2" style={{ color: '#8BB5A0' }}>
+          Changes take effect immediately for all users. Tools not on the whitelist default to UNVERIFIED — OAS assessment required before use.
         </p>
       </div>
 
       {/* Actions bar */}
-      <div className="bg-white border border-gray-200 rounded-lg px-6 py-4">
+      <div className="rounded-lg px-6 py-4" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         <div className="flex flex-wrap items-center gap-3">
           <button onClick={() => setAdding(true)} className="btn-primary text-sm">
             + Add Tool
@@ -283,23 +318,32 @@ export default function WhitelistAdmin() {
             {seeding ? 'Seeding…' : 'Load TRACE Defaults'}
           </button>
         </div>
-        {importError && <p className="text-xs text-red-600 mt-2">{importError}</p>}
+        {importError && <p className="font-courier text-xs mt-2" style={{ color: '#f87171' }}>{importError}</p>}
       </div>
 
       {/* Add form */}
       {adding && (
-        <div className="bg-white border border-trace-pale-dark rounded-lg p-6">
+        <div className="rounded-lg p-6" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
           <h3 className="section-heading">Add Tool to Whitelist</h3>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="label">Tool Display Name</label>
+                <label className="label">Tool Name</label>
                 <input
                   className="input"
                   required
                   placeholder="e.g. Adobe Firefly"
                   value={newForm.displayName}
                   onChange={(e) => setNewForm((f) => ({ ...f, displayName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">Department</label>
+                <input
+                  className="input"
+                  placeholder="e.g. VFX, Writing, Sound Post"
+                  value={newForm.department}
+                  onChange={(e) => setNewForm((f) => ({ ...f, department: e.target.value }))}
                 />
               </div>
               <div>
@@ -315,7 +359,7 @@ export default function WhitelistAdmin() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="label">Condition <span className="normal-case font-normal text-gray-400">(optional — shown for AMBER tools)</span></label>
+                <label className="label">Rationale / Condition <span className="normal-case font-normal" style={{ color: '#5A8A72' }}>(shown to crew when tool is selected)</span></label>
                 <input
                   className="input"
                   placeholder="e.g. Local deployment only. No cloud upload of production data."
@@ -327,11 +371,12 @@ export default function WhitelistAdmin() {
                 <input
                   type="checkbox"
                   id="new-lct"
-                  className="h-4 w-4 rounded border-gray-300 text-trace-moss"
+                  className="h-4 w-4 rounded"
+                  style={{ accentColor: '#C8A84B' }}
                   checked={newForm.requiresLCT}
                   onChange={(e) => setNewForm((f) => ({ ...f, requiresLCT: e.target.checked }))}
                 />
-                <label htmlFor="new-lct" className="text-sm text-gray-700 cursor-pointer">
+                <label htmlFor="new-lct" className="text-sm cursor-pointer" style={{ color: '#D4EDE1' }}>
                   Requires LCT token
                 </label>
               </div>
@@ -348,50 +393,73 @@ export default function WhitelistAdmin() {
         </div>
       )}
 
-      {/* Whitelist table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="bg-trace-pale px-6 py-3 border-b border-trace-pale-dark flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-trace-forest">
-            Production Whitelist
-          </h3>
-          <span className="text-xs text-trace-moss font-medium">{entries.length} tools</span>
+      {/* Filter + count */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="font-courier text-xs uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Filter by dept</label>
+          <select
+            className="select text-sm py-1"
+            value={filterDept}
+            onChange={(e) => setFilterDept(e.target.value)}
+          >
+            <option value="">All departments</option>
+            {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
         </div>
-        {loading ? (
-          <div className="px-6 py-8 text-sm text-gray-400">Loading…</div>
-        ) : entries.length === 0 ? (
-          <div className="px-6 py-8 text-sm text-gray-400">
-            No tools on the whitelist yet.{' '}
-            <button onClick={handleSeedDefaults} className="text-trace-moss hover:underline">
-              Load TRACE defaults
-            </button>{' '}
-            to get started.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Tool</th>
-                  <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Status</th>
-                  <th className="text-left px-3 py-2 text-xs font-bold uppercase text-trace-moss">Condition</th>
-                  <th className="text-center px-3 py-2 text-xs font-bold uppercase text-trace-moss">LCT</th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <EntryRow
-                    key={entry.id}
-                    entry={entry}
-                    onUpdate={handleUpdate}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <span className="font-courier text-xs ml-auto" style={{ color: '#C8A84B' }}>
+          {filtered.length} / {entries.length} tools
+        </span>
       </div>
+
+      {/* Whitelist table — grouped by department */}
+      {loading ? (
+        <div className="rounded-lg px-6 py-8 font-courier text-sm" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', color: '#5A8A72' }}>Loading…</div>
+      ) : entries.length === 0 ? (
+        <div className="rounded-lg px-6 py-8 font-courier text-sm" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', color: '#5A8A72' }}>
+          No tools on the whitelist yet.{' '}
+          <button onClick={handleSeedDefaults} className="hover:underline" style={{ color: '#C8A84B' }}>
+            Load TRACE defaults
+          </button>{' '}
+          to get started.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([dept, deptEntries]) => (
+            <div key={dept} className="rounded-lg overflow-hidden" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
+              <div className="px-6 py-3 flex items-center justify-between" style={{ backgroundColor: '#122E1F', borderBottom: '1px solid #2D6A4F' }}>
+                <h3 className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>
+                  {dept}
+                </h3>
+                <span className="font-courier text-xs" style={{ color: '#C8A84B' }}>{deptEntries.length} tool{deptEntries.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: '#122E1F', borderBottom: '1px solid rgba(45,106,79,0.4)' }}>
+                      <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool</th>
+                      <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Dept</th>
+                      <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Status</th>
+                      <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Rationale / Condition</th>
+                      <th className="text-center px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>LCT</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deptEntries.map((entry) => (
+                      <EntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onUpdate={handleUpdate}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

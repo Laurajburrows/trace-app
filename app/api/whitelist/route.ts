@@ -6,7 +6,7 @@ import { DEFAULT_WHITELIST } from '@/lib/whitelist-defaults'
 
 export async function GET() {
   const entries = await prisma.whitelistEntry.findMany({
-    orderBy: { displayName: 'asc' },
+    orderBy: [{ department: 'asc' }, { displayName: 'asc' }],
   })
   return NextResponse.json(entries)
 }
@@ -18,9 +18,10 @@ export async function POST(req: NextRequest) {
   if (body.import && Array.isArray(body.entries)) {
     await prisma.whitelistEntry.deleteMany()
     const created = await prisma.whitelistEntry.createMany({
-      data: body.entries.map((e: { toolName: string; displayName: string; status: string; condition?: string | null; requiresLCT?: boolean }) => ({
+      data: body.entries.map((e: { toolName: string; displayName: string; department?: string; status: string; condition?: string | null; requiresLCT?: boolean }) => ({
         toolName: e.toolName.toLowerCase().trim(),
         displayName: e.displayName,
+        department: e.department || 'General',
         status: e.status,
         condition: e.condition || null,
         requiresLCT: Boolean(e.requiresLCT),
@@ -36,12 +37,13 @@ export async function POST(req: NextRequest) {
       data: DEFAULT_WHITELIST.map((e) => ({
         toolName: e.toolName,
         displayName: e.displayName,
+        department: e.department,
         status: e.status,
         condition: e.condition,
         requiresLCT: e.requiresLCT,
       })),
     })
-    const entries = await prisma.whitelistEntry.findMany({ orderBy: { displayName: 'asc' } })
+    const entries = await prisma.whitelistEntry.findMany({ orderBy: [{ department: 'asc' }, { displayName: 'asc' }] })
     return NextResponse.json(entries)
   }
 
@@ -50,6 +52,7 @@ export async function POST(req: NextRequest) {
     data: {
       toolName: body.toolName.toLowerCase().trim(),
       displayName: body.displayName,
+      department: body.department || 'General',
       status: body.status,
       condition: body.condition || null,
       requiresLCT: Boolean(body.requiresLCT),

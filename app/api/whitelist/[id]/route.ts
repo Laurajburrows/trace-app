@@ -10,6 +10,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     data: {
       toolName: body.toolName.toLowerCase().trim(),
       displayName: body.displayName,
+      department: body.department || 'General',
       status: body.status,
       condition: body.condition || null,
       requiresLCT: Boolean(body.requiresLCT),

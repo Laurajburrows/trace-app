@@ -266,6 +266,7 @@ export interface WhitelistEntry {
   id: string
   toolName: string
   displayName: string
+  department: string
   status: 'GREEN' | 'AMBER' | 'RED'
   condition?: string | null
   requiresLCT: boolean

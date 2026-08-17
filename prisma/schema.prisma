@@ -85,6 +85,7 @@ model WhitelistEntry {
   id          String   @id @default(uuid())
   toolName    String   @unique
   displayName String
+  department  String   @default("General")
   status      String
   condition   String?
   requiresLCT Boolean  @default(false)
