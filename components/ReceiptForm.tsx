@@ -1247,16 +1247,34 @@ export default function ReceiptForm() {
       {/* TRACE Four-Point Log */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="section-heading">TRACE Four-Point Log</h2>
+
+        {/* Sequence indicator */}
+        <div className="flex items-center gap-1.5 mb-5 flex-wrap">
+          {['POR', 'SEL', 'ADJ', 'AUTH'].map((step, i) => (
+            <div key={step} className="flex items-center gap-1.5">
+              {i > 0 && (
+                <span className="text-xs text-gray-300 select-none">›</span>
+              )}
+              <span
+                className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+                style={{ color: '#2D6A4F', backgroundColor: '#F0FAF4', border: '1px solid #D4EDE1' }}
+              >
+                {step}
+              </span>
+            </div>
+          ))}
+        </div>
+
         <div className="space-y-5">
           <div>
-            <label className="label" htmlFor="por_description">POR — Point of Record</label>
-            <p className="text-xs text-gray-400 mb-1">What did the AI produce? Include the prompt used and describe the output.</p>
+            <label className="label" htmlFor="por_description">POR — Prompt of Record</label>
+            <p className="text-xs text-gray-400 mb-1">What did you ask the AI to do? Describe your prompt — then describe what the AI produced.</p>
             <textarea
               id="por_description"
               className="textarea"
               rows={4}
               required
-              placeholder="Describe the AI output: what was prompted, and what the system produced…"
+              placeholder="Describe your prompt and what the AI produced in response…"
               value={form.por_description}
               onChange={(e) => set('por_description', e.target.value)}
             />
