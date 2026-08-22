@@ -220,9 +220,10 @@ export default function ReceiptForm() {
     fetch('/api/whitelist').then((r) => r.json()).then(setWhitelist).catch(() => {})
   }, [])
 
-  // Reset toolEntries when department changes
+  // Reset toolEntries and VFX-only fields when department changes
   useEffect(() => {
     setToolEntries([makeEmptyEntry()])
+    if (form.department !== 'VFX') set('scene_usid', '')
   }, [form.department])
 
   // Click-outside: handles both single toolRef and all session toolRefs
@@ -772,18 +773,19 @@ export default function ReceiptForm() {
               onChange={(e) => set('crew_role', e.target.value)}
             />
           </div>
-          <div>
-            <label className="label" htmlFor="scene_usid">Shot Reference</label>
-            <p className="text-xs text-gray-400 mb-1.5">The VFX shot code for this work — e.g. VFX_0023, SC23_045A, or your production&apos;s shot identifier.</p>
-            <input
-              id="scene_usid"
-              className="input"
-              required
-              placeholder="e.g. VFX_0023, SC23_045A"
-              value={form.scene_usid}
-              onChange={(e) => set('scene_usid', e.target.value)}
-            />
-          </div>
+          {form.department === 'VFX' && (
+            <div>
+              <label className="label" htmlFor="scene_usid">Shot Reference</label>
+              <p className="text-xs text-gray-400 mb-1.5">The VFX shot code for this work — e.g. VFX_0023, SC23_045A, or your production&apos;s shot identifier.</p>
+              <input
+                id="scene_usid"
+                className="input"
+                placeholder="e.g. VFX_0023, SC23_045A"
+                value={form.scene_usid}
+                onChange={(e) => set('scene_usid', e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="script_date">Script Date &amp; Version</label>
             <input
