@@ -290,7 +290,7 @@ export interface Receipt {
   sel_output?: string | null
   sel_description: string
   sel_detail?: string | null
-  adj_description: string
+  arr_description: string
   status: ReceiptStatus
   crew_confirmed_at?: string | null
   auth_signer?: string | null

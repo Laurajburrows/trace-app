@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       sel_output: body.sel_output || null,
       sel_description: body.sel_description,
       sel_detail: body.sel_detail || null,
-      adj_description: body.adj_description,
+      arr_description: body.arr_description,
       whitelist_condition: body.whitelist_condition || null,
       status: initialStatus,
       submitter_role: submitterRole,

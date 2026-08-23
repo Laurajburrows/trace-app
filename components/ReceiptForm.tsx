@@ -21,7 +21,7 @@ const emptyForm = {
   sel_output: '',
   sel_description: '' as SelReason | '',
   sel_detail: '',
-  adj_description: '',
+  arr_description: '',
   lct_required: false,
   lct_reference: '',
   lct_child_performer: false,
@@ -898,7 +898,7 @@ export default function ReceiptForm() {
           </div>
           {toolEntries.length > 1 && (
             <p className="text-xs text-gray-400 mb-5">
-              Session receipt — logging {toolEntries.length} tool interactions. The POR, SEL, ADJ, and AUTH fields below apply to this session as a whole.
+              Session receipt — logging {toolEntries.length} tool interactions. The POR, SEL, ARR, and AUTH fields below apply to this session as a whole.
             </p>
           )}
 
@@ -1250,7 +1250,7 @@ export default function ReceiptForm() {
 
         {/* Sequence indicator */}
         <div className="flex items-center gap-1.5 mb-5 flex-wrap">
-          {['POR', 'SEL', 'ADJ', 'AUTH'].map((step, i) => (
+          {['POR', 'SEL', 'ARR', 'AUTH'].map((step, i) => (
             <div key={step} className="flex items-center gap-1.5">
               {i > 0 && (
                 <span className="text-xs text-gray-300 select-none">›</span>
@@ -1326,16 +1326,16 @@ export default function ReceiptForm() {
           </div>
 
           <div>
-            <label className="label" htmlFor="adj_description">Where did you end up?</label>
+            <label className="label" htmlFor="arr_description">ARR — Where did you end up?</label>
             <p className="text-xs text-gray-400 mb-1">The final version after working with the AI output — not a description of every change, just where you ended up.</p>
             <textarea
-              id="adj_description"
+              id="arr_description"
               className="textarea"
               rows={3}
               required
               placeholder="Describe where you ended up after working with the AI output…"
-              value={form.adj_description}
-              onChange={(e) => set('adj_description', e.target.value)}
+              value={form.arr_description}
+              onChange={(e) => set('arr_description', e.target.value)}
             />
           </div>
         </div>

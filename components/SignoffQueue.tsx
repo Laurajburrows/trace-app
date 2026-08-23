@@ -257,8 +257,8 @@ export default function SignoffQueue({
                           </div>
                         </div>
                         <div>
-                          <p className="label">ADJ — Where did you end up?</p>
-                          <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.adj_description}</p>
+                          <p className="label">ARR — Where did you end up?</p>
+                          <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.arr_description}</p>
                         </div>
                       </div>
                       <div className="space-y-4">

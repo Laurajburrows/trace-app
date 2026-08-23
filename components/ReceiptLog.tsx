@@ -35,7 +35,7 @@ function exportCSV(receipts: Receipt[]) {
     'id', 'production_name', 'date', 'department', 'crew_member_name', 'crew_role',
     'scene_usid', 'ai_tool_used', 'tool_status', 'por_description',
     'sel_output', 'sel_description', 'sel_detail',
-    'adj_description', 'auth_signer', 'auth_timestamp', 'lct_required', 'lct_reference', 'notes',
+    'arr_description', 'auth_signer', 'auth_timestamp', 'lct_required', 'lct_reference', 'notes',
   ]
 
   const esc = (v: unknown) => {
@@ -298,8 +298,8 @@ export default function ReceiptLog() {
                                 <p className="font-courier text-xs mt-2" style={{ color: '#5A8A72' }}>Recorded: {fmtDateTime(r.created_at)}</p>
                               </div>
                               <div>
-                                <p className="label">ADJ — Where did you end up?</p>
-                                <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.adj_description}</p>
+                                <p className="label">ARR — Where did you end up?</p>
+                                <p className="whitespace-pre-wrap mt-1" style={{ color: '#D4EDE1' }}>{r.arr_description}</p>
                               </div>
                             </div>
                             <div className="space-y-4">
