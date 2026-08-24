@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   }
 
   const res = NextResponse.json({ ok: true })
-  res.cookies.set('trace_auth', btoa(sitePassword), {
+  res.cookies.set('trace_auth', sitePassword, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
