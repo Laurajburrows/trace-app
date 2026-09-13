@@ -1301,14 +1301,14 @@ export default function ReceiptForm() {
 
         <div className="space-y-5">
           <div>
-            <label className="label" htmlFor="por_description">POR — Prompt of Record</label>
-            <p className="text-xs text-gray-400 mb-1">What did you ask the AI to do? Describe your prompt — then describe what the AI produced.</p>
+            <label className="label" htmlFor="por_description">POR — PROMPT OF RECORD</label>
+            <p className="text-xs text-gray-400 mb-1">What did you ask the AI to do?</p>
             <textarea
               id="por_description"
               className="textarea"
               rows={4}
               required
-              placeholder="Describe your prompt and what the AI produced in response…"
+              placeholder="Describe your prompt…"
               value={form.por_description}
               onChange={(e) => set('por_description', e.target.value)}
             />
