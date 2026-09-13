@@ -25,11 +25,11 @@ function isComplianceFlagged(r: Receipt): boolean {
 const links = [
   { href: '/admin', label: 'OAS Admin' },
   { href: '/receipt/new', label: 'Receipt Form' },
+  { href: '/log', label: 'Receipt Log' },
+  { href: '/lct', label: 'LCT Check Sheet' },
   { href: '/hod', label: 'HOD' },
   { href: '/producer', label: 'Producer' },
   { href: '/exec', label: 'Exec' },
-  { href: '/log', label: 'Receipt Log' },
-  { href: '/lct', label: 'LCT Check Sheet' },
   { href: '/report', label: 'Compliance Report' },
 ]
 
