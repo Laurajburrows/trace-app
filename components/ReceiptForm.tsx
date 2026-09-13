@@ -68,6 +68,7 @@ const emptyForm = {
   facility_ai_policy_confirmed: false,
   input_file_version: '',
   output_file_version: '',
+  tool_version: '',
 }
 
 type FormState = typeof emptyForm
@@ -89,6 +90,7 @@ interface ToolEntryFormState {
   suggestions: WhitelistEntry[]
   showSuggestions: boolean
   // Persisted fields
+  tool_version: string
   input_file_version: string
   output_file_version: string
   vfx_software: string
@@ -117,7 +119,7 @@ interface ToolEntryFormState {
 function makeEmptyEntry(): ToolEntryFormState {
   return {
     toolQuery: '', selectedEntry: null, suggestions: [], showSuggestions: false,
-    input_file_version: '', output_file_version: '',
+    tool_version: '', input_file_version: '', output_file_version: '',
     vfx_software: '', vfx_data_location: '', vfx_no_training_confirmed: false,
     vfx_input_type: '', vfx_output_type: '', vfx_lct_confirmed: false,
     colour_grading_system: '', colour_ai_grading: false,
@@ -275,6 +277,7 @@ export default function ReceiptForm() {
     set('ai_tool_used', entry.displayName)
     set('tool_status', entry.status)
     set('whitelist_condition', entry.condition || '')
+    set('tool_version', entry.displayName)
     setSuggestions([])
     setShowSuggestions(false)
   }
@@ -293,7 +296,7 @@ export default function ReceiptForm() {
   }
 
   function selectEntryFromWhitelist(index: number, entry: WhitelistEntry) {
-    updateEntry(index, { toolQuery: entry.displayName, selectedEntry: entry, suggestions: [], showSuggestions: false })
+    updateEntry(index, { toolQuery: entry.displayName, selectedEntry: entry, tool_version: entry.displayName, suggestions: [], showSuggestions: false })
   }
 
   function addEntry() {
@@ -366,6 +369,7 @@ export default function ReceiptForm() {
         if (eStatus === 'RED' || eStatus === 'UNVERIFIED' || eStatus === '') {
           return setError(`Cannot submit: tool${label} is not approved. Resolve tool status before proceeding.`)
         }
+        if (!entry.tool_version.trim()) return setError(`Please enter the tool version${label}.`)
 
         if (form.department === 'VFX') {
           if (!entry.vfx_software.trim()) return setError(`VFX: Please enter the software name and version${label}.`)
@@ -424,6 +428,7 @@ export default function ReceiptForm() {
           ai_tool_used: first.selectedEntry!.displayName,
           tool_status: first.selectedEntry!.status,
           whitelist_condition: first.selectedEntry?.condition || null,
+          tool_version: first.tool_version || null,
           input_file_version: first.input_file_version || null,
           output_file_version: first.output_file_version || null,
           vfx_software: first.vfx_software || null,
@@ -452,6 +457,7 @@ export default function ReceiptForm() {
             ai_tool_used: e.selectedEntry!.displayName,
             tool_status: e.selectedEntry!.status,
             whitelist_condition: e.selectedEntry?.condition || null,
+            tool_version: e.tool_version || null,
             input_file_version: e.input_file_version || null,
             output_file_version: e.output_file_version || null,
             vfx_software: e.vfx_software || null,
@@ -507,6 +513,7 @@ export default function ReceiptForm() {
     // Non-post-prod path
     if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
     if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before proceeding.')
+    if (!form.tool_version.trim()) return setError('Please enter the tool version.')
 
     if (form.department === 'Sound') {
       if (!form.sound_processing_location) return setError('Sound: Please select where audio was processed.')
@@ -967,8 +974,22 @@ export default function ReceiptForm() {
                   )}
                 </div>
 
+                {/* Tool version — mandatory for all departments */}
+                <div className="mb-4 pt-4 mt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
+                  <label className="label" htmlFor={`tool_ver_${index}`}>Tool version</label>
+                  <p className="text-xs text-gray-400 mb-1.5">The specific version of the AI tool used — e.g. Gen-3, v14.0, GPT-4o. Pre-populated from whitelist; edit if needed.</p>
+                  <input
+                    id={`tool_ver_${index}`}
+                    className="input"
+                    required
+                    placeholder="e.g. Runway Gen-3, iZotope RX 11, v14.0"
+                    value={entry.tool_version}
+                    onChange={(e) => updateEntry(index, { tool_version: e.target.value })}
+                  />
+                </div>
+
                 {/* File versions */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="label" htmlFor={`input_ver_${index}`}>
                       Input file version <span className="normal-case font-normal text-gray-400">(recommended)</span>
@@ -1240,6 +1261,19 @@ export default function ReceiptForm() {
                 Enter a tool name above to check whitelist status.
               </div>
             )}
+          </div>
+
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid #F3F4F6' }}>
+            <label className="label" htmlFor="tool_version">Tool version</label>
+            <p className="text-xs text-gray-400 mb-1.5">The specific version of the AI tool used — e.g. GPT-4o, v3.5, Gen-3. Pre-populated from whitelist; edit if needed.</p>
+            <input
+              id="tool_version"
+              className="input"
+              required
+              placeholder="e.g. ChatGPT Plus / GPT-4o, Claude 3.5 Sonnet"
+              value={form.tool_version}
+              onChange={(e) => set('tool_version', e.target.value)}
+            />
           </div>
         </section>
       )}

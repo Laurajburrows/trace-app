@@ -344,6 +344,7 @@ export interface Receipt {
   facility_ai_policy_confirmed?: boolean
   input_file_version?: string | null
   output_file_version?: string | null
+  tool_version?: string | null
   is_session?: boolean
   session_tool_entries?: SessionToolEntry[] | null
 }
@@ -352,6 +353,7 @@ export interface SessionToolEntry {
   ai_tool_used: string
   tool_status: string
   whitelist_condition?: string | null
+  tool_version?: string | null
   input_file_version?: string | null
   output_file_version?: string | null
   vfx_software?: string | null

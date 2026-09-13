@@ -540,12 +540,218 @@ async function generatePDF(report: ReportData) {
   doc.save(filename)
 }
 
+async function generateAIStatement(report: ReportData) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+
+  const pageW = 210
+  const pageH = 297
+  const margin = 20
+  const contentW = pageW - margin * 2
+  let y = margin
+
+  const FOREST = [26, 61, 43] as [number, number, number]
+  const MOSS = [45, 106, 79] as [number, number, number]
+  const DARK = [30, 30, 30] as [number, number, number]
+  const MID = [80, 80, 80] as [number, number, number]
+  const LIGHT = [140, 140, 140] as [number, number, number]
+  const GOLD = [200, 168, 75] as [number, number, number]
+
+  function rule() {
+    doc.setDrawColor(...MOSS)
+    doc.setLineWidth(0.3)
+    doc.line(margin, y, pageW - margin, y)
+    y += 5
+  }
+
+  function gap(n = 4) { y += n }
+
+  function para(text: string, color: [number, number, number] = MID, size = 10) {
+    doc.setFontSize(size)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...color)
+    const lines = doc.splitTextToSize(text, contentW)
+    if (y + lines.length * 5 > pageH - 20) { doc.addPage(); y = margin }
+    doc.text(lines, margin, y)
+    y += lines.length * 5 + 3
+  }
+
+  function bold(text: string, color: [number, number, number] = DARK, size = 10) {
+    doc.setFontSize(size)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...color)
+    const lines = doc.splitTextToSize(text, contentW)
+    if (y + lines.length * 5 > pageH - 20) { doc.addPage(); y = margin }
+    doc.text(lines, margin, y)
+    y += lines.length * 5 + 2
+  }
+
+  // Header
+  doc.setFontSize(22)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...FOREST)
+  doc.text('TRACE©', margin, y)
+  y += 10
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...LIGHT)
+  doc.text('PRODUCTION AI STATEMENT', margin, y)
+  y += 8
+  rule()
+  gap(2)
+
+  bold(`Production: ${report.production_name}`, DARK, 12)
+  gap(1)
+  para(`Period covered: ${new Date(report.date_range.from).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })} – ${new Date(report.date_range.to).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`)
+  para(`Statement generated: ${new Date(report.generated_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`)
+  gap(4)
+  rule()
+  gap(2)
+
+  bold('1. Purpose of this Statement', FOREST, 11)
+  gap(2)
+  para(
+    'This statement is produced automatically from the TRACE© Artist Receipt system. It provides a plain-language summary of AI tool use on this production, and confirms that human authorship was documented at every point of AI use in accordance with the TRACE© protocol.'
+  )
+  gap(4)
+
+  bold('2. AI Tool Use — Summary by Department', FOREST, 11)
+  gap(2)
+
+  const depts = Object.entries(report.by_department)
+  if (depts.length === 0) {
+    para('No departmental AI use recorded for this period.')
+  } else {
+    para(`AI tools were used across ${depts.length} department${depts.length > 1 ? 's' : ''} on this production:`)
+    gap(2)
+    for (const [dept, count] of depts) {
+      const deptReceipts = report.receipts.filter(r => r.department === dept)
+      const toolNames = [...new Set(deptReceipts.map(r => r.ai_tool_used))].join(', ')
+      bold(`${dept}  (${count} receipt${count > 1 ? 's' : ''})`, DARK)
+      para(`Tools used: ${toolNames}`)
+      gap(2)
+    }
+  }
+
+  gap(2)
+  rule()
+  gap(2)
+
+  bold('3. Human Authorship — Confirmation', FOREST, 11)
+  gap(2)
+
+  const total = report.receipts.length
+  const authorised = report.auth_signed_count
+  const pct = total > 0 ? Math.round((authorised / total) * 100) : 0
+
+  para(
+    `Of ${total} AI use receipt${total !== 1 ? 's' : ''} recorded during this period, ${authorised} (${pct}%) have been fully authorised through the TRACE© chain of custody — signed by the relevant crew member and countersigned by the Head of Department or Producer.`
+  )
+  gap(2)
+  para(
+    'Each TRACE© Artist Receipt documents: the specific AI prompt used (Point of Record), the human selection made from the AI output (Selection), the human modifications applied (Arrival), and the countersigning authorisation of a senior creative (AUTH). This four-point log establishes an unbroken chain of human authorial control at every AI-assisted decision point.'
+  )
+  gap(4)
+
+  if (report.all_signers.length > 0) {
+    bold('4. Authorising Signatories', FOREST, 11)
+    gap(2)
+    para('The following individuals applied AUTH signatures during this period:')
+    gap(1)
+    for (const signer of report.all_signers) {
+      bold(`• ${signer}`, DARK)
+    }
+    gap(4)
+    rule()
+    gap(2)
+  } else {
+    rule()
+    gap(2)
+  }
+
+  bold('5. Compliance Basis', FOREST, 11)
+  gap(2)
+  para(
+    'This statement is generated under the TRACE© Protocol, designed to meet the human authorship documentation requirements arising from Thaler v. Perlmutter (2025) and equivalent international copyright rulings. It confirms that AI tools were used as assistive instruments under direct human creative direction, and that no AI-generated output was incorporated without documented human selection, modification, and sign-off.'
+  )
+  gap(6)
+
+  // Footer bar
+  doc.setFillColor(...FOREST)
+  doc.rect(margin, y, contentW, 0.5, 'F')
+  gap(5)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...LIGHT)
+  doc.text('TRACE© Protocol — Production AI Statement — Confidential', margin, y)
+  doc.setTextColor(...GOLD)
+  doc.text('© Laura Burrows 2026', pageW - margin, y, { align: 'right' })
+
+  const filename = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-AI-Statement.pdf`
+  doc.save(filename)
+}
+
+function downloadJSON(report: ReportData) {
+  const rows = report.receipts.map(r => ({
+    receipt_id: r.id,
+    sha256_hash: r.twin_lock_hash ?? null,
+    timestamp: r.created_at,
+    department: r.department,
+    tool_name: r.ai_tool_used,
+    tool_version: r.tool_version ?? r.vfx_software ?? null,
+    crew_member: r.crew_member_name,
+    hod_auth_timestamp: r.auth_timestamp ?? null,
+    auth_signer: r.auth_signer ?? null,
+    status: r.status,
+    tool_status: r.tool_status,
+  }))
+  const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-GAL.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function downloadCSV(report: ReportData) {
+  const headers = ['receipt_id', 'sha256_hash', 'timestamp', 'department', 'tool_name', 'tool_version', 'crew_member', 'hod_auth_timestamp', 'auth_signer', 'status', 'tool_status']
+  const escape = (v: string | null | undefined) => {
+    if (v == null) return ''
+    const s = String(v)
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const rows = report.receipts.map(r => [
+    r.id,
+    r.twin_lock_hash ?? '',
+    r.created_at,
+    r.department,
+    r.ai_tool_used,
+    r.tool_version ?? r.vfx_software ?? '',
+    r.crew_member_name,
+    r.auth_timestamp ?? '',
+    r.auth_signer ?? '',
+    r.status,
+    r.tool_status,
+  ].map(escape).join(','))
+  const csv = [headers.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-GAL.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function ComplianceReport() {
   const [productions, setProductions] = useState<string[]>([])
   const [selected, setSelected] = useState('')
   const [report, setReport] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(false)
   const [pdfGenerating, setPdfGenerating] = useState(false)
+  const [statementGenerating, setStatementGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
 
@@ -595,6 +801,19 @@ export default function ComplianceReport() {
       alert('PDF generation failed. Please try again.')
     } finally {
       setPdfGenerating(false)
+    }
+  }
+
+  async function handleDownloadStatement() {
+    if (!report) return
+    setStatementGenerating(true)
+    try {
+      await generateAIStatement(report)
+    } catch (e) {
+      console.error(e)
+      alert('Statement generation failed. Please try again.')
+    } finally {
+      setStatementGenerating(false)
     }
   }
 
@@ -714,13 +933,32 @@ export default function ComplianceReport() {
       {/* Report */}
       {report && (
         <>
-          <div className="flex justify-end mb-4 no-print">
+          <div className="flex flex-wrap justify-end gap-2 mb-4 no-print">
+            <button
+              onClick={() => report && downloadCSV(report)}
+              className="btn-secondary"
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={() => report && downloadJSON(report)}
+              className="btn-secondary"
+            >
+              Export JSON
+            </button>
+            <button
+              onClick={handleDownloadStatement}
+              disabled={statementGenerating}
+              className="btn-secondary disabled:opacity-50"
+            >
+              {statementGenerating ? 'Generating…' : 'AI Statement PDF'}
+            </button>
             <button
               onClick={handleDownloadPDF}
               disabled={pdfGenerating}
               className="btn-primary disabled:opacity-50"
             >
-              {pdfGenerating ? 'Generating PDF…' : 'Download PDF'}
+              {pdfGenerating ? 'Generating PDF…' : 'Download Compliance Report'}
             </button>
           </div>
 
