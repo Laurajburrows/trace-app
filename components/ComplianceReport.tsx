@@ -627,7 +627,7 @@ async function generateAIStatement(report: ReportData) {
     gap(2)
     for (const [dept, count] of depts) {
       const deptReceipts = report.receipts.filter(r => r.department === dept)
-      const toolNames = [...new Set(deptReceipts.map(r => r.ai_tool_used))].join(', ')
+      const toolNames = Array.from(new Set(deptReceipts.map(r => r.ai_tool_used))).join(', ')
       bold(`${dept}  (${count} receipt${count > 1 ? 's' : ''})`, DARK)
       para(`Tools used: ${toolNames}`)
       gap(2)
