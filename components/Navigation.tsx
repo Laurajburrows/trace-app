@@ -23,6 +23,7 @@ function isComplianceFlagged(r: Receipt): boolean {
 }
 
 const links = [
+  { href: '/admin', label: 'OAS Admin' },
   { href: '/receipt/new', label: 'Receipt Form' },
   { href: '/hod', label: 'HOD' },
   { href: '/producer', label: 'Producer' },
@@ -30,7 +31,6 @@ const links = [
   { href: '/log', label: 'Receipt Log' },
   { href: '/report', label: 'Compliance Report' },
   { href: '/lct', label: 'LCT Check Sheet' },
-  { href: '/admin', label: 'OAS Admin' },
 ]
 
 function NavBadge({ count }: { count: number }) {
