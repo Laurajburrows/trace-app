@@ -29,8 +29,8 @@ const links = [
   { href: '/producer', label: 'Producer' },
   { href: '/exec', label: 'Exec' },
   { href: '/log', label: 'Receipt Log' },
-  { href: '/report', label: 'Compliance Report' },
   { href: '/lct', label: 'LCT Check Sheet' },
+  { href: '/report', label: 'Compliance Report' },
 ]
 
 function NavBadge({ count }: { count: number }) {
