@@ -173,7 +173,6 @@ export default function WhitelistAdmin() {
   const [adding, setAdding] = useState(false)
   const [newForm, setNewForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
-  const [seeding, setSeeding] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [filterDept, setFilterDept] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -221,18 +220,6 @@ export default function WhitelistAdmin() {
   async function handleDelete(id: string) {
     if (!confirm('Remove this tool from the whitelist?')) return
     await fetch(`/api/whitelist/${id}`, { method: 'DELETE' })
-    await load()
-  }
-
-  async function handleSeedDefaults() {
-    if (!confirm('This will replace the entire whitelist with the TRACE default entries. Continue?')) return
-    setSeeding(true)
-    await fetch('/api/whitelist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ seedDefaults: true }),
-    })
-    setSeeding(false)
     await load()
   }
 
@@ -301,6 +288,14 @@ export default function WhitelistAdmin() {
         </p>
       </div>
 
+      {/* Non-endorsement notice */}
+      <div className="rounded-lg px-5 py-4" style={{ backgroundColor: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.4)' }}>
+        <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#C8A84B' }}>Important Notice</p>
+        <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
+          TRACE© does not endorse or approve any specific AI tool. Your production&apos;s AI tool whitelist should be agreed with your legal team, completion bond provider, and relevant guild representatives before principal photography begins.
+        </p>
+      </div>
+
       {/* Actions bar */}
       <div className="rounded-lg px-6 py-4" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         <div className="flex flex-wrap items-center gap-3">
@@ -314,9 +309,6 @@ export default function WhitelistAdmin() {
             Import JSON
             <input ref={fileRef} type="file" accept=".json" className="sr-only" onChange={handleImportFile} />
           </label>
-          <button onClick={handleSeedDefaults} disabled={seeding} className="btn-secondary text-sm disabled:opacity-50 ml-auto">
-            {seeding ? 'Seeding…' : 'Load TRACE Defaults'}
-          </button>
         </div>
         {importError && <p className="font-courier text-xs mt-2" style={{ color: '#f87171' }}>{importError}</p>}
       </div>
@@ -416,11 +408,7 @@ export default function WhitelistAdmin() {
         <div className="rounded-lg px-6 py-8 font-courier text-sm" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', color: '#5A8A72' }}>Loading…</div>
       ) : entries.length === 0 ? (
         <div className="rounded-lg px-6 py-8 font-courier text-sm" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', color: '#5A8A72' }}>
-          No tools on the whitelist yet.{' '}
-          <button onClick={handleSeedDefaults} className="hover:underline" style={{ color: '#C8A84B' }}>
-            Load TRACE defaults
-          </button>{' '}
-          to get started.
+          No tools on the whitelist yet. Use &ldquo;+ Add Tool&rdquo; to build the whitelist for this production.
         </div>
       ) : (
         <div className="space-y-4">

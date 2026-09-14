@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { DEFAULT_WHITELIST } from '@/lib/whitelist-defaults'
 
 export async function GET() {
   const entries = await prisma.whitelistEntry.findMany({
@@ -28,23 +27,6 @@ export async function POST(req: NextRequest) {
       })),
     })
     return NextResponse.json({ count: created.count })
-  }
-
-  // Seed defaults
-  if (body.seedDefaults) {
-    await prisma.whitelistEntry.deleteMany()
-    await prisma.whitelistEntry.createMany({
-      data: DEFAULT_WHITELIST.map((e) => ({
-        toolName: e.toolName,
-        displayName: e.displayName,
-        department: e.department,
-        status: e.status,
-        condition: e.condition,
-        requiresLCT: e.requiresLCT,
-      })),
-    })
-    const entries = await prisma.whitelistEntry.findMany({ orderBy: [{ department: 'asc' }, { displayName: 'asc' }] })
-    return NextResponse.json(entries)
   }
 
   // Single create
