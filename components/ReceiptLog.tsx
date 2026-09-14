@@ -71,6 +71,7 @@ export default function ReceiptLog() {
   const [filters, setFilters] = useState({
     production: '',
     department: '' as Department | '',
+    scene: '',
     status: '' as ToolStatus | '',
     dateFrom: '',
     dateTo: '',
@@ -82,6 +83,7 @@ export default function ReceiptLog() {
     const params = new URLSearchParams()
     if (filters.production) params.set('production', filters.production)
     if (filters.department) params.set('department', filters.department)
+    if (filters.scene) params.set('scene', filters.scene)
     if (filters.status) params.set('status', filters.status)
     if (filters.dateFrom) params.set('dateFrom', filters.dateFrom)
     if (filters.dateTo) params.set('dateTo', filters.dateTo)
@@ -102,7 +104,7 @@ export default function ReceiptLog() {
   }
 
   function clearFilters() {
-    setFilters({ production: '', department: '', status: '', dateFrom: '', dateTo: '', authSigner: '' })
+    setFilters({ production: '', department: '', scene: '', status: '', dateFrom: '', dateTo: '', authSigner: '' })
   }
 
   const hasFilters = Object.values(filters).some((v) => v !== '')
@@ -111,7 +113,7 @@ export default function ReceiptLog() {
     <div className="space-y-4">
       {/* Filters */}
       <div className="rounded-lg p-4" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <div>
             <label className="label">Production</label>
             <input
@@ -131,6 +133,15 @@ export default function ReceiptLog() {
               <option value="">All</option>
               {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="label">Scene</label>
+            <input
+              className="input"
+              placeholder="e.g. 42, 12A…"
+              value={filters.scene}
+              onChange={(e) => setFilter('scene', e.target.value)}
+            />
           </div>
           <div>
             <label className="label">Tool Status</label>
@@ -171,14 +182,59 @@ export default function ReceiptLog() {
             />
           </div>
         </div>
+
         {hasFilters && (
-          <button
-            onClick={clearFilters}
-            className="mt-3 font-courier text-xs hover:underline"
-            style={{ color: '#C8A84B' }}
-          >
-            Clear all filters
-          </button>
+          <div className="flex items-center flex-wrap gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+            {filters.production && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                Production: {filters.production}
+                <button onClick={() => setFilter('production', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.department && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                Dept: {filters.department}
+                <button onClick={() => setFilter('department', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.scene && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(200,168,75,0.15)', color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}>
+                Scene: {filters.scene}
+                <button onClick={() => setFilter('scene', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.status && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                Status: {filters.status}
+                <button onClick={() => setFilter('status', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.dateFrom && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                From: {filters.dateFrom}
+                <button onClick={() => setFilter('dateFrom', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.dateTo && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                To: {filters.dateTo}
+                <button onClick={() => setFilter('dateTo', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            {filters.authSigner && (
+              <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                Signer: {filters.authSigner}
+                <button onClick={() => setFilter('authSigner', '')} className="ml-0.5 hover:opacity-70" aria-label="Remove">✕</button>
+              </span>
+            )}
+            <button
+              onClick={clearFilters}
+              className="font-courier text-xs hover:underline ml-auto"
+              style={{ color: '#C8A84B' }}
+            >
+              Clear all
+            </button>
+          </div>
         )}
       </div>
 

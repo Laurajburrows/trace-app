@@ -20,6 +20,24 @@ function fmt(iso: string) {
   })
 }
 
+function buildPdfFilterLabel(filterDescription: string): string {
+  return filterDescription
+    .split(' · ')
+    .map((part) => {
+      const colon = part.indexOf(': ')
+      if (colon === -1) return part
+      const key = part.slice(0, colon)
+      const val = part.slice(colon + 2)
+      if (key === 'Department') return `${val} Department`
+      if (key === 'Scene') return `Scene ${val}`
+      if (key === 'Tool Status') return `${val} Tools`
+      if (key === 'From') return `From ${val}`
+      if (key === 'To') return `To ${val}`
+      return part
+    })
+    .join(' — ')
+}
+
 async function generatePDF(report: ReportData) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
@@ -166,12 +184,20 @@ async function generatePDF(report: ReportData) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(255, 255, 255)
-  doc.text('TRACE Compliance Report', margin, 28)
+  doc.text('TRACE Compliance Report', margin, 26)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(212, 237, 225)
-  doc.text('Transparent Record of Authorship in Creative Environments', margin, 37)
+  doc.text('Transparent Record of Authorship in Creative Environments', margin, 35)
+
+  if (report.filter_description) {
+    const filterLabel = buildPdfFilterLabel(report.filter_description)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(200, 168, 75)
+    doc.text(`— ${filterLabel}`, margin, 45)
+  }
 
   y = 70
 
@@ -790,6 +816,7 @@ export default function ComplianceReport() {
   const reportRef = useRef<HTMLDivElement>(null)
 
   const [filterDept, setFilterDept] = useState('')
+  const [filterScene, setFilterScene] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
@@ -809,6 +836,7 @@ export default function ComplianceReport() {
 
     const params = new URLSearchParams({ production: selected })
     if (filterDept) params.set('department', filterDept)
+    if (filterScene) params.set('scene', filterScene)
     if (filterStatus) params.set('toolStatus', filterStatus)
     if (filterDateFrom) params.set('dateFrom', filterDateFrom)
     if (filterDateTo) params.set('dateTo', filterDateTo)
@@ -887,7 +915,7 @@ export default function ComplianceReport() {
           <>
             <div className="pt-4 mb-4" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
               <p className="label mb-3">Filter Report <span className="normal-case font-normal" style={{ color: '#5A8A72' }}>(optional — leave blank for full production report)</span></p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <div>
                   <label className="label" htmlFor="filter-dept">Department</label>
                   <select
@@ -901,6 +929,16 @@ export default function ComplianceReport() {
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="label" htmlFor="filter-scene">Scene</label>
+                  <input
+                    id="filter-scene"
+                    className="input"
+                    placeholder="e.g. 42, 12A…"
+                    value={filterScene}
+                    onChange={(e) => { setFilterScene(e.target.value); setReport(null) }}
+                  />
                 </div>
                 <div>
                   <label className="label" htmlFor="filter-status">Tool Status</label>
@@ -938,14 +976,41 @@ export default function ComplianceReport() {
                   />
                 </div>
               </div>
-              {(filterDept || filterStatus || filterDateFrom || filterDateTo) && (
-                <button
-                  onClick={() => { setFilterDept(''); setFilterStatus(''); setFilterDateFrom(''); setFilterDateTo(''); setReport(null) }}
-                  className="mt-2 font-courier text-xs hover:underline"
-                  style={{ color: '#C8A84B' }}
-                >
-                  Clear filters
-                </button>
+              {(filterDept || filterScene || filterStatus || filterDateFrom || filterDateTo) && (
+                <div className="flex items-center flex-wrap gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                  {filterDept && (
+                    <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                      Dept: {filterDept}
+                    </span>
+                  )}
+                  {filterScene && (
+                    <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(200,168,75,0.15)', color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}>
+                      Scene: {filterScene}
+                    </span>
+                  )}
+                  {filterStatus && (
+                    <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                      Status: {filterStatus}
+                    </span>
+                  )}
+                  {filterDateFrom && (
+                    <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                      From: {filterDateFrom}
+                    </span>
+                  )}
+                  {filterDateTo && (
+                    <span className="inline-flex items-center gap-1 font-courier text-xs px-2 py-1 rounded-full" style={{ background: 'rgba(45,106,79,0.25)', color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}>
+                      To: {filterDateTo}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => { setFilterDept(''); setFilterScene(''); setFilterStatus(''); setFilterDateFrom(''); setFilterDateTo(''); setReport(null) }}
+                    className="font-courier text-xs hover:underline ml-auto"
+                    style={{ color: '#C8A84B' }}
+                  >
+                    Clear filters
+                  </button>
+                </div>
               )}
             </div>
           </>

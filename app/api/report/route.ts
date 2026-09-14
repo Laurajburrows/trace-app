@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const toolStatus = searchParams.get('toolStatus')
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
+  const scene = searchParams.get('scene')
 
   if (!production) {
     return NextResponse.json({ error: 'production required' }, { status: 400 })
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
   const where: Record<string, unknown> = { production_name: production }
   if (department) where.department = department
   if (toolStatus) where.tool_status = toolStatus
+  if (scene) where.scene_usid = { contains: scene, mode: 'insensitive' }
   if (dateFrom || dateTo) {
     where.date = {}
     if (dateFrom) (where.date as Record<string, unknown>).gte = new Date(dateFrom)
@@ -90,6 +92,7 @@ export async function GET(req: NextRequest) {
   // Build a human-readable filter description for the cover page
   const filterParts: string[] = []
   if (department) filterParts.push(`Department: ${department}`)
+  if (scene) filterParts.push(`Scene: ${scene}`)
   if (toolStatus) filterParts.push(`Tool Status: ${toolStatus}`)
   if (dateFrom) filterParts.push(`From: ${dateFrom}`)
   if (dateTo) filterParts.push(`To: ${dateTo}`)

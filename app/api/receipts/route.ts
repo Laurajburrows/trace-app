@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   const authSigner = searchParams.get('authSigner')
+  const scene = searchParams.get('scene')
 
   const viewerName = searchParams.get('viewerName')
 
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest) {
     where.status = statuses.length === 1 ? statuses[0] : { in: statuses }
   }
   if (authSigner) where.auth_signer = { contains: authSigner }
+  if (scene) where.scene_usid = { contains: scene, mode: 'insensitive' }
   if (viewerName?.trim()) {
     where.NOT = { crew_member_name: { equals: viewerName.trim(), mode: 'insensitive' } }
   }
