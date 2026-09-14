@@ -93,6 +93,20 @@ model Receipt {
   superseded_by               String?
   superseded_at               DateTime?
   supersede_reason            String?
+  writing_consent_confirmed   Boolean @default(false)
+  third_party_asset           Boolean @default(false)
+  third_party_licence_confirmed Boolean @default(false)
+}
+
+model Production {
+  id                    String    @id @default(uuid())
+  name                  String    @unique
+  declaration_briefed   Boolean   @default(false)
+  declaration_logged    Boolean   @default(false)
+  declaration_consented Boolean   @default(false)
+  declaration_timestamp DateTime?
+  activated_at          DateTime?
+  created_at            DateTime  @default(now())
 }
 
 model WhitelistEntry {

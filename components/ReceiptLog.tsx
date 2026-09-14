@@ -413,6 +413,21 @@ export default function ReceiptLog() {
                                   </div>
                                 )}
                               </div>
+                              {Boolean(r.third_party_asset) && (
+                                <div>
+                                  <p className="label">Third-Party Asset</p>
+                                  {r.third_party_licence_confirmed ? (
+                                    <p className="font-courier text-xs mt-1 font-semibold" style={{ color: '#8BB5A0' }}>
+                                      Licence clearance confirmed by producer
+                                    </p>
+                                  ) : (
+                                    <div className="mt-1 rounded px-3 py-2" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)' }}>
+                                      <p className="font-courier text-xs font-semibold uppercase tracking-wide" style={{ color: '#C8A84B' }}>Third-party licence clearance not confirmed</p>
+                                      <p className="text-xs mt-0.5" style={{ color: '#C8A84B', opacity: 0.85 }}>Legal review required before delivery.</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                               {r.notes && (
                                 <div>
                                   <p className="label">Notes</p>

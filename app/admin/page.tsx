@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import WhitelistAdmin from '@/components/WhitelistAdmin'
+import ProductionAdmin from '@/components/ProductionAdmin'
 
 const CORRECT_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || '1234'
 const SESSION_KEY = 'trace_admin_unlocked'
@@ -85,13 +86,16 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
       <div className="flex justify-end mb-4">
         <button onClick={handleLock} className="btn-secondary text-xs">
           Lock Admin
         </button>
       </div>
-      <WhitelistAdmin />
+      <ProductionAdmin />
+      <div style={{ borderTop: '1px solid rgba(45,106,79,0.4)', paddingTop: '3rem' }}>
+        <WhitelistAdmin />
+      </div>
     </div>
   )
 }

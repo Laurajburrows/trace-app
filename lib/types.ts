@@ -362,6 +362,20 @@ export interface Receipt {
   supersede_reason?: string | null
   is_session?: boolean
   session_tool_entries?: SessionToolEntry[] | null
+  writing_consent_confirmed?: boolean
+  third_party_asset?: boolean
+  third_party_licence_confirmed?: boolean
+}
+
+export interface Production {
+  id: string
+  name: string
+  declaration_briefed: boolean
+  declaration_logged: boolean
+  declaration_consented: boolean
+  declaration_timestamp?: string | null
+  activated_at?: string | null
+  created_at: string
 }
 
 export interface SessionToolEntry {

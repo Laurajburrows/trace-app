@@ -76,6 +76,9 @@ const emptyForm = {
   timecode_range: '',
   session_file_reference: '',
   deliverable_name: '',
+  writing_consent_confirmed: false,
+  third_party_asset: false,
+  third_party_licence_confirmed: false,
 }
 
 type FormState = typeof emptyForm
@@ -121,7 +124,6 @@ interface ToolEntryFormState {
   delivery_ai_tool_type: string
   delivery_format: string
   delivery_no_training_confirmed: boolean
-  tool_version: string
 }
 
 function makeEmptyEntry(): ToolEntryFormState {
@@ -137,7 +139,6 @@ function makeEmptyEntry(): ToolEntryFormState {
     sound_processing_location: '', sound_processing_type: '',
     sound_performer_audio: false, sound_no_training_confirmed: false,
     delivery_ai_tool_type: '', delivery_format: '', delivery_no_training_confirmed: false,
-    tool_version: '',
   }
 }
 
@@ -320,6 +321,9 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           timecode_range: receipt.timecode_range || '',
           session_file_reference: receipt.session_file_reference || '',
           deliverable_name: receipt.deliverable_name || '',
+          writing_consent_confirmed: Boolean(receipt.writing_consent_confirmed),
+          third_party_asset: Boolean(receipt.third_party_asset),
+          third_party_licence_confirmed: Boolean(receipt.third_party_licence_confirmed),
         })
         setToolQuery(receipt.ai_tool_used || '')
         if (receipt.is_session && Array.isArray(receipt.session_tool_entries) && receipt.session_tool_entries.length > 0) {
@@ -530,6 +534,12 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     e.preventDefault()
     setError(null)
     setMissingFields([])
+
+    if (form.department === 'Writing' && !form.writing_consent_confirmed) {
+      setError('Writer consent must be confirmed before this receipt can be submitted.')
+      return
+    }
+
     const missing = getMissingFields()
     if (missing.length > 0) {
       setMissingFields(missing)
@@ -1907,6 +1917,25 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 I confirm that the material I am submitting for production represents my own creative authorship, shaped and directed by me, with AI used as a tool under my creative control
               </label>
             </div>
+            <div className="rounded border border-amber-200 bg-amber-50 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <input
+                  id="writing_consent_confirmed"
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss flex-shrink-0"
+                  checked={form.writing_consent_confirmed}
+                  onChange={(e) => set('writing_consent_confirmed', e.target.checked)}
+                />
+                <label htmlFor="writing_consent_confirmed" className="text-sm text-amber-800 cursor-pointer font-medium">
+                  The writer has consented to AI use on this material in accordance with their guild agreement
+                </label>
+              </div>
+              {!form.writing_consent_confirmed && (
+                <p className="text-xs text-amber-700 mt-2 ml-7">
+                  This confirmation is mandatory. The receipt cannot be submitted without it.
+                </p>
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -1981,6 +2010,51 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           </div>
         </section>
       )}
+
+      {/* Third-Party Licence */}
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <h2 className="section-heading">Third-Party Assets</h2>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <input
+              id="third_party_asset"
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss flex-shrink-0"
+              checked={form.third_party_asset}
+              onChange={(e) => {
+                set('third_party_asset', e.target.checked)
+                if (!e.target.checked) set('third_party_licence_confirmed', false)
+              }}
+            />
+            <label htmlFor="third_party_asset" className="text-sm text-gray-700 cursor-pointer">
+              This receipt involves a third-party asset (e.g. licensed music, stock footage, third-party imagery) that is being processed using AI tools
+            </label>
+          </div>
+          {form.third_party_asset && (
+            <div className="ml-7 space-y-3">
+              <div className="flex items-start gap-3">
+                <input
+                  id="third_party_licence_confirmed"
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss flex-shrink-0"
+                  checked={form.third_party_licence_confirmed}
+                  onChange={(e) => set('third_party_licence_confirmed', e.target.checked)}
+                />
+                <label htmlFor="third_party_licence_confirmed" className="text-sm text-gray-700 cursor-pointer font-medium">
+                  Third-party licence permits AI processing — confirmed by producer
+                </label>
+              </div>
+              {!form.third_party_licence_confirmed && (
+                <div className="rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                  <p className="text-xs text-yellow-800">
+                    If licence clearance has not been confirmed, this receipt will be flagged in the Compliance Report: <em>Third-party licence clearance not confirmed — legal review required before delivery.</em>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Notes */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">

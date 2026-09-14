@@ -444,6 +444,40 @@ async function generatePDF(report: ReportData) {
     }
   }
 
+  // ── THIRD-PARTY LICENCE REGISTER (conditional) ───────────────────────────
+  const tpReceipts = report.receipts.filter((r) => Boolean(r.third_party_asset))
+  if (tpReceipts.length > 0) {
+    newPage()
+    h2('Third-Party Licence Register')
+    gap(2)
+    const uncleared = tpReceipts.filter((r) => !r.third_party_licence_confirmed)
+    if (uncleared.length > 0) {
+      body(
+        `${uncleared.length} receipt${uncleared.length !== 1 ? 's' : ''} involve third-party assets where licence clearance for AI processing has NOT been confirmed. Legal review required before delivery.`
+      )
+    } else {
+      body('All third-party asset receipts have producer-confirmed licence clearance for AI processing.')
+    }
+    gap(4)
+    tableRow(['Date', 'Dept', 'Crew', 'Scene', 'Tool', 'Licence Confirmed'], [22, 26, 32, 26, 40, 34], true)
+    tpReceipts.forEach((r) => {
+      const confirmed = r.third_party_licence_confirmed
+      tableRow(
+        [
+          new Date(r.date).toLocaleDateString('en-GB'),
+          r.department.substring(0, 14),
+          r.crew_member_name.substring(0, 16),
+          r.scene_usid.substring(0, 12),
+          r.ai_tool_used.substring(0, 20),
+          confirmed ? 'Yes' : 'NOT CONFIRMED',
+        ],
+        [22, 26, 32, 26, 40, 34],
+        false,
+        !confirmed ? YELLOW_C : undefined
+      )
+    })
+  }
+
   // ── FACILITY AI POLICY REGISTER (conditional) ─────────────────────────────
   const postProdDepts = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
   const facilityReceipts = report.receipts.filter((r) => postProdDepts.includes(r.department))
@@ -978,7 +1012,8 @@ export default function ComplianceReport() {
                   (r.department === 'Writing' && !r.writing_no_training_confirmed) ||
                   (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
                   cloudSound ||
-                  (POST_PROD_DEPTS.includes(r.department) && !r.facility_ai_policy_confirmed)
+                  (POST_PROD_DEPTS.includes(r.department) && !r.facility_ai_policy_confirmed) ||
+                  (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed)
                 )
               }).length
               const stats = [
@@ -1423,6 +1458,65 @@ export default function ComplianceReport() {
                 </div>
               </ReportSection>
             )}
+
+            {/* Third-Party Licence Register (conditional) */}
+            {report.receipts.some((r) => Boolean(r.third_party_asset)) && (() => {
+              const tpReceipts = report.receipts.filter((r) => Boolean(r.third_party_asset))
+              const uncleared = tpReceipts.filter((r) => !r.third_party_licence_confirmed)
+              return (
+                <ReportSection title="Third-Party Licence Register">
+                  {uncleared.length > 0 && (
+                    <div className="mb-4 rounded px-4 py-3" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)', borderLeft: '3px solid #C8A84B' }}>
+                      <p className="font-courier text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: '#C8A84B' }}>
+                        {uncleared.length} receipt{uncleared.length !== 1 ? 's' : ''} — third-party licence clearance not confirmed
+                      </p>
+                      <p className="text-xs" style={{ color: '#C8A84B', opacity: 0.85 }}>
+                        Third-party licence clearance not confirmed — legal review required before delivery.
+                      </p>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Date</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Dept</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Crew Member</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Scene / Asset</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>AI Tool</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest whitespace-nowrap" style={{ color: '#8BB5A0' }}>Licence Confirmed</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tpReceipts.map((r) => (
+                          <tr
+                            key={r.id}
+                            className="align-top"
+                            style={{
+                              borderTop: '1px solid rgba(45,106,79,0.3)',
+                              backgroundColor: !r.third_party_licence_confirmed ? 'rgba(200,168,75,0.05)' : 'transparent',
+                            }}
+                          >
+                            <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.department}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
+                            <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                            <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</td>
+                            <td className="px-3 py-2">
+                              {r.third_party_licence_confirmed ? (
+                                <span className="font-courier text-xs font-semibold text-status-green">Confirmed</span>
+                              ) : (
+                                <span className="font-courier text-xs font-semibold text-status-amber">NOT CONFIRMED</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </ReportSection>
+              )
+            })()}
 
             {/* Facility AI Policy Register (conditional) */}
             {report.receipts.some((r) => ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department)) && (() => {

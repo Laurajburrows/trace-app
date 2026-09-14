@@ -159,6 +159,9 @@ export async function PUT(
       timecode_range: body.timecode_range || null,
       session_file_reference: body.session_file_reference || null,
       deliverable_name: body.deliverable_name || null,
+      writing_consent_confirmed: Boolean(body.writing_consent_confirmed),
+      third_party_asset: Boolean(body.third_party_asset),
+      third_party_licence_confirmed: Boolean(body.third_party_licence_confirmed),
     },
   })
 

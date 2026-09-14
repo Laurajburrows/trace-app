@@ -134,6 +134,9 @@ export async function POST(
       deliverable_name: body.deliverable_name || null,
       supersedes: params.id,
       supersede_reason: body.supersede_reason.trim(),
+      writing_consent_confirmed: Boolean(body.writing_consent_confirmed),
+      third_party_asset: Boolean(body.third_party_asset),
+      third_party_licence_confirmed: Boolean(body.third_party_licence_confirmed),
     },
   })
 
