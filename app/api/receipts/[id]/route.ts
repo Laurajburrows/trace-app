@@ -168,3 +168,25 @@ export async function PUT(
 
   return NextResponse.json(updated)
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const existing = await prisma.receipt.findUnique({ where: { id: params.id } })
+
+  if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  if (existing.status !== 'RECALLED') {
+    return NextResponse.json(
+      { error: 'Only recalled receipts can be discarded.' },
+      { status: 409 }
+    )
+  }
+
+  await prisma.receipt.delete({ where: { id: params.id } })
+
+  return new NextResponse(null, { status: 204 })
+}

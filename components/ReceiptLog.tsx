@@ -65,6 +65,8 @@ export default function ReceiptLog() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [recallConfirming, setRecallConfirming] = useState<string | null>(null)
   const [recalling, setRecalling] = useState(false)
+  const [discardConfirming, setDiscardConfirming] = useState<string | null>(null)
+  const [discarding, setDiscarding] = useState(false)
 
   const [filters, setFilters] = useState({
     production: '',
@@ -338,35 +340,37 @@ export default function ReceiptLog() {
                                 {r.status === 'PENDING_HOD_AUTH' && (
                                   <div className="mt-3">
                                     {recallConfirming === r.id ? (
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-courier text-xs" style={{ color: '#C8A84B' }}>Are you sure?</span>
-                                        <button
-                                          disabled={recalling}
-                                          onClick={async () => {
-                                            setRecalling(true)
-                                            try {
-                                              const res = await fetch(`/api/receipts/${r.id}/recall`, { method: 'PATCH' })
-                                              if (!res.ok) throw new Error()
-                                              window.location.href = `/receipt/edit/${r.id}`
-                                            } catch {
-                                              alert('Unable to recall this receipt. Please try again.')
-                                              setRecallConfirming(null)
-                                            } finally {
-                                              setRecalling(false)
-                                            }
-                                          }}
-                                          className="font-courier text-xs px-2 py-1 rounded"
-                                          style={{ color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
-                                        >
-                                          {recalling ? 'Recalling…' : 'Confirm recall'}
-                                        </button>
-                                        <button
-                                          onClick={() => setRecallConfirming(null)}
-                                          className="font-courier text-xs px-2 py-1 rounded"
-                                          style={{ color: '#5A8A72', border: '1px solid rgba(90,138,114,0.4)' }}
-                                        >
-                                          Cancel
-                                        </button>
+                                      <div className="space-y-2">
+                                        <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>Are you sure you want to recall this receipt? It will be removed from the HOD queue and returned to draft.</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <button
+                                            disabled={recalling}
+                                            onClick={async () => {
+                                              setRecalling(true)
+                                              try {
+                                                const res = await fetch(`/api/receipts/${r.id}/recall`, { method: 'PATCH' })
+                                                if (!res.ok) throw new Error()
+                                                window.location.href = `/receipt/edit/${r.id}`
+                                              } catch {
+                                                alert('Unable to recall this receipt. Please try again.')
+                                                setRecallConfirming(null)
+                                              } finally {
+                                                setRecalling(false)
+                                              }
+                                            }}
+                                            className="font-courier text-xs px-2 py-1 rounded"
+                                            style={{ color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
+                                          >
+                                            {recalling ? 'Recalling…' : 'Confirm recall'}
+                                          </button>
+                                          <button
+                                            onClick={() => setRecallConfirming(null)}
+                                            className="font-courier text-xs px-2 py-1 rounded"
+                                            style={{ color: '#5A8A72', border: '1px solid rgba(90,138,114,0.4)' }}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
                                       </div>
                                     ) : (
                                       <button
@@ -375,6 +379,53 @@ export default function ReceiptLog() {
                                         style={{ color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
                                       >
                                         Recall this receipt
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                                {r.status === 'RECALLED' && (
+                                  <div className="mt-3">
+                                    {discardConfirming === r.id ? (
+                                      <div className="space-y-2">
+                                        <p className="font-courier text-xs" style={{ color: '#E05252' }}>This will permanently delete this receipt. This action cannot be undone.</p>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <button
+                                            disabled={discarding}
+                                            onClick={async () => {
+                                              setDiscarding(true)
+                                              try {
+                                                const res = await fetch(`/api/receipts/${r.id}`, { method: 'DELETE' })
+                                                if (!res.ok) throw new Error()
+                                                await fetchReceipts()
+                                                setDiscardConfirming(null)
+                                              } catch {
+                                                alert('Unable to discard this receipt. Please try again.')
+                                                setDiscardConfirming(null)
+                                              } finally {
+                                                setDiscarding(false)
+                                              }
+                                            }}
+                                            className="font-courier text-xs px-2 py-1 rounded"
+                                            style={{ color: '#E05252', border: '1px solid rgba(224,82,82,0.4)' }}
+                                          >
+                                            {discarding ? 'Discarding…' : 'Confirm discard'}
+                                          </button>
+                                          <button
+                                            onClick={() => setDiscardConfirming(null)}
+                                            className="font-courier text-xs px-2 py-1 rounded"
+                                            style={{ color: '#5A8A72', border: '1px solid rgba(90,138,114,0.4)' }}
+                                          >
+                                            Cancel
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setDiscardConfirming(r.id)}
+                                        className="font-courier text-xs px-2 py-1 rounded"
+                                        style={{ color: '#E05252', border: '1px solid rgba(224,82,82,0.4)' }}
+                                      >
+                                        Discard receipt
                                       </button>
                                     )}
                                   </div>
