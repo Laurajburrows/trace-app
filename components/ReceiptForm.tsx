@@ -2338,6 +2338,43 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                   </p>
                 </div>
               )}
+
+              {/* Clearance Tracker — coming in Build 2 */}
+              <div className="pt-2 space-y-3">
+                <div className="relative inline-block group">
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded border border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+                  >
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Connect Clearance Tracker
+                  </button>
+                  <span className="absolute left-0 top-full mt-1 z-10 hidden group-hover:block whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white shadow">
+                    Coming in Build 2
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Example clearance results</p>
+                  <div className="space-y-1.5 rounded border border-gray-100 bg-gray-50 px-3 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0 bg-green-500 opacity-50" />
+                      <span className="text-xs text-gray-400">Archive footage — BBC — AI processing confirmed</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0 bg-yellow-400 opacity-50" />
+                      <span className="text-xs text-gray-400">Licensed music — Sony Music — AI processing not specified in licence</span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0 bg-red-400 opacity-50" />
+                      <span className="text-xs text-gray-400">Stock imagery — Getty Images — AI processing not permitted</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
