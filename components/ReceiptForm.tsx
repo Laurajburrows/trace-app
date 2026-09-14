@@ -2314,7 +2314,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               }}
             />
             <label htmlFor="third_party_asset" className="text-sm text-gray-700 cursor-pointer">
-              This receipt involves a third-party asset (e.g. licensed music, stock footage, third-party imagery) that is being processed using AI tools
+              This receipt involves a third-party asset (archive footage, licensed music, stock imagery or other licensed material).
             </label>
           </div>
           {form.third_party_asset && (

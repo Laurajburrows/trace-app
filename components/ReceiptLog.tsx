@@ -316,9 +316,20 @@ export default function ReceiptLog() {
                         })()}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
-                          {r.tool_status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
+                            {r.tool_status}
+                          </span>
+                          {Boolean(r.third_party_asset) && !r.third_party_licence_confirmed && (
+                            <span
+                              className="font-courier text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                              style={{ background: 'rgba(200,168,75,0.15)', color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
+                              title="Third-party licence clearance not confirmed — legal review required before delivery"
+                            >
+                              3P⚑
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {r.status === 'AUTH_COMPLETE' ? (

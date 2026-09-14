@@ -165,9 +165,9 @@ export default function ProductionAdmin() {
                   )}
                   <div className="space-y-3">
                     {([
-                      { field: 'declaration_briefed' as const, label: 'The production has been briefed on the use of AI tools' },
-                      { field: 'declaration_logged' as const, label: 'AI tool use is logged in the production documentation' },
-                      { field: 'declaration_consented' as const, label: 'Crew have consented to AI tool use in their contracts or agreements' },
+                      { field: 'declaration_briefed' as const, label: 'All crew have been briefed on AI use on this production.' },
+                      { field: 'declaration_logged' as const, label: 'All crew have been informed that AI use will be logged through TRACE©.' },
+                      { field: 'declaration_consented' as const, label: 'All crew have consented to work under the TRACE© framework as a condition of their engagement.' },
                     ]).map(({ field, label }) => (
                       <div key={field} className="flex items-start gap-3">
                         <input
