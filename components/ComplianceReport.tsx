@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
-import type { ReportData, ToolStatus, AdditionalToolEntry } from '@/lib/types'
+import type { ReportData, Receipt, ToolStatus, AdditionalToolEntry } from '@/lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
@@ -38,7 +38,7 @@ function buildPdfFilterLabel(filterDescription: string): string {
     .join(' — ')
 }
 
-async function generatePDF(report: ReportData) {
+async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summary') {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
 
@@ -586,6 +586,109 @@ async function generatePDF(report: ReportData) {
     'Laura Burrows, NFTS AI Diploma, April 2026. This report is generated automatically from Artist Receipts submitted to the TRACE system.'
   )
 
+  // ── SECTION 9: FULL AUDIT RECEIPT LOG (audit mode only) ──────────────────
+  if (mode === 'audit') {
+    newPage()
+    h2('9. Complete Receipt Log — Full Audit Detail')
+    gap(2)
+    body(
+      `Full four-point log for all ${report.receipts.length} receipt${report.receipts.length !== 1 ? 's' : ''} in this report. Each entry includes Point of Record (POR), Selection (SEL), Arrival (ARR), Authorisation (AUTH), tool details, and any compliance flags.`
+    )
+    gap(4)
+
+    const auditKv = (label: string, value: string) => {
+      checkPage(14)
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...DARK)
+      doc.text(label, margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...MID)
+      const lines = doc.splitTextToSize(value, contentW - 6)
+      checkPage(lines.length * 4 + 2)
+      doc.text(lines, margin + 6, y)
+      y += lines.length * 4 + 3
+    }
+
+    report.receipts.forEach((r, i) => {
+      checkPage(50)
+      if (i > 0) {
+        gap(3)
+        doc.setDrawColor(200, 200, 200)
+        doc.setLineWidth(0.15)
+        doc.line(margin, y, pageW - margin, y)
+        y += 4
+      }
+
+      // Receipt header line
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...FOREST)
+      const num = String(i + 1).padStart(2, '0')
+      checkPage(7)
+      doc.text(
+        `${num}. ${r.crew_member_name} — ${r.department} — ${r.scene_usid} — ${new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+        margin, y
+      )
+      y += 5
+
+      // Status badge inline
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'bold')
+      const sc = statusColor(r.tool_status)
+      doc.setTextColor(...sc)
+      checkPage(5)
+      doc.text(`[${r.tool_status}]  ${r.status === 'AUTH_COMPLETE' ? '✓ AUTH COMPLETE' : '⏳ AUTH PENDING'}`, margin, y)
+      y += 5
+
+      // Hash
+      if (r.twin_lock_hash) {
+        doc.setFontSize(6.5)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(...LIGHT)
+        checkPage(4)
+        doc.text(`SHA-256: ${r.twin_lock_hash}`, margin, y)
+        y += 4
+      }
+      gap(1)
+
+      // Tool
+      auditKv('AI Tool', `${r.ai_tool_used}${r.tool_version ? ` (v${r.tool_version})` : ''}`)
+      if (r.whitelist_condition) auditKv('Risk / Condition at Submission', r.whitelist_condition)
+
+      // Four-point log
+      auditKv('POR — Prompt of Record', r.por_description)
+      auditKv(
+        'SEL — Selection',
+        [r.sel_output, r.sel_description, r.sel_detail].filter(Boolean).join(' · ')
+      )
+      auditKv('ARR — Arrival', r.arr_description)
+      auditKv(
+        'AUTH — Authorisation',
+        r.status === 'AUTH_COMPLETE' && r.auth_signer
+          ? `${r.auth_signer}${r.auth_timestamp ? ' — ' + new Date(r.auth_timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}`
+          : 'Pending'
+      )
+      auditKv('Submitted', new Date(r.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }))
+
+      // Compliance flags
+      const flags: string[] = []
+      if (r.lct_required) flags.push(`LCT required — ref: ${r.lct_reference || 'not provided'}`)
+      if (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed) flags.push('Third-party licence clearance not confirmed')
+      if (r.department === 'Writing' && r.writing_consent_confirmed === false) flags.push('Writer consent not confirmed')
+      if (r.tool_status === 'RED' || r.tool_status === 'UNVERIFIED') flags.push(`Tool status: ${r.tool_status}`)
+      if (flags.length > 0) {
+        checkPage(6)
+        doc.setFontSize(7.5)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(...YELLOW_C)
+        doc.text('⚑ ' + flags.join('  ·  '), margin, y)
+        y += 5
+      }
+    })
+  }
+
   // footer on final page
   doc.setFontSize(7)
   doc.setTextColor(...LIGHT)
@@ -596,7 +699,7 @@ async function generatePDF(report: ReportData) {
   )
   doc.text(`Page ${doc.getNumberOfPages()}`, pageW - margin, pageH - 10, { align: 'right' })
 
-  const filename = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-Compliance-Report.pdf`
+  const filename = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-Compliance-Report${mode === 'audit' ? '-FullAudit' : ''}.pdf`
   doc.save(filename)
 }
 
@@ -815,6 +918,17 @@ export default function ComplianceReport() {
   const [error, setError] = useState<string | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
 
+  const [viewMode, setViewMode] = useState<'summary' | 'audit'>('summary')
+  const [expandedReceipts, setExpandedReceipts] = useState<Set<string>>(new Set())
+
+  function toggleReceipt(id: string) {
+    setExpandedReceipts((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
   const [filterDept, setFilterDept] = useState('')
   const [filterScene, setFilterScene] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -857,7 +971,7 @@ export default function ComplianceReport() {
     if (!report) return
     setPdfGenerating(true)
     try {
-      await generatePDF(report)
+      await generatePDF(report, viewMode)
     } catch (e) {
       console.error(e)
       alert('PDF generation failed. Please try again.')
@@ -1032,33 +1146,52 @@ export default function ComplianceReport() {
       {/* Report */}
       {report && (
         <>
-          <div className="flex flex-wrap justify-end gap-2 mb-4 no-print">
-            <button
-              onClick={() => report && downloadCSV(report)}
-              className="btn-secondary"
-            >
-              Export CSV
-            </button>
-            <button
-              onClick={() => report && downloadJSON(report)}
-              className="btn-secondary"
-            >
-              Export JSON
-            </button>
-            <button
-              onClick={handleDownloadStatement}
-              disabled={statementGenerating}
-              className="btn-secondary disabled:opacity-50"
-            >
-              {statementGenerating ? 'Generating…' : 'AI Statement PDF'}
-            </button>
-            <button
-              onClick={handleDownloadPDF}
-              disabled={pdfGenerating}
-              className="btn-primary disabled:opacity-50"
-            >
-              {pdfGenerating ? 'Generating PDF…' : 'Download Compliance Report'}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4 no-print">
+            {/* View mode toggle */}
+            <div className="flex items-center gap-1 rounded-lg p-1" style={{ backgroundColor: '#122E1F', border: '1px solid #2D6A4F' }}>
+              <button
+                onClick={() => setViewMode('summary')}
+                className="font-courier text-xs px-3 py-1.5 rounded transition-colors"
+                style={viewMode === 'summary'
+                  ? { backgroundColor: '#2D6A4F', color: '#F0EBE0' }
+                  : { color: '#5A8A72' }}
+              >
+                Summary View
+              </button>
+              <button
+                onClick={() => { setViewMode('audit'); setExpandedReceipts(new Set()) }}
+                className="font-courier text-xs px-3 py-1.5 rounded transition-colors"
+                style={viewMode === 'audit'
+                  ? { backgroundColor: '#C8A84B', color: '#0F2419' }
+                  : { color: '#5A8A72' }}
+              >
+                Full Audit View
+              </button>
+            </div>
+
+            {/* Download actions */}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => report && downloadCSV(report)} className="btn-secondary">
+                Export CSV
+              </button>
+              <button onClick={() => report && downloadJSON(report)} className="btn-secondary">
+                Export JSON
+              </button>
+              <button
+                onClick={handleDownloadStatement}
+                disabled={statementGenerating}
+                className="btn-secondary disabled:opacity-50"
+              >
+                {statementGenerating ? 'Generating…' : 'AI Statement PDF'}
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                disabled={pdfGenerating}
+                className="btn-primary disabled:opacity-50"
+              >
+                {pdfGenerating ? 'Generating PDF…' : viewMode === 'audit' ? 'Download Full Audit PDF' : 'Download Compliance Report'}
+              </button>
+            </div>
           </div>
 
           <div ref={reportRef} className="space-y-6">
@@ -1664,12 +1797,262 @@ export default function ComplianceReport() {
               <CompletionBondNote report={report} />
             </ReportSection>
 
+            {/* Section 9: Complete Receipt Log */}
+            <ReportSection title={`9. Complete Receipt Log${viewMode === 'audit' ? ' — Full Audit View' : ''}`}>
+              <div className="flex items-center justify-between mb-4 no-print">
+                <p className="text-sm" style={{ color: '#8BB5A0' }}>
+                  {report.receipts.length} receipt{report.receipts.length !== 1 ? 's' : ''}.{' '}
+                  {viewMode === 'summary'
+                    ? 'Click any row to expand the full four-point log.'
+                    : 'All receipts expanded — full audit detail.'}
+                </p>
+                {viewMode === 'summary' && report.receipts.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (expandedReceipts.size === report.receipts.length) {
+                        setExpandedReceipts(new Set())
+                      } else {
+                        setExpandedReceipts(new Set(report.receipts.map((r) => r.id)))
+                      }
+                    }}
+                    className="font-courier text-xs hover:underline ml-4 flex-shrink-0"
+                    style={{ color: '#C8A84B' }}
+                  >
+                    {expandedReceipts.size === report.receipts.length ? 'Collapse all' : 'Expand all'}
+                  </button>
+                )}
+              </div>
+              <div className="rounded overflow-hidden" style={{ border: '1px solid rgba(45,106,79,0.4)' }}>
+                {report.receipts.map((r, i) => (
+                  <ReceiptAuditRow
+                    key={r.id}
+                    receipt={r}
+                    index={i}
+                    expanded={viewMode === 'audit' || expandedReceipts.has(r.id)}
+                    onToggle={() => toggleReceipt(r.id)}
+                  />
+                ))}
+              </div>
+            </ReportSection>
+
             {/* Footer */}
             <div className="text-center font-courier text-xs py-4" style={{ color: '#5A8A72', borderTop: '1px solid rgba(45,106,79,0.4)' }}>
               TRACE Compliance Report generated {fmt(report.generated_at)} &bull; Laura Burrows, NFTS AI Diploma, April 2026
             </div>
           </div>
         </>
+      )}
+    </div>
+  )
+}
+
+function ReceiptAuditRow({
+  receipt: r,
+  index,
+  expanded,
+  onToggle,
+}: {
+  receipt: Receipt
+  index: number
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const fmtD = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const fmtDT = (iso: string) =>
+    new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+  const hasFlags =
+    (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed) ||
+    (r.lct_required && !r.lct_reference) ||
+    r.tool_status === 'RED' ||
+    r.tool_status === 'UNVERIFIED' ||
+    (r.department === 'Writing' && r.writing_consent_confirmed === false)
+
+  return (
+    <div style={{ borderBottom: index > 0 ? '1px solid rgba(45,106,79,0.25)' : undefined }}>
+      {/* Summary row */}
+      <div
+        onClick={onToggle}
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+        onMouseEnter={(e) => { if (!expanded) e.currentTarget.style.backgroundColor = 'rgba(45,106,79,0.08)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = expanded ? 'rgba(45,106,79,0.06)' : 'transparent' }}
+        style={{ backgroundColor: expanded ? 'rgba(45,106,79,0.06)' : 'transparent' }}
+      >
+        <span className="font-courier text-xs flex-shrink-0 w-3" style={{ color: '#C8A84B' }}>
+          {expanded ? '▾' : '▸'}
+        </span>
+        <span className="font-courier text-xs flex-shrink-0 w-20 whitespace-nowrap" style={{ color: '#5A8A72' }}>
+          {fmtD(r.date)}
+        </span>
+        <span className="font-courier text-xs flex-shrink-0 w-28 truncate" style={{ color: '#8BB5A0' }}>
+          {r.department}
+        </span>
+        <span className="font-garamond text-base flex-shrink-0 w-40 truncate" style={{ color: '#F0EBE0' }}>
+          {r.crew_member_name}
+        </span>
+        <span className="font-courier text-xs flex-shrink-0 w-20 truncate" style={{ color: '#8BB5A0' }}>
+          {r.scene_usid}
+        </span>
+        <span className="flex-1 text-sm truncate" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</span>
+        <span className={`status-badge flex-shrink-0 ${STATUS_COLORS[r.tool_status] || 'status-red'}`}>
+          {r.tool_status}
+        </span>
+        <span className="font-courier text-[10px] flex-shrink-0 whitespace-nowrap" style={{ color: r.status === 'AUTH_COMPLETE' ? '#4CAF50' : '#C8A84B' }}>
+          {r.status === 'AUTH_COMPLETE' ? '✓ AUTH' : '⏳ Pending'}
+        </span>
+        {hasFlags && (
+          <span className="font-courier text-[10px] font-semibold flex-shrink-0" style={{ color: '#C8A84B' }}>⚑</span>
+        )}
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-5 pb-5 pt-3" style={{ backgroundColor: '#0F2419', borderTop: '1px solid rgba(45,106,79,0.25)' }}>
+          {/* Header */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>
+                {r.department} · {r.crew_member_name} · {r.crew_role} · {fmtD(r.date)}
+              </p>
+              {r.twin_lock_hash && (
+                <p className="font-courier text-[9px] mt-1 break-all" style={{ color: '#2D6A4F' }}>
+                  SHA-256: {r.twin_lock_hash}
+                </p>
+              )}
+              {!r.twin_lock_hash && (
+                <p className="font-courier text-[9px] mt-0.5" style={{ color: '#5A8A72' }}>No hash — receipt not yet finalised</p>
+              )}
+            </div>
+            <span className={`status-badge ml-3 flex-shrink-0 ${STATUS_COLORS[r.tool_status] || 'status-red'}`}>
+              {r.tool_status}
+            </span>
+          </div>
+
+          {/* Compliance flags */}
+          {hasFlags && (
+            <div className="mb-4 rounded px-3 py-2.5" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.35)' }}>
+              <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#C8A84B' }}>Compliance flags</p>
+              <div className="space-y-0.5">
+                {r.tool_status === 'RED' && (
+                  <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ RED status tool — requires auth sign-off review</p>
+                )}
+                {r.tool_status === 'UNVERIFIED' && (
+                  <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ UNVERIFIED tool — OAS assessment required</p>
+                )}
+                {r.lct_required && !r.lct_reference && (
+                  <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ LCT required — reference not provided</p>
+                )}
+                {Boolean(r.third_party_asset) && !r.third_party_licence_confirmed && (
+                  <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ Third-party licence clearance not confirmed — legal review required before delivery</p>
+                )}
+                {r.department === 'Writing' && r.writing_consent_confirmed === false && (
+                  <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ Writer consent not confirmed</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Four-point log */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {[
+              { label: 'POR — Prompt of Record', content: <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>{r.por_description}</p> },
+              { label: 'SEL — Selection', content: (
+                <>
+                  {r.sel_output && <p className="text-xs font-medium mb-1" style={{ color: '#D4EDE1' }}>{r.sel_output}</p>}
+                  <p className="text-sm" style={{ color: '#8BB5A0' }}>{r.sel_description}</p>
+                  {r.sel_detail && <p className="text-xs italic mt-0.5" style={{ color: '#5A8A72' }}>{r.sel_detail}</p>}
+                </>
+              )},
+              { label: 'ARR — Arrival', content: <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>{r.arr_description}</p> },
+              { label: 'AUTH — Authorisation', content: r.status === 'AUTH_COMPLETE' ? (
+                <>
+                  <p className="text-sm font-medium" style={{ color: '#D4EDE1' }}>{r.auth_signer}</p>
+                  <p className="font-courier text-xs mt-0.5" style={{ color: '#5A8A72' }}>
+                    {r.auth_timestamp ? fmtDT(r.auth_timestamp) : '—'}
+                  </p>
+                </>
+              ) : (
+                <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>Pending sign-off</p>
+              )},
+            ].map(({ label, content }) => (
+              <div key={label} className="rounded p-3" style={{ background: 'rgba(45,106,79,0.1)', border: '1px solid rgba(45,106,79,0.25)' }}>
+                <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#5A8A72' }}>{label}</p>
+                {content}
+              </div>
+            ))}
+          </div>
+
+          {/* Tool details */}
+          <div className="rounded p-3 mb-3" style={{ background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.2)' }}>
+            <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#5A8A72' }}>Tool Details</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>Tool Name</p>
+                <p style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</p>
+              </div>
+              <div>
+                <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>Version</p>
+                <p style={{ color: r.tool_version ? '#D4EDE1' : '#5A8A72' }}>{r.tool_version || '—'}</p>
+              </div>
+              <div>
+                <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>Approval Category</p>
+                <span className={`status-badge ${STATUS_COLORS[r.tool_status] || 'status-red'}`}>{r.tool_status}</span>
+              </div>
+              <div>
+                <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>Scene / Asset</p>
+                <p className="font-courier" style={{ color: '#8BB5A0' }}>{r.scene_usid}</p>
+              </div>
+            </div>
+            {r.whitelist_condition && (
+              <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(45,106,79,0.2)' }}>
+                <p className="font-courier text-[10px] mb-1" style={{ color: '#5A8A72' }}>Risk Attributes / Condition at Submission</p>
+                <p className="text-xs italic" style={{ color: '#8BB5A0' }}>{r.whitelist_condition}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Additional tools */}
+          {Array.isArray(r.additional_tools) && (r.additional_tools as AdditionalToolEntry[]).length > 0 && (
+            <div className="rounded p-3 mb-3" style={{ background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.2)' }}>
+              <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#5A8A72' }}>
+                Additional Tools — {(r.additional_tools as AdditionalToolEntry[]).length} further tool{(r.additional_tools as AdditionalToolEntry[]).length !== 1 ? 's' : ''} in this session
+              </p>
+              <div className="space-y-2">
+                {(r.additional_tools as AdditionalToolEntry[]).map((at, j) => (
+                  <div key={j} className="rounded px-3 py-2" style={{ background: 'rgba(45,106,79,0.06)', border: '1px solid rgba(45,106,79,0.15)' }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-medium" style={{ color: '#D4EDE1' }}>{at.ai_tool_used}</span>
+                      {at.tool_version && <span className="font-courier text-[10px]" style={{ color: '#5A8A72' }}>v{at.tool_version}</span>}
+                      <span className={`status-badge ml-auto ${STATUS_COLORS[at.tool_status] || 'status-red'}`}>{at.tool_status}</span>
+                    </div>
+                    <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>POR: <span className="normal-case not-italic font-normal" style={{ color: '#8BB5A0' }}>{at.por_description}</span></p>
+                    <p className="font-courier text-[10px] mb-0.5" style={{ color: '#5A8A72' }}>SEL: <span className="normal-case not-italic font-normal" style={{ color: '#8BB5A0' }}>{at.sel_output} — {at.sel_description}</span></p>
+                    <p className="font-courier text-[10px]" style={{ color: '#5A8A72' }}>ARR: <span className="normal-case not-italic font-normal" style={{ color: '#8BB5A0' }}>{at.arr_description}</span></p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LCT details */}
+          {r.lct_required && (
+            <div className="rounded px-3 py-2 mb-3" style={{ background: 'rgba(200,168,75,0.06)', border: '1px solid rgba(200,168,75,0.3)' }}>
+              <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#C8A84B' }}>LCT — Performer Likeness / Voice</p>
+              <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>
+                Ref: {r.lct_reference || 'not provided'}
+                {r.lct_child_performer && ` · Child performer — ${r.lct_child_age_bracket || 'age not set'}`}
+              </p>
+            </div>
+          )}
+
+          {/* Meta row */}
+          <div className="font-courier text-[10px] flex flex-wrap gap-x-4 gap-y-1 pt-2" style={{ color: '#2D6A4F', borderTop: '1px solid rgba(45,106,79,0.15)' }}>
+            <span>Submitted: {fmtDT(r.created_at)}</span>
+            <span>Receipt ID: {r.id}</span>
+            {r.notes && <span>Notes: {r.notes}</span>}
+          </div>
+        </div>
       )}
     </div>
   )
