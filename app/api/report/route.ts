@@ -31,10 +31,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const receipts = await prisma.receipt.findMany({
-    where,
-    orderBy: { date: 'asc' },
-  })
+  const [receipts, crewConsents] = await Promise.all([
+    prisma.receipt.findMany({ where, orderBy: { date: 'asc' } }),
+    prisma.crewConsent.findMany({
+      where: { production_name: production },
+      orderBy: { consented_at: 'asc' },
+    }),
+  ])
 
   if (receipts.length === 0) {
     return NextResponse.json({ error: 'No receipts found' }, { status: 404 })
@@ -89,6 +92,10 @@ export async function GET(req: NextRequest) {
     created_at: r.created_at.toISOString(),
   })
 
+  const consentedNames = new Set(crewConsents.map((c) => c.crew_member_name))
+  const allCrewNames = Array.from(new Set(receipts.map((r) => r.crew_member_name)))
+  const unconsentedCrew = allCrewNames.filter((name) => !consentedNames.has(name))
+
   // Build a human-readable filter description for the cover page
   const filterParts: string[] = []
   if (department) filterParts.push(`Department: ${department}`)
@@ -109,6 +116,8 @@ export async function GET(req: NextRequest) {
     lct_receipts: lctReceipts.map(serializeReceipt) as unknown as ReportData['lct_receipts'],
     all_signers: allSigners,
     filter_description: filterParts.length > 0 ? filterParts.join(' · ') : null,
+    crew_consents: crewConsents.map((c) => ({ ...c, consented_at: c.consented_at.toISOString() })),
+    unconsented_crew: unconsentedCrew,
   }
 
   return NextResponse.json(report)

@@ -421,6 +421,14 @@ export interface SessionToolEntry {
   delivery_no_training_confirmed?: boolean
 }
 
+export interface CrewConsent {
+  id: string
+  production_name: string
+  crew_member_name: string
+  crew_role: string
+  consented_at: string
+}
+
 export interface ReportData {
   production_name: string
   receipts: Receipt[]
@@ -433,6 +441,8 @@ export interface ReportData {
   lct_receipts: Receipt[]
   all_signers: string[]
   filter_description?: string | null
+  crew_consents: CrewConsent[]
+  unconsented_crew: string[]
 }
 
 export interface ToolEntry {

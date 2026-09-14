@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
-import type { ReportData, Receipt, ToolStatus, AdditionalToolEntry } from '@/lib/types'
+import type { ReportData, Receipt, ToolStatus, AdditionalToolEntry, CrewConsent } from '@/lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
@@ -532,6 +532,42 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
         false,
         !r.facility_ai_policy_confirmed ? YELLOW_C : undefined
       )
+    })
+  }
+
+  // ── CREW CONSENT REGISTER ─────────────────────────────────────────────────
+  newPage()
+  h2('Crew Consent Register')
+  gap(2)
+
+  if (report.crew_consents.length === 0) {
+    body('No crew consent records have been recorded for this production.')
+  } else {
+    body(`${report.crew_consents.length} crew member${report.crew_consents.length !== 1 ? 's' : ''} have confirmed their TRACE© consent declaration.`)
+    gap(4)
+    tableRow(['Name', 'Role', 'Consented At'], [70, 60, 50], true)
+    report.crew_consents.forEach((c) => {
+      tableRow(
+        [c.crew_member_name, c.crew_role, new Date(c.consented_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })],
+        [70, 60, 50],
+        false
+      )
+    })
+  }
+
+  if (report.unconsented_crew.length > 0) {
+    gap(6)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...YELLOW_C)
+    checkPage(6)
+    doc.text('⚑ AMBER FLAG — Crew with activity but no consent record:', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    report.unconsented_crew.forEach((name) => {
+      checkPage(5)
+      doc.text(`  • ${name}`, margin, y)
+      y += 4
     })
   }
 
@@ -1296,6 +1332,51 @@ export default function ComplianceReport() {
                     ))}
                 </tbody>
               </table>
+            </ReportSection>
+
+            {/* Crew Consent Register */}
+            <ReportSection title="Crew Consent Register">
+              {report.crew_consents.length === 0 ? (
+                <p className="font-courier text-sm" style={{ color: '#5A8A72' }}>No consent records found for this production.</p>
+              ) : (
+                <>
+                  <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
+                    {report.crew_consents.length} crew member{report.crew_consents.length !== 1 ? 's' : ''} have confirmed their TRACE© consent declaration.
+                  </p>
+                  <table className="w-full text-sm mb-4">
+                    <thead>
+                      <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Name</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Role</th>
+                        <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Consented At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {report.crew_consents.map((c: CrewConsent) => (
+                        <tr key={c.id} style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                          <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{c.crew_member_name}</td>
+                          <td className="px-3 py-2" style={{ color: '#8BB5A0' }}>{c.crew_role}</td>
+                          <td className="px-3 py-2 font-courier text-xs" style={{ color: '#5A8A72' }}>
+                            {new Date(c.consented_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+              {report.unconsented_crew.length > 0 && (
+                <div className="rounded px-4 py-3" style={{ background: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.4)' }}>
+                  <p className="font-courier text-xs font-semibold mb-2" style={{ color: '#C8A84B' }}>
+                    ⚑ AMBER — Crew with activity but no consent record
+                  </p>
+                  <ul className="space-y-1">
+                    {report.unconsented_crew.map((name) => (
+                      <li key={name} className="font-courier text-xs" style={{ color: '#C8A84B' }}>{name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </ReportSection>
 
             {/* Section 2: Guild Compliance Register */}

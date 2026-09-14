@@ -110,6 +110,16 @@ model Production {
   created_at            DateTime  @default(now())
 }
 
+model CrewConsent {
+  id               String   @id @default(uuid())
+  production_name  String
+  crew_member_name String
+  crew_role        String
+  consented_at     DateTime @default(now())
+
+  @@unique([production_name, crew_member_name])
+}
+
 model WhitelistEntry {
   id          String   @id @default(uuid())
   toolName    String   @unique

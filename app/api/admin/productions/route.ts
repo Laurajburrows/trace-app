@@ -23,6 +23,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'A production with that name already exists.' }, { status: 409 })
   }
 
-  const production = await prisma.production.create({ data: { name } })
+  const production = await prisma.production.create({ data: { name, activated_at: new Date() } })
   return NextResponse.json(production, { status: 201 })
 }
