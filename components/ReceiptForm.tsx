@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
-import type { Department, WhitelistEntry, SelReason, SubmitterRole } from '@/lib/types'
+import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -69,6 +69,13 @@ const emptyForm = {
   input_file_version: '',
   output_file_version: '',
   tool_version: '',
+  scene_asset_reference: '',
+  writing_script_reference: '',
+  writing_scene_number: '',
+  reel: '',
+  timecode_range: '',
+  session_file_reference: '',
+  deliverable_name: '',
 }
 
 type FormState = typeof emptyForm
@@ -114,6 +121,7 @@ interface ToolEntryFormState {
   delivery_ai_tool_type: string
   delivery_format: string
   delivery_no_training_confirmed: boolean
+  tool_version: string
 }
 
 function makeEmptyEntry(): ToolEntryFormState {
@@ -129,6 +137,7 @@ function makeEmptyEntry(): ToolEntryFormState {
     sound_processing_location: '', sound_processing_type: '',
     sound_performer_audio: false, sound_no_training_confirmed: false,
     delivery_ai_tool_type: '', delivery_format: '', delivery_no_training_confirmed: false,
+    tool_version: '',
   }
 }
 
@@ -198,13 +207,24 @@ function StatusBadge({ status, condition, requiresLCT }: {
   return null
 }
 
-export default function ReceiptForm() {
+interface ReceiptFormProps {
+  mode?: 'edit' | 'supersede'
+  preloadId?: string
+  supersedeId?: string
+}
+
+export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFormProps = {}) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [missingFields, setMissingFields] = useState<string[]>([])
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
   const [productions, setProductions] = useState<string[]>([])
   const [newProduction, setNewProduction] = useState(false)
+
+  const [supersedeReason, setSupersedeReason] = useState('')
+  const [preloadedReceipt, setPreloadedReceipt] = useState<Receipt | null>(null)
+  const [preloadLoading, setPreloadLoading] = useState(false)
 
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([])
   const [toolQuery, setToolQuery] = useState('')
@@ -221,6 +241,121 @@ export default function ReceiptForm() {
     fetch('/api/productions').then((r) => r.json()).then(setProductions).catch(() => {})
     fetch('/api/whitelist').then((r) => r.json()).then(setWhitelist).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const id = preloadId || supersedeId
+    if (!id) return
+    setPreloadLoading(true)
+    fetch(`/api/receipts/${id}`)
+      .then(r => r.json())
+      .then((receipt: Receipt) => {
+        setPreloadedReceipt(receipt)
+        setForm({
+          production_name: receipt.production_name || '',
+          date: receipt.date ? new Date(receipt.date).toISOString().split('T')[0] : today,
+          department: (receipt.department || '') as Department | '',
+          crew_member_name: receipt.crew_member_name || '',
+          crew_role: receipt.crew_role || '',
+          submitter_role: (receipt.submitter_role || 'crew') as SubmitterRole,
+          scene_usid: receipt.scene_usid || '',
+          script_date: receipt.script_date || '',
+          ai_tool_used: receipt.ai_tool_used || '',
+          tool_status: receipt.tool_status || '',
+          whitelist_condition: receipt.whitelist_condition || '',
+          por_description: receipt.por_description || '',
+          sel_output: receipt.sel_output || '',
+          sel_description: (receipt.sel_description || '') as SelReason | '',
+          sel_detail: receipt.sel_detail || '',
+          arr_description: receipt.arr_description || '',
+          lct_required: Boolean(receipt.lct_required),
+          lct_reference: receipt.lct_reference || '',
+          lct_child_performer: Boolean(receipt.lct_child_performer),
+          lct_child_age_bracket: receipt.lct_child_age_bracket || '',
+          lct_guardian_name: receipt.lct_guardian_name || '',
+          lct_guardian_consent_ref: receipt.lct_guardian_consent_ref || '',
+          lct_performance_licence_ref: receipt.lct_performance_licence_ref || '',
+          notes: receipt.notes || '',
+          vfx_software: receipt.vfx_software || '',
+          vfx_data_location: receipt.vfx_data_location || '',
+          vfx_no_training_confirmed: Boolean(receipt.vfx_no_training_confirmed),
+          vfx_input_type: receipt.vfx_input_type || '',
+          vfx_output_type: receipt.vfx_output_type || '',
+          vfx_lct_confirmed: Boolean(receipt.vfx_lct_confirmed),
+          sound_processing_location: receipt.sound_processing_location || '',
+          sound_processing_type: receipt.sound_processing_type || '',
+          sound_performer_audio: Boolean(receipt.sound_performer_audio),
+          sound_no_training_confirmed: Boolean(receipt.sound_no_training_confirmed),
+          writing_stage: receipt.writing_stage || '',
+          writing_submitted_material: receipt.writing_submitted_material || '',
+          writing_processing_location: receipt.writing_processing_location || '',
+          writing_guild_status: receipt.writing_guild_status || '',
+          writing_ai_contribution: receipt.writing_ai_contribution || '',
+          writing_no_training_confirmed: Boolean(receipt.writing_no_training_confirmed),
+          writing_authorship_declared: Boolean(receipt.writing_authorship_declared),
+          writing_wga_writers_count: receipt.writing_wga_writers_count ? String(receipt.writing_wga_writers_count) : '',
+          writing_wga_registration: receipt.writing_wga_registration || '',
+          writing_wggb_context: receipt.writing_wggb_context || '',
+          writing_wggb_paternity: Boolean(receipt.writing_wggb_paternity),
+          colour_grading_system: receipt.colour_grading_system || '',
+          colour_ai_grading: Boolean(receipt.colour_ai_grading),
+          colour_performer_footage: Boolean(receipt.colour_performer_footage),
+          colour_lct_confirmed: Boolean(receipt.colour_lct_confirmed),
+          editorial_editing_system: receipt.editorial_editing_system || '',
+          editorial_ai_tool_type: receipt.editorial_ai_tool_type || '',
+          editorial_performer_footage: Boolean(receipt.editorial_performer_footage),
+          editorial_lct_confirmed: Boolean(receipt.editorial_lct_confirmed),
+          delivery_ai_tool_type: receipt.delivery_ai_tool_type || '',
+          delivery_format: receipt.delivery_format || '',
+          delivery_no_training_confirmed: Boolean(receipt.delivery_no_training_confirmed),
+          facility_name: receipt.facility_name || '',
+          render_processing_location: receipt.render_processing_location || '',
+          facility_ai_policy_confirmed: Boolean(receipt.facility_ai_policy_confirmed),
+          input_file_version: receipt.input_file_version || '',
+          output_file_version: receipt.output_file_version || '',
+          tool_version: receipt.tool_version || '',
+          scene_asset_reference: receipt.scene_asset_reference || '',
+          writing_script_reference: receipt.writing_script_reference || '',
+          writing_scene_number: receipt.writing_scene_number || '',
+          reel: receipt.reel || '',
+          timecode_range: receipt.timecode_range || '',
+          session_file_reference: receipt.session_file_reference || '',
+          deliverable_name: receipt.deliverable_name || '',
+        })
+        setToolQuery(receipt.ai_tool_used || '')
+        if (receipt.is_session && Array.isArray(receipt.session_tool_entries) && receipt.session_tool_entries.length > 0) {
+          const entries = (receipt.session_tool_entries as import('@/lib/types').SessionToolEntry[]).map(e => ({
+            ...makeEmptyEntry(),
+            toolQuery: e.ai_tool_used || '',
+            input_file_version: e.input_file_version || '',
+            output_file_version: e.output_file_version || '',
+            vfx_software: e.vfx_software || '',
+            vfx_data_location: e.vfx_data_location || '',
+            vfx_no_training_confirmed: Boolean(e.vfx_no_training_confirmed),
+            vfx_input_type: e.vfx_input_type || '',
+            vfx_output_type: e.vfx_output_type || '',
+            vfx_lct_confirmed: Boolean(e.vfx_lct_confirmed),
+            colour_grading_system: e.colour_grading_system || '',
+            colour_ai_grading: Boolean(e.colour_ai_grading),
+            colour_performer_footage: Boolean(e.colour_performer_footage),
+            colour_lct_confirmed: Boolean(e.colour_lct_confirmed),
+            editorial_editing_system: e.editorial_editing_system || '',
+            editorial_ai_tool_type: e.editorial_ai_tool_type || '',
+            editorial_performer_footage: Boolean(e.editorial_performer_footage),
+            editorial_lct_confirmed: Boolean(e.editorial_lct_confirmed),
+            sound_processing_location: e.sound_processing_location || '',
+            sound_processing_type: e.sound_processing_type || '',
+            sound_performer_audio: Boolean(e.sound_performer_audio),
+            sound_no_training_confirmed: Boolean(e.sound_no_training_confirmed),
+            delivery_ai_tool_type: e.delivery_ai_tool_type || '',
+            delivery_format: e.delivery_format || '',
+            delivery_no_training_confirmed: Boolean(e.delivery_no_training_confirmed),
+            tool_version: '',
+          }))
+          setToolEntries(entries)
+        }
+      })
+      .finally(() => setPreloadLoading(false))
+  }, [preloadId, supersedeId])
 
   // Reset toolEntries and VFX-only fields when department changes
   useEffect(() => {
@@ -308,8 +443,16 @@ export default function ReceiptForm() {
   }
 
   // Derived values — single tool (non-post-prod)
+  const isPreloadedTool = Boolean(
+    (mode === 'edit' || mode === 'supersede') &&
+    preloadedReceipt &&
+    toolQuery.trim().toLowerCase() === (preloadedReceipt.ai_tool_used || '').toLowerCase()
+  )
+
   const derivedStatus: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' = selectedEntry
     ? (selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
+    : isPreloadedTool && form.tool_status
+    ? (form.tool_status as 'GREEN' | 'AMBER' | 'RED')
     : toolQuery.trim().length >= 3
     ? 'UNVERIFIED'
     : ''
@@ -320,10 +463,12 @@ export default function ReceiptForm() {
     derivedStatus === ''
 
   // Derived values — session log mode
+  const preloadMode = mode === 'edit' || mode === 'supersede'
+
   function entryDerivedStatus(e: ToolEntryFormState): 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' {
-    return e.selectedEntry
-      ? (e.selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
-      : e.toolQuery.trim().length >= 3 ? 'UNVERIFIED' : ''
+    if (e.selectedEntry) return e.selectedEntry.status as 'GREEN' | 'AMBER' | 'RED'
+    if (preloadMode && e.toolQuery.trim()) return 'GREEN'
+    return e.toolQuery.trim().length >= 3 ? 'UNVERIFIED' : ''
   }
 
   const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
@@ -347,9 +492,49 @@ export default function ReceiptForm() {
     : 'HOD'
   const isWritingDev = form.department === 'Writing' && form.writing_stage === 'Development'
 
+  function getMissingFields(): string[] {
+    const missing: string[] = []
+    if (!form.department) missing.push('Department')
+    if (isPostProd) {
+      if (!toolEntries[0]?.toolQuery?.trim()) missing.push('Tool Name')
+      if (toolEntries.some(e => !e.tool_version.trim())) missing.push('Tool Version')
+    } else {
+      if (!form.ai_tool_used.trim()) missing.push('Tool Name')
+      if (!form.tool_version.trim()) missing.push('Tool Version')
+    }
+    if (!form.por_description.trim()) missing.push('POR')
+    if (!form.sel_output.trim()) missing.push('SEL')
+    if (!form.arr_description.trim()) missing.push('ARR')
+    if (form.department === 'Writing') {
+      if (!form.writing_script_reference.trim()) missing.push('Script Reference')
+      if (!form.writing_scene_number.trim()) missing.push('Scene Number')
+    }
+    if (form.department === 'VFX' || form.department === 'Art Department') {
+      if (!form.scene_asset_reference.trim()) missing.push('Scene or Asset Reference')
+    }
+    if (form.department === 'Colour / DI' || form.department === 'Editorial') {
+      if (!form.reel.trim()) missing.push('Reel')
+      if (!form.timecode_range.trim()) missing.push('Timecode Range')
+    }
+    if (form.department === 'Sound Post') {
+      if (!form.session_file_reference.trim()) missing.push('Session File Reference')
+    }
+    if (form.department === 'Delivery / QC') {
+      if (!form.deliverable_name.trim()) missing.push('Deliverable Name')
+    }
+    if (mode === 'supersede' && !supersedeReason.trim()) missing.push('Reason for Superseding')
+    return missing
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setMissingFields([])
+    const missing = getMissingFields()
+    if (missing.length > 0) {
+      setMissingFields(missing)
+      return
+    }
 
     if (!form.department) return setError('Please select a department.')
 
@@ -485,17 +670,32 @@ export default function ReceiptForm() {
         }
 
         // e. Submit
-        const res = await fetch('/api/receipts', {
-          method: 'POST',
+        let postProdUrl = '/api/receipts'
+        let postProdMethod = 'POST'
+        let postProdExtraFields: Record<string, unknown> = {}
+
+        if (mode === 'edit' && preloadId) {
+          postProdUrl = `/api/receipts/${preloadId}`
+          postProdMethod = 'PUT'
+        } else if (mode === 'supersede' && supersedeId) {
+          postProdUrl = `/api/receipts/${supersedeId}/supersede`
+          postProdMethod = 'POST'
+          postProdExtraFields = { supersede_reason: supersedeReason }
+        }
+
+        const res = await fetch(postProdUrl, {
+          method: postProdMethod,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, ...postProdExtraFields }),
         })
 
         if (!res.ok) throw new Error('Submission failed')
 
         const receipt = await res.json()
         const selfAuth = false
-        const routedTo: Confirmation['routedTo'] = form.submitter_role === 'hod'
+        const routedTo: Confirmation['routedTo'] = mode === 'edit'
+          ? 'hod'
+          : form.submitter_role === 'hod'
           ? 'producer'
           : form.submitter_role === 'producer'
           ? 'exec'
@@ -550,22 +750,38 @@ export default function ReceiptForm() {
     try {
       const payload = {
         ...form,
-        tool_status: selectedEntry?.status || 'RED',
-        whitelist_condition: selectedEntry?.condition || null,
+        tool_status: selectedEntry?.status || form.tool_status || 'RED',
+        whitelist_condition: selectedEntry?.condition || form.whitelist_condition || null,
         is_session: false,
         session_tool_entries: null,
       }
-      const res = await fetch('/api/receipts', {
-        method: 'POST',
+
+      let url = '/api/receipts'
+      let method = 'POST'
+      let extraFields: Record<string, unknown> = {}
+
+      if (mode === 'edit' && preloadId) {
+        url = `/api/receipts/${preloadId}`
+        method = 'PUT'
+      } else if (mode === 'supersede' && supersedeId) {
+        url = `/api/receipts/${supersedeId}/supersede`
+        method = 'POST'
+        extraFields = { supersede_reason: supersedeReason }
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, ...extraFields }),
       })
 
       if (!res.ok) throw new Error('Submission failed')
 
       const receipt = await res.json()
       const selfAuth = form.department === 'Writing' && form.writing_stage === 'Development'
-      const routedTo: Confirmation['routedTo'] = selfAuth
+      const routedTo: Confirmation['routedTo'] = mode === 'edit'
+        ? 'hod'
+        : selfAuth
         ? 'self'
         : form.submitter_role === 'hod'
         ? 'producer'
@@ -592,6 +808,12 @@ export default function ReceiptForm() {
       ? '/exec'
       : '/hod'
 
+    const modeSubtitle = mode === 'edit'
+      ? 'Resubmitted successfully — the receipt is back in the HOD queue.'
+      : mode === 'supersede'
+      ? 'Superseding receipt created. The original has been marked as superseded in the log.'
+      : null
+
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-8">
         <div className="flex items-center gap-3 mb-6">
@@ -612,6 +834,9 @@ export default function ReceiptForm() {
                 ? 'Receipt submitted — self-authorised'
                 : `Receipt submitted — pending ${queueLabel}`}
             </h2>
+            {modeSubtitle && (
+              <p className="text-sm text-gray-600 mt-0.5">{modeSubtitle}</p>
+            )}
             <p className="text-sm text-gray-500">Production: {confirmation.production_name}</p>
           </div>
         </div>
@@ -672,8 +897,27 @@ export default function ReceiptForm() {
     )
   }
 
+  if (preloadLoading) {
+    return <div className="py-12 text-center text-sm text-gray-500">Loading receipt…</div>
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+
+      {mode === 'edit' && preloadedReceipt && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4">
+          <p className="text-sm font-semibold text-amber-800">Editing recalled receipt</p>
+          <p className="font-courier text-xs text-amber-700 mt-0.5 break-all">{preloadedReceipt.id}</p>
+          <p className="text-xs text-amber-700 mt-1">This receipt was recalled from the HOD queue. Update any fields and resubmit.</p>
+        </div>
+      )}
+      {mode === 'supersede' && preloadedReceipt && (
+        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-5 py-4">
+          <p className="text-sm font-semibold text-gray-800">Superseding receipt</p>
+          <p className="font-courier text-xs text-gray-600 mt-0.5 break-all">{preloadedReceipt.id}</p>
+          <p className="text-xs text-gray-600 mt-1">Complete all fields below. The original receipt will be marked as superseded in the log.</p>
+        </div>
+      )}
 
       {/* Production Details */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
@@ -790,6 +1034,90 @@ export default function ReceiptForm() {
                 placeholder="e.g. VFX_0023, SC23_045A"
                 value={form.scene_usid}
                 onChange={(e) => set('scene_usid', e.target.value)}
+              />
+            </div>
+          )}
+          {(form.department === 'VFX' || form.department === 'Art Department') && (
+            <div>
+              <label className="label" htmlFor="scene_asset_reference">Scene or Asset Reference</label>
+              <input
+                id="scene_asset_reference"
+                className="input"
+                placeholder="e.g. SC023, Asset_Tree_V001, INT_OFFICE_DAY"
+                value={form.scene_asset_reference}
+                onChange={(e) => set('scene_asset_reference', e.target.value)}
+              />
+            </div>
+          )}
+          {form.department === 'Writing' && (
+            <>
+              <div>
+                <label className="label" htmlFor="writing_script_reference">Script Reference</label>
+                <input
+                  id="writing_script_reference"
+                  className="input"
+                  placeholder="e.g. EP01_Pink_v3, 1x01_Sc23"
+                  value={form.writing_script_reference}
+                  onChange={(e) => set('writing_script_reference', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="writing_scene_number">Scene Number</label>
+                <input
+                  id="writing_scene_number"
+                  className="input"
+                  placeholder="e.g. 23, A-23"
+                  value={form.writing_scene_number}
+                  onChange={(e) => set('writing_scene_number', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+          {(form.department === 'Colour / DI' || form.department === 'Editorial') && (
+            <>
+              <div>
+                <label className="label" htmlFor="reel">Reel</label>
+                <input
+                  id="reel"
+                  className="input"
+                  placeholder="e.g. R1, Reel 01"
+                  value={form.reel}
+                  onChange={(e) => set('reel', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="timecode_range">Timecode Range</label>
+                <input
+                  id="timecode_range"
+                  className="input"
+                  placeholder="e.g. 01:00:00:00 – 01:10:32:14"
+                  value={form.timecode_range}
+                  onChange={(e) => set('timecode_range', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+          {form.department === 'Sound Post' && (
+            <div>
+              <label className="label" htmlFor="session_file_reference">Session File Reference</label>
+              <input
+                id="session_file_reference"
+                className="input"
+                placeholder="e.g. EP01_MIX_v03.ptx"
+                value={form.session_file_reference}
+                onChange={(e) => set('session_file_reference', e.target.value)}
+              />
+            </div>
+          )}
+          {form.department === 'Delivery / QC' && (
+            <div>
+              <label className="label" htmlFor="deliverable_name">Deliverable Name</label>
+              <input
+                id="deliverable_name"
+                className="input"
+                placeholder="e.g. IMF_EP01_UK_5.1, ProRes_MASTER_EP02"
+                value={form.deliverable_name}
+                onChange={(e) => set('deliverable_name', e.target.value)}
               />
             </div>
           )}
@@ -960,6 +1288,18 @@ export default function ReceiptForm() {
                   {entry.toolQuery.trim().length >= 3 && !entry.selectedEntry && entry.suggestions.length === 0 && (
                     <p className="text-xs text-red-600 mt-2 font-medium">Tool not found on production whitelist — refer to OAS before proceeding.</p>
                   )}
+                </div>
+
+                {/* Tool Version */}
+                <div className="mb-4">
+                  <label className="label" htmlFor={`tool_version_${index}`}>Tool Version</label>
+                  <input
+                    id={`tool_version_${index}`}
+                    className="input"
+                    placeholder="e.g. 2.1, Pro 2024-10, v3.5-turbo"
+                    value={entry.tool_version}
+                    onChange={(e) => updateEntry(index, { tool_version: e.target.value })}
+                  />
                 </div>
 
                 {/* Tool Status */}
@@ -1246,6 +1586,17 @@ export default function ReceiptForm() {
                 Tool not found on production whitelist — refer to OAS before proceeding.
               </p>
             )}
+          </div>
+
+          <div className="mb-4">
+            <label className="label" htmlFor="tool_version">Tool Version</label>
+            <input
+              id="tool_version"
+              className="input"
+              placeholder="e.g. 2.1, Pro 2024-10, v3.5-turbo"
+              value={form.tool_version}
+              onChange={(e) => set('tool_version', e.target.value)}
+            />
           </div>
 
           <div>
@@ -1613,6 +1964,24 @@ export default function ReceiptForm() {
         )}
       </section>
 
+      {/* Reason for Superseding */}
+      {mode === 'supersede' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">Reason for Superseding</h2>
+          <div>
+            <label className="label" htmlFor="supersede_reason">Reason <span className="normal-case font-normal text-gray-400">(mandatory)</span></label>
+            <textarea
+              id="supersede_reason"
+              className="textarea"
+              rows={3}
+              placeholder="Explain why this receipt supersedes the original — e.g. incorrect tool version recorded, wrong scene reference, material change after submission…"
+              value={supersedeReason}
+              onChange={(e) => setSupersedeReason(e.target.value)}
+            />
+          </div>
+        </section>
+      )}
+
       {/* Notes */}
       <section className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="section-heading">Notes <span className="normal-case font-normal text-gray-400">(optional)</span></h2>
@@ -1625,6 +1994,22 @@ export default function ReceiptForm() {
           onChange={(e) => set('notes', e.target.value)}
         />
       </section>
+
+      {missingFields.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-5 py-4">
+          <p className="text-sm font-medium text-gray-800 mb-2">
+            Your receipt is incomplete. Please complete the following fields before submitting to your HOD:
+          </p>
+          <ul className="space-y-1">
+            {missingFields.map((f) => (
+              <li key={f} className="text-sm text-gray-700 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded px-4 py-3 text-sm text-red-700">

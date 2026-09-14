@@ -80,6 +80,19 @@ model Receipt {
   tool_version                String?
   is_session                  Boolean @default(false)
   session_tool_entries        Json?
+  scene_asset_reference       String?
+  writing_script_reference    String?
+  writing_scene_number        String?
+  reel                        String?
+  timecode_range              String?
+  session_file_reference      String?
+  deliverable_name            String?
+  recalled_at                 DateTime?
+  resubmitted_at              DateTime?
+  supersedes                  String?
+  superseded_by               String?
+  superseded_at               DateTime?
+  supersede_reason            String?
 }
 
 model WhitelistEntry {

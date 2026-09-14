@@ -43,6 +43,8 @@ export type ReceiptStatus =
   | 'PENDING_PRODUCER_AUTH'
   | 'PENDING_EXEC_AUTH'
   | 'AUTH_COMPLETE'
+  | 'RECALLED'
+  | 'SUPERSEDED'
 
 export type SubmitterRole = 'crew' | 'hod' | 'producer'
 
@@ -345,6 +347,19 @@ export interface Receipt {
   input_file_version?: string | null
   output_file_version?: string | null
   tool_version?: string | null
+  scene_asset_reference?: string | null
+  writing_script_reference?: string | null
+  writing_scene_number?: string | null
+  reel?: string | null
+  timecode_range?: string | null
+  session_file_reference?: string | null
+  deliverable_name?: string | null
+  recalled_at?: string | null
+  resubmitted_at?: string | null
+  supersedes?: string | null
+  superseded_by?: string | null
+  superseded_at?: string | null
+  supersede_reason?: string | null
   is_session?: boolean
   session_tool_entries?: SessionToolEntry[] | null
 }

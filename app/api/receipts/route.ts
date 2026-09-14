@@ -142,6 +142,13 @@ export async function POST(req: NextRequest) {
       tool_version: body.tool_version || null,
       is_session: Boolean(body.is_session),
       session_tool_entries: body.session_tool_entries ?? null,
+      scene_asset_reference: body.scene_asset_reference || null,
+      writing_script_reference: body.writing_script_reference || null,
+      writing_scene_number: body.writing_scene_number || null,
+      reel: body.reel || null,
+      timecode_range: body.timecode_range || null,
+      session_file_reference: body.session_file_reference || null,
+      deliverable_name: body.deliverable_name || null,
     },
   })
 

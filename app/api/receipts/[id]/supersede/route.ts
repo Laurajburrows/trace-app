@@ -1,91 +1,60 @@
-export const dynamic = 'force-dynamic'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const receipt = await prisma.receipt.findUnique({
-    where: { id: params.id },
-  })
-
-  if (!receipt) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  return NextResponse.json(receipt)
-}
-
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const body = await req.json()
-  const { auth_signer } = body
-
-  if (!auth_signer || typeof auth_signer !== 'string' || !auth_signer.trim()) {
-    return NextResponse.json({ error: 'auth_signer is required' }, { status: 400 })
-  }
-
-  const existing = await prisma.receipt.findUnique({ where: { id: params.id } })
-  if (!existing) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-  if (existing.status === 'AUTH_COMPLETE') {
-    return NextResponse.json({ error: 'Receipt already signed off' }, { status: 409 })
-  }
-  if (!existing.status.startsWith('PENDING_')) {
-    return NextResponse.json({ error: 'Receipt is not in a pending state' }, { status: 409 })
-  }
-  if (auth_signer.trim().toLowerCase() === existing.crew_member_name.toLowerCase()) {
-    return NextResponse.json({ error: 'You cannot sign off your own receipt.' }, { status: 403 })
-  }
-
-  const updated = await prisma.receipt.update({
-    where: { id: params.id },
-    data: {
-      auth_signer: auth_signer.trim(),
-      auth_timestamp: new Date(),
-      status: 'AUTH_COMPLETE',
-    },
-  })
-
-  const hash = createHash('sha256')
-    .update(JSON.stringify(updated, Object.keys(updated).sort()))
-    .digest('hex')
-
-  const withHash = await prisma.receipt.update({
-    where: { id: params.id },
-    data: { twin_lock_hash: hash },
-  })
-
-  return NextResponse.json(withHash)
-}
-
-export async function PUT(
+export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const body = await req.json()
 
-  const existing = await prisma.receipt.findUnique({ where: { id: params.id } })
+  if (!body.supersede_reason?.trim()) {
+    return NextResponse.json({ error: 'supersede_reason is required' }, { status: 400 })
+  }
 
-  if (!existing) {
+  const original = await prisma.receipt.findUnique({ where: { id: params.id } })
+
+  if (!original) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  if (existing.status !== 'RECALLED') {
+  if (original.status !== 'AUTH_COMPLETE') {
     return NextResponse.json(
-      { error: 'Only recalled receipts can be resubmitted.' },
+      { error: 'Only fully authorised receipts can be superseded.' },
       { status: 409 }
     )
   }
 
-  const updated = await prisma.receipt.update({
-    where: { id: params.id },
+  if (original.superseded_by) {
+    return NextResponse.json(
+      { error: 'This receipt has already been superseded.' },
+      { status: 409 }
+    )
+  }
+
+  const submitterRole: string = body.submitter_role || 'crew'
+  const now = new Date()
+
+  let initialStatus: string
+  let routedToTier: string
+
+  const isWritingDevelopment = body.department === 'Writing' && body.writing_stage === 'Development'
+
+  if (isWritingDevelopment) {
+    initialStatus = 'AUTH_COMPLETE'
+    routedToTier = 'self'
+  } else if (submitterRole === 'hod') {
+    initialStatus = 'PENDING_PRODUCER_AUTH'
+    routedToTier = 'producer'
+  } else if (submitterRole === 'producer') {
+    initialStatus = 'PENDING_EXEC_AUTH'
+    routedToTier = 'exec'
+  } else {
+    initialStatus = 'PENDING_HOD_AUTH'
+    routedToTier = 'hod'
+  }
+
+  const newReceipt = await prisma.receipt.create({
     data: {
       production_name: body.production_name,
       date: new Date(body.date),
@@ -102,8 +71,12 @@ export async function PUT(
       sel_description: body.sel_description,
       sel_detail: body.sel_detail || null,
       arr_description: body.arr_description,
-      status: 'PENDING_HOD_AUTH',
-      resubmitted_at: new Date(),
+      status: initialStatus,
+      submitter_role: submitterRole,
+      routed_to_tier: routedToTier,
+      crew_confirmed_at: now,
+      auth_signer: isWritingDevelopment ? body.crew_member_name : null,
+      auth_timestamp: isWritingDevelopment ? now : null,
       lct_required: Boolean(body.lct_required),
       lct_reference: body.lct_reference || null,
       lct_child_performer: Boolean(body.lct_child_performer),
@@ -159,8 +132,30 @@ export async function PUT(
       timecode_range: body.timecode_range || null,
       session_file_reference: body.session_file_reference || null,
       deliverable_name: body.deliverable_name || null,
+      supersedes: params.id,
+      supersede_reason: body.supersede_reason.trim(),
     },
   })
 
-  return NextResponse.json(updated)
+  await prisma.receipt.update({
+    where: { id: params.id },
+    data: {
+      status: 'SUPERSEDED',
+      superseded_by: newReceipt.id,
+      superseded_at: now,
+    },
+  })
+
+  if (isWritingDevelopment) {
+    const hash = createHash('sha256')
+      .update(JSON.stringify(newReceipt, Object.keys(newReceipt).sort()))
+      .digest('hex')
+    const withHash = await prisma.receipt.update({
+      where: { id: newReceipt.id },
+      data: { twin_lock_hash: hash },
+    })
+    return NextResponse.json(withHash, { status: 201 })
+  }
+
+  return NextResponse.json(newReceipt, { status: 201 })
 }

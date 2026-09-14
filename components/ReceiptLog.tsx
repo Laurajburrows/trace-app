@@ -63,6 +63,8 @@ export default function ReceiptLog() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [recallConfirming, setRecallConfirming] = useState<string | null>(null)
+  const [recalling, setRecalling] = useState(false)
 
   const [filters, setFilters] = useState({
     production: '',
@@ -258,6 +260,16 @@ export default function ReceiptLog() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         {r.status === 'AUTH_COMPLETE' ? (
                           <span className="text-sm" style={{ color: '#D4EDE1' }}>{r.auth_signer}</span>
+                        ) : r.status === 'SUPERSEDED' ? (
+                          <div>
+                            <span className="text-sm" style={{ color: '#8BB5A0' }}>{r.auth_signer}</span>
+                            <span className="block font-courier text-[10px] uppercase tracking-widest mt-0.5" style={{ color: '#5A8A72' }}>Superseded</span>
+                          </div>
+                        ) : r.status === 'RECALLED' ? (
+                          <span className="inline-flex items-center gap-1 font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#C8A84B' }} />
+                            Recalled
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#C8A84B' }} />
@@ -308,6 +320,60 @@ export default function ReceiptLog() {
                                 <p className="font-courier text-xs mt-1" style={{ color: '#5A8A72' }}>
                                   {r.crew_confirmed_at ? fmtDateTime(r.crew_confirmed_at) : fmtDateTime(r.created_at)}
                                 </p>
+                                {r.recalled_at && (
+                                  <p className="font-courier text-xs mt-1" style={{ color: '#C8A84B' }}>
+                                    Recalled: {fmtDateTime(r.recalled_at)}
+                                  </p>
+                                )}
+                                {r.resubmitted_at && (
+                                  <p className="font-courier text-xs mt-1" style={{ color: '#5A8A72' }}>
+                                    Resubmitted: {fmtDateTime(r.resubmitted_at)}
+                                  </p>
+                                )}
+                                {r.status === 'PENDING_HOD_AUTH' && (
+                                  <div className="mt-3">
+                                    {recallConfirming === r.id ? (
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-courier text-xs" style={{ color: '#C8A84B' }}>Are you sure?</span>
+                                        <button
+                                          disabled={recalling}
+                                          onClick={async () => {
+                                            setRecalling(true)
+                                            try {
+                                              const res = await fetch(`/api/receipts/${r.id}/recall`, { method: 'PATCH' })
+                                              if (!res.ok) throw new Error()
+                                              window.location.href = `/receipt/edit/${r.id}`
+                                            } catch {
+                                              alert('Unable to recall this receipt. Please try again.')
+                                              setRecallConfirming(null)
+                                            } finally {
+                                              setRecalling(false)
+                                            }
+                                          }}
+                                          className="font-courier text-xs px-2 py-1 rounded"
+                                          style={{ color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
+                                        >
+                                          {recalling ? 'Recalling…' : 'Confirm recall'}
+                                        </button>
+                                        <button
+                                          onClick={() => setRecallConfirming(null)}
+                                          className="font-courier text-xs px-2 py-1 rounded"
+                                          style={{ color: '#5A8A72', border: '1px solid rgba(90,138,114,0.4)' }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setRecallConfirming(r.id)}
+                                        className="font-courier text-xs px-2 py-1 rounded"
+                                        style={{ color: '#C8A84B', border: '1px solid rgba(200,168,75,0.4)' }}
+                                      >
+                                        Recall this receipt
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                               <div>
                                 <p className="label">Stage 2 — AUTH Signature</p>
@@ -361,11 +427,40 @@ export default function ReceiptLog() {
                                       {r.twin_lock_hash}
                                     </p>
                                   </div>
+                                  {r.status === 'AUTH_COMPLETE' && !r.superseded_by && (
+                                    <div className="mt-2">
+                                      <a
+                                        href={`/receipt/new?supersedes=${r.id}`}
+                                        className="font-courier text-xs"
+                                        style={{ color: '#5A8A72' }}
+                                      >
+                                        Supersede this receipt
+                                      </a>
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <div>
                                   <p className="label">TRACE Twin Lock — SHA-256</p>
                                   <p className="font-courier text-xs italic mt-1" style={{ color: '#5A8A72' }}>Generated on HOD sign-off</p>
+                                </div>
+                              )}
+                              {r.superseded_by && (
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Superseded by receipt</p>
+                                  <p className="font-courier text-xs mt-0.5" style={{ color: '#8BB5A0' }}>{r.superseded_by.slice(0, 8)}</p>
+                                </div>
+                              )}
+                              {r.supersedes && (
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Supersedes receipt</p>
+                                  <p className="font-courier text-xs mt-0.5" style={{ color: '#8BB5A0' }}>{r.supersedes.slice(0, 8)}</p>
+                                  {r.supersede_reason && (
+                                    <div className="mt-2">
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Reason for superseding</p>
+                                      <p className="text-xs mt-0.5 whitespace-pre-wrap" style={{ color: '#D4EDE1' }}>{r.supersede_reason}</p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
