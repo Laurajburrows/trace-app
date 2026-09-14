@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
-import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt } from '@/lib/types'
+import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -142,6 +142,28 @@ function makeEmptyEntry(): ToolEntryFormState {
   }
 }
 
+// --- Additional tools per-session ---
+
+interface AdditionalToolFormState {
+  toolQuery: string
+  selectedEntry: WhitelistEntry | null
+  suggestions: WhitelistEntry[]
+  showSuggestions: boolean
+  tool_version: string
+  por_description: string
+  sel_output: string
+  sel_description: SelReason | ''
+  sel_detail: string
+  arr_description: string
+}
+
+function makeEmptyAdditionalTool(): AdditionalToolFormState {
+  return {
+    toolQuery: '', selectedEntry: null, suggestions: [], showSuggestions: false,
+    tool_version: '', por_description: '', sel_output: '', sel_description: '', sel_detail: '', arr_description: '',
+  }
+}
+
 // --- StatusBadge ---
 
 function StatusBadge({ status, condition, requiresLCT }: {
@@ -237,6 +259,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   // Session log mode state
   const [toolEntries, setToolEntries] = useState<ToolEntryFormState[]>([makeEmptyEntry()])
   const toolRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  // Additional tools state
+  const [additionalTools, setAdditionalTools] = useState<AdditionalToolFormState[]>([])
+  const additionalToolRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
     fetch('/api/productions').then((r) => r.json()).then(setProductions).catch(() => {})
@@ -357,13 +383,27 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           }))
           setToolEntries(entries)
         }
+        if (Array.isArray(receipt.additional_tools) && (receipt.additional_tools as AdditionalToolEntry[]).length > 0) {
+          const ats = (receipt.additional_tools as AdditionalToolEntry[]).map(at => ({
+            ...makeEmptyAdditionalTool(),
+            toolQuery: at.ai_tool_used || '',
+            tool_version: at.tool_version || '',
+            por_description: at.por_description || '',
+            sel_output: at.sel_output || '',
+            sel_description: (at.sel_description || '') as SelReason | '',
+            sel_detail: at.sel_detail || '',
+            arr_description: at.arr_description || '',
+          }))
+          setAdditionalTools(ats)
+        }
       })
       .finally(() => setPreloadLoading(false))
   }, [preloadId, supersedeId])
 
-  // Reset toolEntries and VFX-only fields when department changes
+  // Reset toolEntries, additionalTools and VFX-only fields when department changes
   useEffect(() => {
     setToolEntries([makeEmptyEntry()])
+    setAdditionalTools([])
     if (form.department !== 'VFX') set('scene_usid', '')
   }, [form.department])
 
@@ -376,6 +416,14 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       toolRefs.current.forEach((ref, i) => {
         if (ref && !ref.contains(e.target as Node)) {
           setToolEntries(prev => {
+            if (!prev[i]?.showSuggestions) return prev
+            return prev.map((entry, idx) => idx === i ? { ...entry, showSuggestions: false } : entry)
+          })
+        }
+      })
+      additionalToolRefs.current.forEach((ref, i) => {
+        if (ref && !ref.contains(e.target as Node)) {
+          setAdditionalTools(prev => {
             if (!prev[i]?.showSuggestions) return prev
             return prev.map((entry, idx) => idx === i ? { ...entry, showSuggestions: false } : entry)
           })
@@ -444,6 +492,31 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
   function removeEntry(index: number) {
     setToolEntries(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Additional tools handlers
+  function updateAdditionalTool(index: number, updates: Partial<AdditionalToolFormState>) {
+    setAdditionalTools(prev => prev.map((e, i) => i === index ? { ...e, ...updates } : e))
+  }
+
+  function handleAdditionalToolInput(index: number, value: string) {
+    const q = value.toLowerCase()
+    const matches = value.trim().length >= 1
+      ? whitelist.filter(e => e.displayName.toLowerCase().includes(q) || e.toolName.includes(q))
+      : []
+    updateAdditionalTool(index, { toolQuery: value, selectedEntry: null, suggestions: matches, showSuggestions: matches.length > 0 && value.trim().length >= 1 })
+  }
+
+  function selectAdditionalToolEntry(index: number, entry: WhitelistEntry) {
+    updateAdditionalTool(index, { toolQuery: entry.displayName, selectedEntry: entry, tool_version: entry.displayName, suggestions: [], showSuggestions: false })
+  }
+
+  function addAdditionalTool() {
+    setAdditionalTools(prev => [...prev, makeEmptyAdditionalTool()])
+  }
+
+  function removeAdditionalTool(index: number) {
+    setAdditionalTools(prev => prev.filter((_, i) => i !== index))
   }
 
   // Derived values — single tool (non-post-prod)
@@ -544,6 +617,19 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     if (missing.length > 0) {
       setMissingFields(missing)
       return
+    }
+
+    for (let i = 0; i < additionalTools.length; i++) {
+      const at = additionalTools[i]
+      const label = `Additional tool ${i + 1}`
+      if (!at.toolQuery.trim()) return setError(`${label}: Please enter the AI tool name.`)
+      if (at.toolQuery.trim().length >= 3 && !at.selectedEntry) return setError(`${label}: Tool not on production whitelist — refer to OAS before proceeding.`)
+      if (at.selectedEntry?.status === 'RED') return setError(`${label}: Tool is not approved. Contact OAS before proceeding.`)
+      if (!at.tool_version.trim()) return setError(`${label}: Please enter the tool version.`)
+      if (!at.por_description.trim()) return setError(`${label}: Please complete the POR field.`)
+      if (!at.sel_output.trim()) return setError(`${label}: Please complete the SEL (selection) field.`)
+      if (!at.sel_description) return setError(`${label}: Please select the SEL reason.`)
+      if (!at.arr_description.trim()) return setError(`${label}: Please complete the ARR field.`)
     }
 
     if (!form.department) return setError('Please select a department.')
@@ -648,6 +734,17 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           delivery_format: first.delivery_format || null,
           delivery_no_training_confirmed: first.delivery_no_training_confirmed,
           is_session: isSession,
+          additional_tools: additionalTools.length > 0 ? additionalTools.map(at => ({
+            ai_tool_used: at.toolQuery.trim(),
+            tool_status: at.selectedEntry?.status || 'UNVERIFIED',
+            whitelist_condition: at.selectedEntry?.condition || null,
+            tool_version: at.tool_version,
+            por_description: at.por_description,
+            sel_output: at.sel_output,
+            sel_description: at.sel_description,
+            sel_detail: at.sel_detail || null,
+            arr_description: at.arr_description,
+          })) : null,
           session_tool_entries: isSession ? toolEntries.map(e => ({
             ai_tool_used: e.selectedEntry!.displayName,
             tool_status: e.selectedEntry!.status,
@@ -764,6 +861,17 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
         whitelist_condition: selectedEntry?.condition || form.whitelist_condition || null,
         is_session: false,
         session_tool_entries: null,
+        additional_tools: additionalTools.length > 0 ? additionalTools.map(at => ({
+          ai_tool_used: at.toolQuery.trim(),
+          tool_status: at.selectedEntry?.status || 'UNVERIFIED',
+          whitelist_condition: at.selectedEntry?.condition || null,
+          tool_version: at.tool_version,
+          por_description: at.por_description,
+          sel_output: at.sel_output,
+          sel_description: at.sel_description,
+          sel_detail: at.sel_detail || null,
+          arr_description: at.arr_description,
+        })) : null,
       }
 
       let url = '/api/receipts'
@@ -892,6 +1000,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               setToolQuery('')
               setSelectedEntry(null)
               setToolEntries([makeEmptyEntry()])
+              setAdditionalTools([])
               setForm({ ...emptyForm, production_name: form.production_name })
               fetch('/api/productions').then(r => r.json()).then(setProductions).catch(() => {})
             }}
@@ -1734,6 +1843,184 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             />
           </div>
         </div>
+      </section>
+
+      {/* Additional Tools */}
+      <section className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h2 className="section-heading mb-0">Did you use any other AI tools in this session?</h2>
+          {additionalTools.length === 0 && (
+            <button
+              type="button"
+              onClick={addAdditionalTool}
+              className="btn-secondary text-sm flex-shrink-0"
+            >
+              Add tool +
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-gray-400 mb-5">
+          Each additional tool used in this session gets its own point of record, selection, and arrival log.
+        </p>
+
+        {additionalTools.length > 0 && (
+          <div className="space-y-0">
+            {additionalTools.map((at, index) => {
+              const atStatus: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | '' = at.selectedEntry
+                ? (at.selectedEntry.status as 'GREEN' | 'AMBER' | 'RED')
+                : at.toolQuery.trim().length >= 3 ? 'UNVERIFIED' : ''
+              return (
+                <div
+                  key={index}
+                  className={index > 0 ? 'mt-10 pt-10 border-t-2 border-dashed border-gray-200' : ''}
+                >
+                  <div className="flex items-center justify-between mb-5">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Additional Tool {index + 1}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeAdditionalTool(index)}
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  {/* Tool Name */}
+                  <div className="mb-4" ref={(el) => { additionalToolRefs.current[index] = el }}>
+                    <label className="label" htmlFor={`at_tool_${index}`}>Tool Name</label>
+                    <p className="text-xs text-gray-400 mb-1.5">Start typing to search the production whitelist.</p>
+                    <div className="relative">
+                      <input
+                        id={`at_tool_${index}`}
+                        className="input"
+                        autoComplete="off"
+                        placeholder="e.g. Adobe Firefly, Runway Gen-3, Eleven Labs…"
+                        value={at.toolQuery}
+                        onChange={(e) => handleAdditionalToolInput(index, e.target.value)}
+                        onFocus={() => at.toolQuery.length >= 1 && updateAdditionalTool(index, { showSuggestions: at.suggestions.length > 0 })}
+                      />
+                      {at.showSuggestions && at.suggestions.length > 0 && (
+                        <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                          {at.suggestions.map((sug) => (
+                            <li key={sug.id}>
+                              <button
+                                type="button"
+                                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-trace-pale text-left transition-colors"
+                                onMouseDown={(e) => { e.preventDefault(); selectAdditionalToolEntry(index, sug) }}
+                              >
+                                <span className="text-sm font-medium text-gray-800">{sug.displayName}</span>
+                                <span className={`status-badge ml-3 flex-shrink-0 ${sug.status === 'GREEN' ? 'status-green' : sug.status === 'AMBER' ? 'status-amber' : 'status-red'}`}>
+                                  {sug.status}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    {at.toolQuery.trim().length >= 3 && !at.selectedEntry && at.suggestions.length === 0 && (
+                      <p className="text-xs text-red-600 mt-2 font-medium">Tool not found on production whitelist — refer to OAS before proceeding.</p>
+                    )}
+                  </div>
+
+                  {atStatus && (
+                    <div className="mb-4">
+                      <StatusBadge status={atStatus} condition={at.selectedEntry?.condition} requiresLCT={at.selectedEntry?.requiresLCT} />
+                    </div>
+                  )}
+
+                  {/* Tool Version */}
+                  <div className="mb-4">
+                    <label className="label" htmlFor={`at_ver_${index}`}>Tool Version</label>
+                    <input
+                      id={`at_ver_${index}`}
+                      className="input"
+                      placeholder="e.g. 2.1, Pro 2024-10, v3.5-turbo"
+                      value={at.tool_version}
+                      onChange={(e) => updateAdditionalTool(index, { tool_version: e.target.value })}
+                    />
+                  </div>
+
+                  {/* POR */}
+                  <div className="mb-4">
+                    <label className="label" htmlFor={`at_por_${index}`}>POR — What did you ask this tool to do?</label>
+                    <p className="text-xs text-gray-400 mb-1">The exact or summarised prompt or instruction you gave this tool.</p>
+                    <textarea
+                      id={`at_por_${index}`}
+                      className="textarea"
+                      rows={2}
+                      placeholder="Describe what you asked the AI to do…"
+                      value={at.por_description}
+                      onChange={(e) => updateAdditionalTool(index, { por_description: e.target.value })}
+                    />
+                  </div>
+
+                  {/* SEL */}
+                  <div className="mb-4 space-y-3">
+                    <div>
+                      <label className="label" htmlFor={`at_sel_${index}`}>SEL — What did you select from the output?</label>
+                      <input
+                        id={`at_sel_${index}`}
+                        className="input"
+                        placeholder="Describe what you selected from what the AI produced…"
+                        value={at.sel_output}
+                        onChange={(e) => updateAdditionalTool(index, { sel_output: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor={`at_sel_desc_${index}`}>Why was this selected?</label>
+                      <select
+                        id={`at_sel_desc_${index}`}
+                        className="select"
+                        value={at.sel_description}
+                        onChange={(e) => updateAdditionalTool(index, { sel_description: e.target.value as SelReason | '', sel_detail: '' })}
+                      >
+                        <option value="">Select reason…</option>
+                        {SEL_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    {at.sel_description === 'Other' && (
+                      <div>
+                        <label className="label" htmlFor={`at_sel_detail_${index}`}>Please specify</label>
+                        <input
+                          id={`at_sel_detail_${index}`}
+                          className="input"
+                          placeholder="Describe your selection reasoning…"
+                          value={at.sel_detail}
+                          onChange={(e) => updateAdditionalTool(index, { sel_detail: e.target.value })}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ARR */}
+                  <div>
+                    <label className="label" htmlFor={`at_arr_${index}`}>ARR — Where did you end up?</label>
+                    <p className="text-xs text-gray-400 mb-1">What was the final result after working with this tool's output?</p>
+                    <textarea
+                      id={`at_arr_${index}`}
+                      className="textarea"
+                      rows={2}
+                      placeholder="Describe where you ended up after working with this tool's output…"
+                      value={at.arr_description}
+                      onChange={(e) => updateAdditionalTool(index, { arr_description: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+
+            <div className="pt-8 mt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={addAdditionalTool}
+                className="btn-secondary text-sm"
+              >
+                Add another tool +
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* AUTH */}

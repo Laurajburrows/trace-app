@@ -365,6 +365,19 @@ export interface Receipt {
   writing_consent_confirmed?: boolean
   third_party_asset?: boolean
   third_party_licence_confirmed?: boolean
+  additional_tools?: AdditionalToolEntry[] | null
+}
+
+export interface AdditionalToolEntry {
+  ai_tool_used: string
+  tool_status: string
+  whitelist_condition?: string | null
+  tool_version: string
+  por_description: string
+  sel_output: string
+  sel_description: string
+  sel_detail?: string | null
+  arr_description: string
 }
 
 export interface Production {

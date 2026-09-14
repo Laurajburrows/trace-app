@@ -152,6 +152,7 @@ export async function POST(req: NextRequest) {
       writing_consent_confirmed: Boolean(body.writing_consent_confirmed),
       third_party_asset: Boolean(body.third_party_asset),
       third_party_licence_confirmed: Boolean(body.third_party_licence_confirmed),
+      additional_tools: body.additional_tools ?? null,
     },
   })
 

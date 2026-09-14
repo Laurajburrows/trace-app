@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
-import type { ReportData, ToolStatus } from '@/lib/types'
+import type { ReportData, ToolStatus, AdditionalToolEntry } from '@/lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
@@ -1013,7 +1013,8 @@ export default function ComplianceReport() {
                   (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
                   cloudSound ||
                   (POST_PROD_DEPTS.includes(r.department) && !r.facility_ai_policy_confirmed) ||
-                  (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed)
+                  (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed) ||
+                  (Array.isArray(r.additional_tools) && (r.additional_tools as AdditionalToolEntry[]).some(at => at.tool_status === 'RED' || at.tool_status === 'UNVERIFIED'))
                 )
               }).length
               const stats = [

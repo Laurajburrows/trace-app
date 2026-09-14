@@ -96,6 +96,7 @@ model Receipt {
   writing_consent_confirmed   Boolean @default(false)
   third_party_asset           Boolean @default(false)
   third_party_licence_confirmed Boolean @default(false)
+  additional_tools            Json?
 }
 
 model Production {

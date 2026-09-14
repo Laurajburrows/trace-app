@@ -50,18 +50,21 @@ export async function GET(req: NextRequest) {
   })
 
   const toolMap: Record<string, ToolEntry> = {}
-  receipts.forEach((r) => {
-    if (!toolMap[r.ai_tool_used]) {
-      toolMap[r.ai_tool_used] = {
-        tool: r.ai_tool_used,
-        status: r.tool_status as ToolEntry['status'],
-        count: 0,
-        departments: [],
-      }
+  function addToToolMap(toolName: string, toolStatus: string, department: string) {
+    if (!toolMap[toolName]) {
+      toolMap[toolName] = { tool: toolName, status: toolStatus as ToolEntry['status'], count: 0, departments: [] }
     }
-    toolMap[r.ai_tool_used].count++
-    if (!toolMap[r.ai_tool_used].departments.includes(r.department)) {
-      toolMap[r.ai_tool_used].departments.push(r.department)
+    toolMap[toolName].count++
+    if (!toolMap[toolName].departments.includes(department)) {
+      toolMap[toolName].departments.push(department)
+    }
+  }
+  receipts.forEach((r) => {
+    addToToolMap(r.ai_tool_used, r.tool_status, r.department)
+    if (Array.isArray(r.additional_tools)) {
+      (r.additional_tools as { ai_tool_used: string; tool_status: string }[]).forEach((at) => {
+        addToToolMap(at.ai_tool_used, at.tool_status, r.department)
+      })
     }
   })
 

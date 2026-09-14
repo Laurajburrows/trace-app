@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { DEPARTMENTS } from '@/lib/types'
-import type { Receipt, Department, ToolStatus, SessionToolEntry } from '@/lib/types'
+import type { Receipt, Department, ToolStatus, SessionToolEntry, AdditionalToolEntry } from '@/lib/types'
 
 const STATUS_COLORS: Record<string, string> = {
   GREEN: 'status-green',
@@ -243,14 +243,19 @@ export default function ReceiptLog() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap font-courier text-xs" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: '#D4EDE1' }}>
-                        {r.is_session && Array.isArray(r.session_tool_entries) && (r.session_tool_entries as SessionToolEntry[]).length > 1 ? (
-                          <span className="flex items-center gap-2">
-                            <span>{r.ai_tool_used}</span>
-                            <span className="font-courier text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5" style={{ background: 'rgba(45,106,79,0.3)', color: '#8BB5A0' }}>
-                              +{(r.session_tool_entries as SessionToolEntry[]).length - 1}
+                        {(() => {
+                          const extraSession = r.is_session && Array.isArray(r.session_tool_entries) ? Math.max(0, (r.session_tool_entries as SessionToolEntry[]).length - 1) : 0
+                          const extraAdditional = Array.isArray(r.additional_tools) ? (r.additional_tools as AdditionalToolEntry[]).length : 0
+                          const extra = extraSession + extraAdditional
+                          return extra > 0 ? (
+                            <span className="flex items-center gap-2">
+                              <span>{r.ai_tool_used}</span>
+                              <span className="font-courier text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5" style={{ background: 'rgba(45,106,79,0.3)', color: '#8BB5A0' }}>
+                                +{extra}
+                              </span>
                             </span>
-                          </span>
-                        ) : r.ai_tool_used}
+                          ) : r.ai_tool_used
+                        })()}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`status-badge ${STATUS_COLORS[r.tool_status]}`}>
@@ -507,6 +512,42 @@ export default function ReceiptLog() {
                                         )}
                                       </div>
                                     )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {Array.isArray(r.additional_tools) && (r.additional_tools as AdditionalToolEntry[]).length > 0 && (
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                              <p className="label mb-3">Additional Tools — {(r.additional_tools as AdditionalToolEntry[]).length} tool{(r.additional_tools as AdditionalToolEntry[]).length !== 1 ? 's' : ''} in this session</p>
+                              <div className="space-y-4">
+                                {(r.additional_tools as AdditionalToolEntry[]).map((at, i) => (
+                                  <div key={i} className="rounded px-4 py-4" style={{ background: '#0F2419', border: '1px solid rgba(45,106,79,0.4)' }}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Tool {i + 1}</p>
+                                      <span className={`status-badge ${STATUS_COLORS[at.tool_status] || 'status-red'}`}>{at.tool_status}</span>
+                                    </div>
+                                    <p className="text-sm font-medium mb-1" style={{ color: '#F0EBE0' }}>{at.ai_tool_used}</p>
+                                    {at.tool_version && (
+                                      <p className="font-courier text-xs mb-3" style={{ color: '#5A8A72' }}>Version: {at.tool_version}</p>
+                                    )}
+                                    <div className="space-y-3 mt-3">
+                                      <div>
+                                        <p className="font-courier text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#5A8A72' }}>POR</p>
+                                        <p className="text-sm whitespace-pre-wrap" style={{ color: '#D4EDE1' }}>{at.por_description}</p>
+                                      </div>
+                                      <div>
+                                        <p className="font-courier text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#5A8A72' }}>SEL</p>
+                                        <p style={{ color: '#D4EDE1' }}>{at.sel_output}</p>
+                                        <p className="text-xs mt-0.5" style={{ color: '#8BB5A0' }}>
+                                          {at.sel_description}{at.sel_detail ? ` — ${at.sel_detail}` : ''}
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="font-courier text-[10px] uppercase tracking-widest mb-0.5" style={{ color: '#5A8A72' }}>ARR</p>
+                                        <p className="text-sm whitespace-pre-wrap" style={{ color: '#D4EDE1' }}>{at.arr_description}</p>
+                                      </div>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
