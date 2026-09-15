@@ -340,10 +340,24 @@ export default function WhitelistAdmin() {
       </div>
 
       {/* Non-endorsement notice */}
-      <div className="rounded-lg px-5 py-4" style={{ backgroundColor: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.4)' }}>
-        <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#C8A84B' }}>Important Notice</p>
+      <div className="rounded-lg px-5 py-5 space-y-3" style={{ backgroundColor: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.4)' }}>
+        <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#C8A84B' }}>Important Notice</p>
         <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
-          TRACE© does not endorse or approve any specific AI tool. Your production&apos;s AI tool whitelist should be agreed with your legal team, completion bond provider, and relevant guild representatives before principal photography begins.
+          TRACE© does not endorse or approve any specific AI tool. The whitelist is built by the OAS for this production only and does not constitute legal advice or a guarantee of compliance.
+        </p>
+        <div style={{ color: '#D4EDE1' }}>
+          <p className="text-sm mb-2">Before activating the whitelist, please ensure:</p>
+          <ul className="space-y-1" style={{ paddingLeft: '1.25rem', listStyleType: 'disc' }}>
+            <li className="text-sm">Your legal team has reviewed the tools for IP indemnity and data retention terms</li>
+            <li className="text-sm">Your completion bond provider has been informed of the AI tools in use</li>
+            <li className="text-sm">Relevant guild representatives have been consulted where required</li>
+          </ul>
+        </div>
+        <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
+          For each tool, complete all four risk attributes: approval category, data retention policy, indemnity status, and carbon intensity. These attributes appear on crew receipts and in the Compliance Report.
+        </p>
+        <p className="text-sm leading-relaxed" style={{ color: '#8BB5A0' }}>
+          Carbon intensity ratings (Low / Medium / High / Very High) are estimates based on published research. They are not precise measurements. See the carbon intensity methodology note in the Compliance Report.
         </p>
       </div>
 
