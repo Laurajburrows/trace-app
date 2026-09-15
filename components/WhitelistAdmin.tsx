@@ -340,7 +340,7 @@ export default function WhitelistAdmin() {
       </div>
 
       {/* Non-endorsement notice */}
-      <div className="rounded-lg px-5 py-5 space-y-3" style={{ backgroundColor: 'rgba(200,168,75,0.08)', border: '1px solid rgba(200,168,75,0.4)' }}>
+      <div className="rounded-lg px-5 py-5 space-y-3" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
         <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#C8A84B' }}>Important Notice</p>
         <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
           TRACE© does not endorse or approve any specific AI tool. The whitelist is built by the OAS for this production only and does not constitute legal advice or a guarantee of compliance.
