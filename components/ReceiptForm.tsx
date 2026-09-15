@@ -644,7 +644,6 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!form.tool_version.trim()) missing.push('Tool Version')
     }
     if (!form.por_description.trim()) missing.push('POR')
-    if (!form.sel_output.trim()) missing.push('SEL')
     if (!form.arr_description.trim()) missing.push('ARR')
     if (form.department === 'Writing') {
       if (!form.writing_script_reference.trim()) missing.push('Script Reference')
@@ -674,6 +673,11 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
     if (form.department === 'Writing' && !form.writing_consent_confirmed) {
       setError('Writer consent must be confirmed before this receipt can be submitted.')
+      return
+    }
+
+    if (!form.sel_output.trim() || !form.sel_description) {
+      setError('Please complete the Selection field — what did you select from the AI output and why?')
       return
     }
 

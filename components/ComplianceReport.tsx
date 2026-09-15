@@ -343,7 +343,7 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
   gap(4)
 
   tableRow(['Scene / Asset', 'Crew Member', 'What was selected', 'Why selected'], [25, 35, 55, 55], true)
-  report.receipts.forEach((r) => {
+  report.receipts.filter((r) => (r.sel_output || '').trim() || r.sel_description).forEach((r) => {
     const selOutput = (r.sel_output || '—').substring(0, 38) + ((r.sel_output || '').length > 38 ? '…' : '')
     const selReason = r.sel_description === 'Other' && r.sel_detail
       ? (`Other — ${r.sel_detail}`).substring(0, 38) + ((`Other — ${r.sel_detail}`).length > 38 ? '…' : '')
@@ -1544,22 +1544,24 @@ export default function ComplianceReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {report.receipts.map((r) => (
-                    <tr key={r.id} className="align-top" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
-                      <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
-                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>
-                        {r.crew_member_name}
-                        <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>{r.crew_role}</span>
-                      </td>
-                      <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.sel_output || '—'}</td>
-                      <td className="px-3 py-2" style={{ color: '#8BB5A0' }}>
-                        {r.sel_description || '—'}
-                        {r.sel_detail && (
-                          <span className="block text-xs italic mt-0.5" style={{ color: '#5A8A72' }}>{r.sel_detail}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {report.receipts
+                    .filter((r) => (r.sel_output || '').trim() || r.sel_description)
+                    .map((r) => (
+                      <tr key={r.id} className="align-top" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                        <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
+                        <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>
+                          {r.crew_member_name}
+                          <span className="block font-courier text-[10px] mt-0.5" style={{ color: '#5A8A72' }}>{r.crew_role}</span>
+                        </td>
+                        <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>{r.sel_output || '—'}</td>
+                        <td className="px-3 py-2" style={{ color: '#8BB5A0' }}>
+                          {r.sel_description || '—'}
+                          {r.sel_detail && (
+                            <span className="block text-xs italic mt-0.5" style={{ color: '#5A8A72' }}>{r.sel_detail}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </ReportSection>
