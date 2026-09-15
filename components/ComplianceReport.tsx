@@ -38,6 +38,79 @@ function buildPdfFilterLabel(filterDescription: string): string {
     .join(' — ')
 }
 
+const CARBON_KWH_RANGES: Record<string, [number, number]> = {
+  Low: [0.001, 0.01],
+  Medium: [0.002, 0.05],
+  High: [0.1, 1.0],
+  'Very High': [100, 1000],
+}
+const CO2E_PER_KWH = 0.2
+const CARBON_INTENSITY_COLORS_REPORT: Record<string, string> = {
+  Low: '#4ade80',
+  Medium: '#C8A84B',
+  High: '#fb923c',
+  'Very High': '#f87171',
+}
+
+interface CarbonRow {
+  tool: string
+  count: number
+  intensity: string
+  kwhMin: number
+  kwhMax: number
+  co2Min: number
+  co2Max: number
+  isExample?: boolean
+}
+
+function fmtNum(v: number): string {
+  if (v === 0) return '0'
+  if (v < 0.001) return v.toFixed(5)
+  if (v < 1) return v.toFixed(3)
+  if (v < 10) return v.toFixed(2)
+  if (v < 1000) return v.toFixed(1)
+  return v.toLocaleString('en-GB', { maximumFractionDigits: 0 })
+}
+
+function buildCarbonRows(receipts: Receipt[]): { rows: CarbonRow[]; isExample: boolean } {
+  const withCarbon = receipts.filter((r) => r.tool_carbon_intensity)
+  if (withCarbon.length === 0) {
+    const examples = [
+      { tool: 'Claude', intensity: 'Low', count: 12 },
+      { tool: 'Midjourney', intensity: 'Medium', count: 8 },
+      { tool: 'Runway', intensity: 'High', count: 5 },
+    ]
+    return {
+      rows: examples.map((e) => {
+        const range = CARBON_KWH_RANGES[e.intensity]
+        return {
+          tool: e.tool, count: e.count, intensity: e.intensity,
+          kwhMin: range[0] * e.count, kwhMax: range[1] * e.count,
+          co2Min: range[0] * e.count * CO2E_PER_KWH, co2Max: range[1] * e.count * CO2E_PER_KWH,
+          isExample: true,
+        }
+      }),
+      isExample: true,
+    }
+  }
+  const groups: Record<string, { count: number; intensity: string }> = {}
+  for (const r of withCarbon) {
+    const key = r.ai_tool_used
+    if (!groups[key]) groups[key] = { count: 0, intensity: r.tool_carbon_intensity! }
+    groups[key].count++
+  }
+  const order = ['Very High', 'High', 'Medium', 'Low']
+  const rows: CarbonRow[] = Object.entries(groups).map(([tool, { count, intensity }]) => {
+    const range = CARBON_KWH_RANGES[intensity] || [0.001, 0.01]
+    return {
+      tool, count, intensity,
+      kwhMin: range[0] * count, kwhMax: range[1] * count,
+      co2Min: range[0] * count * CO2E_PER_KWH, co2Max: range[1] * count * CO2E_PER_KWH,
+    }
+  }).sort((a, b) => order.indexOf(a.intensity) - order.indexOf(b.intensity))
+  return { rows, isExample: false }
+}
+
 async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summary') {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
@@ -247,9 +320,36 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     tableRow([s, `${count} receipt${count !== 1 ? 's' : ''}`], [120, 80])
   })
 
-  // ── SECTION 3: GUILD COMPLIANCE REGISTER ──────────────────────────────────
+  // ── SECTION 3: AI CARBON ESTIMATE ─────────────────────────────────────────
   newPage()
-  h2('2. Guild Compliance Register')
+  h2('2. AI Carbon Estimate')
+  gap(2)
+  {
+    const { rows, isExample } = buildCarbonRows(report.receipts)
+    if (isExample) {
+      body('No carbon intensity data found for current receipts. The following figures are example data for demonstration purposes.')
+      gap(2)
+    }
+    tableRow(['Tool', 'Receipts', 'Intensity', 'Est. kWh Range', 'Est. CO₂e Range'], [50, 22, 25, 48, 48], true)
+    const totalCount = rows.reduce((s, r) => s + r.count, 0)
+    const totalKwhMin = rows.reduce((s, r) => s + r.kwhMin, 0)
+    const totalKwhMax = rows.reduce((s, r) => s + r.kwhMax, 0)
+    const totalCo2Min = rows.reduce((s, r) => s + r.co2Min, 0)
+    const totalCo2Max = rows.reduce((s, r) => s + r.co2Max, 0)
+    rows.forEach((row) => {
+      tableRow(
+        [row.tool + (row.isExample ? ' [Ex]' : ''), String(row.count), row.intensity, `${fmtNum(row.kwhMin)}–${fmtNum(row.kwhMax)} kWh`, `${fmtNum(row.co2Min)}–${fmtNum(row.co2Max)} kg`],
+        [50, 22, 25, 48, 48]
+      )
+    })
+    tableRow(['Total', String(totalCount), '', `${fmtNum(totalKwhMin)}–${fmtNum(totalKwhMax)} kWh`, `${fmtNum(totalCo2Min)}–${fmtNum(totalCo2Max)} kg`], [50, 22, 25, 48, 48], false, MOSS)
+    gap(4)
+    body('Carbon estimates are based on published academic research. AI tool providers do not publish per-query energy data. These figures are order-of-magnitude estimates, not precise measurements.')
+  }
+
+  // ── SECTION 4: GUILD COMPLIANCE REGISTER ──────────────────────────────────
+  newPage()
+  h2('3. Guild Compliance Register')
   gap(2)
   body(
     'The following table lists every AI tool used on this production, its compliance status, the number of uses, and the departments in which it was used. Any RED or YELLOW status tool is flagged for review.'
@@ -276,9 +376,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     )
   }
 
-  // ── SECTION 4: AI TOOL AUDIT ───────────────────────────────────────────────
+  // ── SECTION 5: AI TOOL AUDIT ───────────────────────────────────────────────
   newPage()
-  h2('3. AI Tool Audit')
+  h2('4. AI Tool Audit')
   gap(2)
   body(
     `${report.by_tool.length} unique AI tool${report.by_tool.length !== 1 ? 's' : ''} were used across this production.`
@@ -290,9 +390,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     tableRow([t.tool, t.status, String(t.count)], [100, 40, 60], false, statusColor(t.status))
   })
 
-  // ── SECTION 5: LCT COVERAGE REPORT ────────────────────────────────────────
+  // ── SECTION 6: LCT COVERAGE REPORT ────────────────────────────────────────
   newPage()
-  h2('4. LCT Coverage Report')
+  h2('5. LCT Coverage Report')
   gap(2)
 
   if (report.lct_receipts.length === 0) {
@@ -317,9 +417,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     })
   }
 
-  // ── SECTION 5: WHITELIST COMPLIANCE REGISTER ──────────────────────────────
+  // ── SECTION 6: WHITELIST COMPLIANCE REGISTER ──────────────────────────────
   newPage()
-  h2('5. Whitelist Compliance Register')
+  h2('6. Whitelist Compliance Register')
   gap(2)
   body('The following table records the whitelist status of every AI tool at the time each receipt was submitted.')
   gap(4)
@@ -335,9 +435,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     )
   })
 
-  // ── SECTION 6: SELECTION REGISTER ─────────────────────────────────────────
+  // ── SECTION 7: SELECTION REGISTER ─────────────────────────────────────────
   newPage()
-  h2('6. Selection Register')
+  h2('7. Selection Register')
   gap(2)
   body('Per-receipt record of what was selected from each AI output and the stated reason for that selection.')
   gap(4)
@@ -571,9 +671,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     })
   }
 
-  // ── SECTION 7: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
+  // ── SECTION 8: PLATFORM DISCLOSURE SUMMARY ────────────────────────────────
   newPage()
-  h2('7. Platform Disclosure Summary')
+  h2('8. Platform Disclosure Summary')
   gap(4)
 
   const uniqueTools = Array.from(new Set(report.receipts.map((r) => r.ai_tool_used)))
@@ -595,9 +695,9 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
 
   body(disclosurePara)
 
-  // ── SECTION 8: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
+  // ── SECTION 9: COMPLETION BOND SUPPORT NOTE ───────────────────────────────
   newPage()
-  h2('8. Delivery Support Note')
+  h2('9. Delivery Support Note')
   gap(4)
 
   const bondPara = [
@@ -622,10 +722,10 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
     'Laura Burrows, NFTS AI Diploma, April 2026. This report is generated automatically from Artist Receipts submitted to the TRACE system.'
   )
 
-  // ── SECTION 9: FULL AUDIT RECEIPT LOG (audit mode only) ──────────────────
+  // ── SECTION 10: FULL AUDIT RECEIPT LOG (audit mode only) ──────────────────
   if (mode === 'audit') {
     newPage()
-    h2('9. Complete Receipt Log — Full Audit Detail')
+    h2('10. Complete Receipt Log — Full Audit Detail')
     gap(2)
     body(
       `Full four-point log for all ${report.receipts.length} receipt${report.receipts.length !== 1 ? 's' : ''} in this report. Each entry includes Point of Record (POR), Selection (SEL), Arrival (ARR), Authorisation (AUTH), tool details, and any compliance flags.`
@@ -1483,8 +1583,76 @@ export default function ComplianceReport() {
               )}
             </ReportSection>
 
-            {/* Section 2: Guild Compliance Register */}
-            <ReportSection title="2. Guild Compliance Register">
+            {/* Section 2: AI Carbon Estimate */}
+            {(() => {
+              const { rows, isExample } = buildCarbonRows(report.receipts)
+              const totalCount = rows.reduce((s, r) => s + r.count, 0)
+              const totalKwhMin = rows.reduce((s, r) => s + r.kwhMin, 0)
+              const totalKwhMax = rows.reduce((s, r) => s + r.kwhMax, 0)
+              const totalCo2Min = rows.reduce((s, r) => s + r.co2Min, 0)
+              const totalCo2Max = rows.reduce((s, r) => s + r.co2Max, 0)
+              return (
+                <ReportSection title="2. AI Carbon Estimate">
+                  {isExample && (
+                    <div className="rounded px-4 py-2 mb-4 font-courier text-xs" style={{ backgroundColor: 'rgba(200,168,75,0.12)', border: '1px solid rgba(200,168,75,0.4)', color: '#C8A84B' }}>
+                      No carbon intensity data found for current receipts. Showing example data for demonstration purposes.
+                    </div>
+                  )}
+                  <div className="overflow-x-auto mb-4">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{ backgroundColor: '#0F2419', borderBottom: '1px solid #2D6A4F' }}>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Tool Name</th>
+                          <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Receipts Logged</th>
+                          <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Carbon Intensity</th>
+                          <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Est. kWh Range</th>
+                          <th className="text-right px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Est. CO₂e Range</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.tool} style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
+                            <td className="px-3 py-2" style={{ color: '#D4EDE1' }}>
+                              {row.tool}{row.isExample && <span className="ml-2 font-courier text-[10px]" style={{ color: '#C8A84B' }}>[Example]</span>}
+                            </td>
+                            <td className="px-3 py-2 text-right" style={{ color: '#D4EDE1' }}>{row.count}</td>
+                            <td className="px-3 py-2">
+                              <span className="font-courier text-xs font-semibold" style={{ color: CARBON_INTENSITY_COLORS_REPORT[row.intensity] || '#C8A84B' }}>{row.intensity}</span>
+                            </td>
+                            <td className="px-3 py-2 text-right font-courier text-xs" style={{ color: '#8BB5A0' }}>{fmtNum(row.kwhMin)}–{fmtNum(row.kwhMax)} kWh</td>
+                            <td className="px-3 py-2 text-right font-courier text-xs" style={{ color: '#8BB5A0' }}>{fmtNum(row.co2Min)}–{fmtNum(row.co2Max)} kg</td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '2px solid #2D6A4F', backgroundColor: '#0F2419' }}>
+                          <td className="px-3 py-2 font-semibold" style={{ color: '#F0EBE0' }}>Total</td>
+                          <td className="px-3 py-2 text-right font-semibold" style={{ color: '#F0EBE0' }}>{totalCount}</td>
+                          <td className="px-3 py-2" />
+                          <td className="px-3 py-2 text-right font-courier text-xs font-semibold" style={{ color: '#D4EDE1' }}>{fmtNum(totalKwhMin)}–{fmtNum(totalKwhMax)} kWh</td>
+                          <td className="px-3 py-2 text-right font-courier text-xs font-semibold" style={{ color: '#D4EDE1' }}>{fmtNum(totalCo2Min)}–{fmtNum(totalCo2Max)} kg</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="font-courier text-[10px] leading-relaxed mb-4" style={{ color: '#5A8A72' }}>
+                    Carbon estimates are based on published academic research. AI tool providers do not publish per-query energy data. These figures are order-of-magnitude estimates, not precise measurements.
+                  </p>
+                  <div className="group relative inline-block">
+                    <button
+                      disabled
+                      className="btn-secondary text-sm opacity-40 cursor-not-allowed"
+                    >
+                      Export to Albert
+                    </button>
+                    <div className="absolute left-0 top-full mt-2 w-64 rounded-lg p-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ backgroundColor: '#0D2418', border: '1px solid #2D6A4F', color: '#D4EDE1' }}>
+                      <p className="font-courier text-[10px] leading-relaxed">Albert integration — coming in Build 2.</p>
+                    </div>
+                  </div>
+                </ReportSection>
+              )
+            })()}
+
+            {/* Section 3: Guild Compliance Register */}
+            <ReportSection title="3. Guild Compliance Register">
               <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Every AI tool used on this production, its status, and department usage. RED and YELLOW status tools are flagged.
               </p>
@@ -1518,8 +1686,8 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 3: AI Tool Audit */}
-            <ReportSection title="3. AI Tool Audit">
+            {/* Section 4: AI Tool Audit */}
+            <ReportSection title="4. AI Tool Audit">
               <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 {report.by_tool.length} unique AI tool{report.by_tool.length !== 1 ? 's' : ''} used across this production.
               </p>
@@ -1545,8 +1713,8 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 4: LCT Coverage Report */}
-            <ReportSection title="4. LCT Coverage Report">
+            {/* Section 5: LCT Coverage Report */}
+            <ReportSection title="5. LCT Coverage Report">
               {report.lct_receipts.length === 0 ? (
                 <p className="text-sm" style={{ color: '#5A8A72' }}>
                   No receipts on this production flagged performer likeness or voice (LCT) use.
@@ -1597,8 +1765,8 @@ export default function ComplianceReport() {
               )}
             </ReportSection>
 
-            {/* Section 5: Whitelist Compliance Register */}
-            <ReportSection title="5. Whitelist Compliance Register">
+            {/* Section 6: Whitelist Compliance Register */}
+            <ReportSection title="6. Whitelist Compliance Register">
               <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Whitelist status of each AI tool at the time of submission.
               </p>
@@ -1633,8 +1801,8 @@ export default function ComplianceReport() {
               </table>
             </ReportSection>
 
-            {/* Section 6: Selection Register */}
-            <ReportSection title="6. Selection Register">
+            {/* Section 7: Selection Register */}
+            <ReportSection title="7. Selection Register">
               <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                 Per-receipt record of what was selected from each AI output and the stated reason for that selection.
               </p>
@@ -1974,18 +2142,18 @@ export default function ComplianceReport() {
               )
             })()}
 
-            {/* Section 7: Platform Disclosure Summary */}
-            <ReportSection title="7. Platform Disclosure Summary">
+            {/* Section 8: Platform Disclosure Summary */}
+            <ReportSection title="8. Platform Disclosure Summary">
               <PlatformDisclosure report={report} />
             </ReportSection>
 
-            {/* Section 8: Delivery Support Note */}
-            <ReportSection title="8. Delivery Support Note">
+            {/* Section 9: Delivery Support Note */}
+            <ReportSection title="9. Delivery Support Note">
               <CompletionBondNote report={report} />
             </ReportSection>
 
-            {/* Section 9: Complete Receipt Log */}
-            <ReportSection title={`9. Complete Receipt Log${viewMode === 'audit' ? ' — Full Audit View' : ''}`}>
+            {/* Section 10: Complete Receipt Log */}
+            <ReportSection title={`10. Complete Receipt Log${viewMode === 'audit' ? ' — Full Audit View' : ''}`}>
               <div className="flex items-center justify-between mb-4 no-print">
                 <p className="text-sm" style={{ color: '#8BB5A0' }}>
                   {report.receipts.length} receipt{report.receipts.length !== 1 ? 's' : ''}.{' '}
