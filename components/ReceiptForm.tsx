@@ -166,10 +166,29 @@ function makeEmptyAdditionalTool(): AdditionalToolFormState {
 
 // --- StatusBadge ---
 
-function StatusBadge({ status, condition, requiresLCT }: {
+const CARBON_INTENSITY_COLORS: Record<string, string> = {
+  'Low': '#16a34a',
+  'Medium': '#d97706',
+  'High': '#ea580c',
+  'Very High': '#dc2626',
+}
+
+function CarbonBadge({ intensity }: { intensity?: string | null }) {
+  if (!intensity) return null
+  const color = CARBON_INTENSITY_COLORS[intensity] || '#d97706'
+  return (
+    <div className="mt-2 ml-5 flex items-center gap-1.5">
+      <span style={{ color, fontSize: 10 }}>●</span>
+      <span className="text-xs" style={{ color: '#6b7280' }}>Carbon intensity: <span style={{ color, fontWeight: 600 }}>{intensity}</span></span>
+    </div>
+  )
+}
+
+function StatusBadge({ status, condition, requiresLCT, carbonIntensity }: {
   status: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | ''
   condition?: string | null
   requiresLCT?: boolean
+  carbonIntensity?: string | null
 }) {
   if (!status) return null
 
@@ -181,6 +200,7 @@ function StatusBadge({ status, condition, requiresLCT }: {
           <span className="text-xs font-bold uppercase tracking-wide text-status-green">GREEN — Approved for production use</span>
         </div>
         {condition && <p className="text-xs text-green-700 italic mt-1 ml-5">{condition}</p>}
+        <CarbonBadge intensity={carbonIntensity} />
       </div>
     )
   }
@@ -199,6 +219,7 @@ function StatusBadge({ status, condition, requiresLCT }: {
             <span className="text-xs font-semibold text-status-amber">LCT required before use</span>
           </div>
         )}
+        <CarbonBadge intensity={carbonIntensity} />
       </div>
     )
   }
@@ -1577,7 +1598,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 <div className="mb-4">
                   <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
                   {eStatus ? (
-                    <StatusBadge status={eStatus} condition={entry.selectedEntry?.condition} requiresLCT={entry.selectedEntry?.requiresLCT} />
+                    <StatusBadge status={eStatus} condition={entry.selectedEntry?.condition} requiresLCT={entry.selectedEntry?.requiresLCT} carbonIntensity={entry.selectedEntry?.carbonIntensity} />
                   ) : (
                     <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
                       Enter a tool name above to check whitelist status.
@@ -1877,6 +1898,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 status={derivedStatus}
                 condition={selectedEntry?.condition}
                 requiresLCT={selectedEntry?.requiresLCT}
+                carbonIntensity={selectedEntry?.carbonIntensity}
               />
             ) : (
               <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
@@ -2079,7 +2101,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
                   {atStatus && (
                     <div className="mb-4">
-                      <StatusBadge status={atStatus} condition={at.selectedEntry?.condition} requiresLCT={at.selectedEntry?.requiresLCT} />
+                      <StatusBadge status={atStatus} condition={at.selectedEntry?.condition} requiresLCT={at.selectedEntry?.requiresLCT} carbonIntensity={at.selectedEntry?.carbonIntensity} />
                     </div>
                   )}
 

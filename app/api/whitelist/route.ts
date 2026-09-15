@@ -17,13 +17,14 @@ export async function POST(req: NextRequest) {
   if (body.import && Array.isArray(body.entries)) {
     await prisma.whitelistEntry.deleteMany()
     const created = await prisma.whitelistEntry.createMany({
-      data: body.entries.map((e: { toolName: string; displayName: string; department?: string; status: string; condition?: string | null; requiresLCT?: boolean }) => ({
+      data: body.entries.map((e: { toolName: string; displayName: string; department?: string; status: string; condition?: string | null; requiresLCT?: boolean; carbonIntensity?: string }) => ({
         toolName: e.toolName.toLowerCase().trim(),
         displayName: e.displayName,
         department: e.department || 'General',
         status: e.status,
         condition: e.condition || null,
         requiresLCT: Boolean(e.requiresLCT),
+        carbonIntensity: e.carbonIntensity || 'Medium',
       })),
     })
     return NextResponse.json({ count: created.count })
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
       status: body.status,
       condition: body.condition || null,
       requiresLCT: Boolean(body.requiresLCT),
+      carbonIntensity: body.carbonIntensity || 'Medium',
     },
   })
   return NextResponse.json(entry, { status: 201 })

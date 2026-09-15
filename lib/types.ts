@@ -272,6 +272,7 @@ export interface WhitelistEntry {
   status: 'GREEN' | 'AMBER' | 'RED'
   condition?: string | null
   requiresLCT: boolean
+  carbonIntensity?: string | null
   createdAt: string
   updatedAt: string
 }

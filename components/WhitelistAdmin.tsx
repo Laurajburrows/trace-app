@@ -11,12 +11,29 @@ const STATUS_LABEL: Record<Status, string> = {
   RED: 'status-red',
 }
 
+type CarbonIntensity = 'Low' | 'Medium' | 'High' | 'Very High'
+
+const CARBON_LABELS: Record<CarbonIntensity, string> = {
+  Low: 'Low — text-based AI',
+  Medium: 'Medium — image generation',
+  High: 'High — video generation',
+  'Very High': 'Very High — large-scale / bespoke pipeline',
+}
+
+const CARBON_COLORS: Record<CarbonIntensity, string> = {
+  Low: '#4ade80',
+  Medium: '#C8A84B',
+  High: '#fb923c',
+  'Very High': '#f87171',
+}
+
 const emptyForm = {
   displayName: '',
   department: 'General',
   status: 'GREEN' as Status,
   condition: '',
   requiresLCT: false,
+  carbonIntensity: 'Medium' as CarbonIntensity,
 }
 
 function EntryRow({
@@ -35,6 +52,7 @@ function EntryRow({
     status: entry.status as Status,
     condition: entry.condition || '',
     requiresLCT: entry.requiresLCT,
+    carbonIntensity: (entry.carbonIntensity || 'Medium') as CarbonIntensity,
   })
   const [saving, setSaving] = useState(false)
 
@@ -51,7 +69,7 @@ function EntryRow({
   if (editing) {
     return (
       <tr style={{ borderTop: '1px solid rgba(45,106,79,0.4)', backgroundColor: '#122E1F' }}>
-        <td className="px-3 py-3" colSpan={6}>
+        <td className="px-3 py-3" colSpan={7}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <div>
               <label className="label text-xs">Tool Name</label>
@@ -104,6 +122,29 @@ function EntryRow({
                 Requires LCT token
               </label>
             </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <label className="label text-xs">Carbon Intensity</label>
+                <div className="group relative cursor-default">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5A8A72" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <div className="absolute left-0 top-full mt-1.5 w-64 rounded-lg p-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ backgroundColor: '#0D2418', border: '1px solid #2D6A4F', color: '#D4EDE1' }}>
+                    <p className="font-courier text-[10px] leading-relaxed">Used to estimate AI carbon footprint for Albert integration — coming in Build 2.</p>
+                  </div>
+                </div>
+              </div>
+              <select
+                className="select text-sm"
+                value={form.carbonIntensity}
+                onChange={(e) => setForm((f) => ({ ...f, carbonIntensity: e.target.value as CarbonIntensity }))}
+              >
+                <option value="Low">Low — text-based AI (Claude, ChatGPT, transcription tools)</option>
+                <option value="Medium">Medium — image generation (Midjourney, Firefly, DALL-E)</option>
+                <option value="High">High — video generation (Runway, Sora, Pika)</option>
+                <option value="Very High">Very High — large-scale model runs or bespoke AI pipeline</option>
+              </select>
+            </div>
           </div>
           <div className="flex gap-2">
             <button onClick={save} disabled={saving} className="btn-primary text-xs py-1.5 px-4 disabled:opacity-50">
@@ -141,6 +182,15 @@ function EntryRow({
       <td className="px-3 py-2.5 text-center">
         {entry.requiresLCT ? (
           <span className="font-courier text-xs font-semibold" style={{ color: '#C8A84B' }}>⚠ LCT</span>
+        ) : (
+          <span className="text-xs" style={{ color: '#2D6A4F' }}>—</span>
+        )}
+      </td>
+      <td className="px-3 py-2.5">
+        {entry.carbonIntensity ? (
+          <span className="font-courier text-xs font-semibold" style={{ color: CARBON_COLORS[(entry.carbonIntensity as CarbonIntensity)] || '#C8A84B' }}>
+            {entry.carbonIntensity}
+          </span>
         ) : (
           <span className="text-xs" style={{ color: '#2D6A4F' }}>—</span>
         )}
@@ -200,6 +250,7 @@ export default function WhitelistAdmin() {
         status: newForm.status,
         condition: newForm.condition || null,
         requiresLCT: newForm.requiresLCT,
+        carbonIntensity: newForm.carbonIntensity,
       }),
     })
     setNewForm(emptyForm)
@@ -372,6 +423,29 @@ export default function WhitelistAdmin() {
                   Requires LCT token
                 </label>
               </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <label className="label">Carbon Intensity</label>
+                  <div className="group relative cursor-default">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5A8A72" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    <div className="absolute left-0 top-full mt-1.5 w-64 rounded-lg p-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ backgroundColor: '#0D2418', border: '1px solid #2D6A4F', color: '#D4EDE1' }}>
+                      <p className="font-courier text-[10px] leading-relaxed">Used to estimate AI carbon footprint for Albert integration — coming in Build 2.</p>
+                    </div>
+                  </div>
+                </div>
+                <select
+                  className="select"
+                  value={newForm.carbonIntensity}
+                  onChange={(e) => setNewForm((f) => ({ ...f, carbonIntensity: e.target.value as CarbonIntensity }))}
+                >
+                  <option value="Low">Low — text-based AI (Claude, ChatGPT, transcription tools)</option>
+                  <option value="Medium">Medium — image generation (Midjourney, Firefly, DALL-E)</option>
+                  <option value="High">High — video generation (Runway, Sora, Pika)</option>
+                  <option value="Very High">Very High — large-scale model runs or bespoke AI pipeline</option>
+                </select>
+              </div>
             </div>
             <div className="flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary disabled:opacity-50">
@@ -429,6 +503,7 @@ export default function WhitelistAdmin() {
                       <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Status</th>
                       <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Rationale / Condition</th>
                       <th className="text-center px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>LCT</th>
+                      <th className="text-left px-3 py-2 font-courier text-[10px] uppercase tracking-widest" style={{ color: '#8BB5A0' }}>Carbon</th>
                       <th className="px-3 py-2" />
                     </tr>
                   </thead>

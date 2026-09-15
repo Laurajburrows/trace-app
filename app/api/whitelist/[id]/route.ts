@@ -14,6 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       status: body.status,
       condition: body.condition || null,
       requiresLCT: Boolean(body.requiresLCT),
+      carbonIntensity: body.carbonIntensity || 'Medium',
     },
   })
   return NextResponse.json(entry)
