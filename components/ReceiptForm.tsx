@@ -1979,6 +1979,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 </div>
               )}
             </div>
+            <p className="text-xs text-gray-400 mt-2">What did you select and why? You can write a description, paste a URL to the specific output, add a file reference, or a combination — whichever best captures your creative decision.</p>
           </div>
 
           <div>
@@ -1993,6 +1994,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               value={form.arr_description}
               onChange={(e) => set('arr_description', e.target.value)}
             />
+            <p className="text-xs text-gray-400 mt-2">Where did you end up? Write a description, paste a URL, or add a file or asset reference — whichever most accurately captures the final version.</p>
           </div>
         </div>
       </section>
