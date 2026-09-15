@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'production required' }, { status: 400 })
   }
 
-  const where: Record<string, unknown> = { production_name: production }
+  // Exclude SUPERSEDED receipts — they are replaced records and should not appear in counts
+  const where: Record<string, unknown> = { production_name: production, status: { not: 'SUPERSEDED' } }
   if (department) where.department = department
   if (toolStatus) where.tool_status = toolStatus
   if (scene) where.scene_usid = { contains: scene, mode: 'insensitive' }

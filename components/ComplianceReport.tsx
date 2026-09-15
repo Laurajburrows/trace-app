@@ -1234,7 +1234,9 @@ export default function ComplianceReport() {
             {/* Summary stat row */}
             {(() => {
               const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
-              const pendingHod = report.receipts.filter((r) => r.status === 'PENDING_HOD_AUTH').length
+              const pendingAuth = report.receipts.filter((r) =>
+                r.status.startsWith('PENDING_') || r.status === 'RECALLED'
+              ).length
               const flagged = report.receipts.filter((r) => {
                 const cloudSound = Boolean(r.sound_performer_audio) &&
                   !!r.sound_processing_location &&
@@ -1254,7 +1256,7 @@ export default function ComplianceReport() {
               const stats = [
                 { label: 'Total Receipts', value: report.receipts.length, alert: false },
                 { label: 'Fully Authorised', value: report.auth_signed_count, alert: false },
-                { label: 'Pending HOD AUTH', value: pendingHod, alert: pendingHod > 0 },
+                { label: 'Pending / Recalled', value: pendingAuth, alert: pendingAuth > 0 },
                 { label: 'Compliance Flags', value: flagged, alert: flagged > 0 },
               ]
               return (
