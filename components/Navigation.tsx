@@ -111,6 +111,42 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center gap-0.5">
+            {/* Browser-Bridge placeholder indicator */}
+            <div className="flex items-center mr-1" style={{ paddingRight: '8px', borderRight: '1px solid rgba(45,106,79,0.6)' }}>
+              <div className="group relative cursor-default">
+                {/* Icon: dimmed puzzle-piece (Chrome extension symbol) */}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-label="Browser-Bridge — coming in Build 1"
+                  style={{ display: 'block', opacity: 0.35 }}
+                >
+                  <path
+                    d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4a2 2 0 0 0-2 2v3.8h1.5a2.7 2.7 0 0 1 0 5.4H2V20a2 2 0 0 0 2 2h3.8v-1.5a2.7 2.7 0 0 1 5.4 0V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 0-5Z"
+                    fill="#8BB5A0"
+                  />
+                </svg>
+                {/* Tooltip */}
+                <div
+                  className="absolute right-0 top-full mt-2 w-64 rounded-lg p-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{
+                    backgroundColor: '#122E1F',
+                    border: '1px solid #2D6A4F',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                  }}
+                >
+                  <p className="font-courier text-[10px] uppercase tracking-widest mb-1.5" style={{ color: '#5A8A72' }}>
+                    Browser-Bridge
+                  </p>
+                  <p className="font-courier text-[10px] leading-relaxed" style={{ color: '#8BB5A0' }}>
+                    Browser-Bridge Chrome extension — monitors AI tool use in Chrome. Stage 1: checks tools against whitelist on open. Stage 2: prompts receipt on close. Coming in Build 1.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {links.map((link) => {
               const active =
                 link.href === '/receipt/new'
