@@ -12,6 +12,7 @@
     "db:migrate": "prisma db push"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.126.0",
     "@prisma/client": "^5.7.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
