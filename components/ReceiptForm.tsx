@@ -248,6 +248,9 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   const [supersedeReason, setSupersedeReason] = useState('')
   const [preloadedReceipt, setPreloadedReceipt] = useState<Receipt | null>(null)
   const [preloadLoading, setPreloadLoading] = useState(false)
+  const [discardConfirming, setDiscardConfirming] = useState(false)
+  const [discarding, setDiscarding] = useState(false)
+  const [discarded, setDiscarded] = useState(false)
 
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([])
   const [toolQuery, setToolQuery] = useState('')
@@ -1073,6 +1076,53 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             {queueLabel} Queue
           </a>
         </div>
+
+        {!mode && (
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            {discarded ? (
+              <p className="text-sm text-gray-500">Receipt permanently deleted.</p>
+            ) : discardConfirming ? (
+              <div className="space-y-2">
+                <p className="text-sm text-red-700 font-medium">Are you sure? This will permanently delete the receipt and cannot be undone.</p>
+                <div className="flex gap-2">
+                  <button
+                    disabled={discarding}
+                    onClick={async () => {
+                      setDiscarding(true)
+                      try {
+                        const res = await fetch(`/api/receipts/${confirmation.id}`, { method: 'DELETE' })
+                        if (!res.ok) throw new Error()
+                        setDiscarded(true)
+                        setDiscardConfirming(false)
+                      } catch {
+                        alert('Unable to delete this receipt. Please try again.')
+                        setDiscardConfirming(false)
+                      } finally {
+                        setDiscarding(false)
+                      }
+                    }}
+                    className="text-sm text-red-600 hover:text-red-800 underline"
+                  >
+                    {discarding ? 'Deleting…' : 'Yes, permanently delete'}
+                  </button>
+                  <button
+                    onClick={() => setDiscardConfirming(false)}
+                    className="text-sm text-gray-400 hover:text-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setDiscardConfirming(true)}
+                className="text-sm text-gray-400 hover:text-red-600 transition-colors"
+              >
+                Made a mistake? Discard this receipt
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }

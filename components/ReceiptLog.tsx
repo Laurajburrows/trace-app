@@ -450,7 +450,7 @@ export default function ReceiptLog() {
                                     )}
                                   </div>
                                 )}
-                                {r.status === 'RECALLED' && (
+                                {(r.status === 'RECALLED' || r.status.startsWith('PENDING_')) && (
                                   <div className="mt-3">
                                     {discardConfirming === r.id ? (
                                       <div className="space-y-2">

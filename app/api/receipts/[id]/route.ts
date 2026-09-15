@@ -179,9 +179,9 @@ export async function DELETE(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  if (existing.status !== 'RECALLED') {
+  if (existing.status === 'AUTH_COMPLETE' || existing.status === 'SUPERSEDED') {
     return NextResponse.json(
-      { error: 'Only recalled receipts can be discarded.' },
+      { error: 'Authorised and superseded receipts cannot be deleted.' },
       { status: 409 }
     )
   }
