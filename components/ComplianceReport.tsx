@@ -1071,38 +1071,13 @@ export default function ComplianceReport() {
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
 
-  const [aiStatement, setAiStatement] = useState<string | null>(null)
-  const [aiStatementLoading, setAiStatementLoading] = useState(false)
-  const [aiStatementError, setAiStatementError] = useState<string | null>(null)
-  const [aiStatementCopied, setAiStatementCopied] = useState(false)
+  const [showStatementDemoModal, setShowStatementDemoModal] = useState(false)
 
-  async function handleGenerateAIStatement() {
-    if (!selected) return
-    setAiStatementLoading(true)
-    setAiStatementError(null)
-    setAiStatement(null)
-    try {
-      const res = await fetch(`/api/statement?production=${encodeURIComponent(selected)}`)
-      const data = await res.json()
-      if (!res.ok) {
-        setAiStatementError(data.error ?? 'Failed to generate statement. Please try again.')
-        return
-      }
-      setAiStatement(data.statement)
-    } catch {
-      setAiStatementError('Something went wrong. Please try again.')
-    } finally {
-      setAiStatementLoading(false)
-    }
+  function handleGenerateAIStatement() {
+    setShowStatementDemoModal(true)
   }
 
-  function copyAIStatement() {
-    if (!aiStatement) return
-    navigator.clipboard.writeText(aiStatement).then(() => {
-      setAiStatementCopied(true)
-      setTimeout(() => setAiStatementCopied(false), 2000)
-    })
-  }
+
 
   useEffect(() => {
     fetch('/api/productions')
@@ -1164,64 +1139,38 @@ export default function ComplianceReport() {
 
   return (
     <div>
-      {/* AI Statement Modal */}
-      {(aiStatementLoading || aiStatement || aiStatementError) && (
+      {/* AI Statement Demo Modal */}
+      {showStatementDemoModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(10,25,16,0.88)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) { setAiStatement(null); setAiStatementError(null) } }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowStatementDemoModal(false) }}
         >
           <div className="w-full max-w-xl rounded-xl p-8 space-y-5" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#8BB5A0' }}>TRACE© — Production AI Statement</p>
-                <p className="font-garamond text-xl" style={{ color: '#F0EBE0' }}>{selected}</p>
+                <p className="font-garamond text-xl" style={{ color: '#F0EBE0' }}>Generate Production AI Statement</p>
               </div>
               <button
-                onClick={() => { setAiStatement(null); setAiStatementError(null) }}
+                onClick={() => setShowStatementDemoModal(false)}
                 className="font-courier text-xs flex-shrink-0"
                 style={{ color: '#5A8A72' }}
               >
                 Close
               </button>
             </div>
-
-            {aiStatementLoading && (
-              <div className="py-8 flex items-center justify-center gap-3">
-                <svg className="animate-spin w-4 h-4" style={{ color: '#8BB5A0' }} fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                <p className="font-courier text-xs" style={{ color: '#8BB5A0' }}>Generating statement…</p>
-              </div>
-            )}
-
-            {aiStatementError && (
-              <div className="rounded-lg px-4 py-3" style={{ background: 'rgba(224,82,82,0.1)', border: '1px solid rgba(224,82,82,0.4)' }}>
-                <p className="font-courier text-xs" style={{ color: '#f87171' }}>{aiStatementError}</p>
-              </div>
-            )}
-
-            {aiStatement && (
-              <>
-                <div className="rounded-lg px-5 py-4 space-y-3" style={{ backgroundColor: '#0F2419', border: '1px solid rgba(45,106,79,0.5)' }}>
-                  {aiStatement.split(/\n\n+/).filter(Boolean).map((para, i) => (
-                    <p key={i} className="font-courier text-xs leading-relaxed" style={{ color: '#D4EDE1' }}>{para}</p>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={copyAIStatement}
-                    className="btn-secondary text-xs"
-                  >
-                    {aiStatementCopied ? 'Copied!' : 'Copy to clipboard'}
-                  </button>
-                  <p className="font-courier text-[10px]" style={{ color: '#5A8A72' }}>
-                    Generated {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </p>
-                </div>
-              </>
-            )}
+            <div className="rounded-lg px-5 py-4" style={{ backgroundColor: '#0F2419', border: '1px solid rgba(45,106,79,0.5)' }}>
+              <p className="text-sm leading-relaxed" style={{ color: '#D4EDE1' }}>
+                Production AI Statement generator — this feature requires API configuration and will be fully operational in Build 1. The statement is auto-generated from the GAL data and covers: which departments used AI tools, a confirmation of human authorship throughout, and which departments did not use AI.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowStatementDemoModal(false)}
+              className="btn-secondary text-sm"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -1410,10 +1359,9 @@ export default function ComplianceReport() {
               </button>
               <button
                 onClick={handleGenerateAIStatement}
-                disabled={aiStatementLoading}
-                className="btn-secondary disabled:opacity-50"
+                className="btn-secondary"
               >
-                {aiStatementLoading ? 'Generating…' : 'Generate Production AI Statement'}
+                Generate Production AI Statement
               </button>
               <button
                 onClick={handleDownloadStatement}
