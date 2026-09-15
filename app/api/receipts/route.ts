@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       sel_detail: body.sel_detail || null,
       arr_description: body.arr_description,
       whitelist_condition: body.whitelist_condition || null,
+      tool_carbon_intensity: body.tool_carbon_intensity || null,
       status: initialStatus,
       submitter_role: submitterRole,
       routed_to_tier: routedToTier,

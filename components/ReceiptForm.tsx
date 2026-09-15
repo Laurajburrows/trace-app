@@ -17,6 +17,7 @@ const emptyForm = {
   ai_tool_used: '',
   tool_status: '' as string,
   whitelist_condition: '' as string,
+  tool_carbon_intensity: '' as string,
   por_description: '',
   sel_output: '',
   sel_description: '' as SelReason | '',
@@ -184,11 +185,10 @@ function CarbonBadge({ intensity }: { intensity?: string | null }) {
   )
 }
 
-function StatusBadge({ status, condition, requiresLCT, carbonIntensity }: {
+function StatusBadge({ status, condition, requiresLCT }: {
   status: 'GREEN' | 'AMBER' | 'RED' | 'UNVERIFIED' | ''
   condition?: string | null
   requiresLCT?: boolean
-  carbonIntensity?: string | null
 }) {
   if (!status) return null
 
@@ -200,7 +200,6 @@ function StatusBadge({ status, condition, requiresLCT, carbonIntensity }: {
           <span className="text-xs font-bold uppercase tracking-wide text-status-green">GREEN — Approved for production use</span>
         </div>
         {condition && <p className="text-xs text-green-700 italic mt-1 ml-5">{condition}</p>}
-        <CarbonBadge intensity={carbonIntensity} />
       </div>
     )
   }
@@ -219,7 +218,6 @@ function StatusBadge({ status, condition, requiresLCT, carbonIntensity }: {
             <span className="text-xs font-semibold text-status-amber">LCT required before use</span>
           </div>
         )}
-        <CarbonBadge intensity={carbonIntensity} />
       </div>
     )
   }
@@ -374,6 +372,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           ai_tool_used: receipt.ai_tool_used || '',
           tool_status: receipt.tool_status || '',
           whitelist_condition: receipt.whitelist_condition || '',
+          tool_carbon_intensity: receipt.tool_carbon_intensity || '',
           por_description: receipt.por_description || '',
           sel_output: receipt.sel_output || '',
           sel_description: (receipt.sel_description || '') as SelReason | '',
@@ -529,6 +528,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     set('ai_tool_used', value)
     set('tool_status', '')
     set('whitelist_condition', '')
+    set('tool_carbon_intensity', '')
 
     if (value.trim().length >= 1) {
       const q = value.toLowerCase()
@@ -549,6 +549,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     set('ai_tool_used', entry.displayName)
     set('tool_status', entry.status)
     set('whitelist_condition', entry.condition || '')
+    set('tool_carbon_intensity', entry.carbonIntensity || '')
     set('tool_version', entry.displayName)
     setSuggestions([])
     setShowSuggestions(false)
@@ -798,6 +799,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           ai_tool_used: first.selectedEntry!.displayName,
           tool_status: first.selectedEntry!.status,
           whitelist_condition: first.selectedEntry?.condition || null,
+          tool_carbon_intensity: first.selectedEntry?.carbonIntensity || null,
           tool_version: first.tool_version || null,
           input_file_version: first.input_file_version || null,
           output_file_version: first.output_file_version || null,
@@ -948,6 +950,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
         ...form,
         tool_status: selectedEntry?.status || form.tool_status || 'RED',
         whitelist_condition: selectedEntry?.condition || form.whitelist_condition || null,
+        tool_carbon_intensity: selectedEntry?.carbonIntensity || form.tool_carbon_intensity || null,
         is_session: false,
         session_tool_entries: null,
         additional_tools: additionalTools.length > 0 ? additionalTools.map(at => ({
@@ -1598,13 +1601,23 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 <div className="mb-4">
                   <p className="label mb-2">Tool Status <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist)</span></p>
                   {eStatus ? (
-                    <StatusBadge status={eStatus} condition={entry.selectedEntry?.condition} requiresLCT={entry.selectedEntry?.requiresLCT} carbonIntensity={entry.selectedEntry?.carbonIntensity} />
+                    <StatusBadge status={eStatus} condition={entry.selectedEntry?.condition} requiresLCT={entry.selectedEntry?.requiresLCT} />
                   ) : (
                     <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
                       Enter a tool name above to check whitelist status.
                     </div>
                   )}
                 </div>
+
+                {entry.selectedEntry?.carbonIntensity && (
+                  <div className="mb-4">
+                    <p className="label mb-2">Carbon Intensity <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist — read only)</span></p>
+                    <div className="rounded border border-gray-200 bg-gray-50 px-4 py-2.5 flex items-center gap-2">
+                      <span style={{ color: CARBON_INTENSITY_COLORS[entry.selectedEntry.carbonIntensity] || '#d97706', fontSize: 10 }}>●</span>
+                      <span className="text-sm font-medium text-gray-800">{entry.selectedEntry.carbonIntensity}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Tool version — mandatory for all departments */}
                 <div className="mb-4 pt-4 mt-2" style={{ borderTop: '1px solid #F3F4F6' }}>
@@ -1898,7 +1911,6 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 status={derivedStatus}
                 condition={selectedEntry?.condition}
                 requiresLCT={selectedEntry?.requiresLCT}
-                carbonIntensity={selectedEntry?.carbonIntensity}
               />
             ) : (
               <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-400">
@@ -1906,6 +1918,16 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               </div>
             )}
           </div>
+
+          {form.tool_carbon_intensity && (
+            <div>
+              <p className="label mb-2">Carbon Intensity <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist — read only)</span></p>
+              <div className="rounded border border-gray-200 bg-gray-50 px-4 py-2.5 flex items-center gap-2">
+                <span style={{ color: CARBON_INTENSITY_COLORS[form.tool_carbon_intensity] || '#d97706', fontSize: 10 }}>●</span>
+                <span className="text-sm font-medium text-gray-800">{form.tool_carbon_intensity}</span>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid #F3F4F6' }}>
             <label className="label" htmlFor="tool_version">Tool version</label>
@@ -2101,7 +2123,17 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
                   {atStatus && (
                     <div className="mb-4">
-                      <StatusBadge status={atStatus} condition={at.selectedEntry?.condition} requiresLCT={at.selectedEntry?.requiresLCT} carbonIntensity={at.selectedEntry?.carbonIntensity} />
+                      <StatusBadge status={atStatus} condition={at.selectedEntry?.condition} requiresLCT={at.selectedEntry?.requiresLCT} />
+                    </div>
+                  )}
+
+                  {at.selectedEntry?.carbonIntensity && (
+                    <div className="mb-4">
+                      <p className="label mb-2">Carbon Intensity <span className="normal-case font-normal text-gray-400">(auto-populated from whitelist — read only)</span></p>
+                      <div className="rounded border border-gray-200 bg-gray-50 px-4 py-2.5 flex items-center gap-2">
+                        <span style={{ color: CARBON_INTENSITY_COLORS[at.selectedEntry.carbonIntensity] || '#d97706', fontSize: 10 }}>●</span>
+                        <span className="text-sm font-medium text-gray-800">{at.selectedEntry.carbonIntensity}</span>
+                      </div>
                     </div>
                   )}
 

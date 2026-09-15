@@ -289,6 +289,7 @@ export interface Receipt {
   ai_tool_used: string
   tool_status: ToolStatus
   whitelist_condition?: string | null
+  tool_carbon_intensity?: string | null
   por_description: string
   sel_output?: string | null
   sel_description: string

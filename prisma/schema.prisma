@@ -17,8 +17,9 @@ model Receipt {
   scene_usid          String
   script_date         String?
   ai_tool_used        String
-  tool_status         String
-  whitelist_condition String?
+  tool_status              String
+  whitelist_condition      String?
+  tool_carbon_intensity    String?
   por_description     String
   sel_output          String?
   sel_description     String

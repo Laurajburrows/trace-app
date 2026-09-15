@@ -97,6 +97,7 @@ export async function PUT(
       ai_tool_used: body.ai_tool_used,
       tool_status: body.tool_status,
       whitelist_condition: body.whitelist_condition || null,
+      tool_carbon_intensity: body.tool_carbon_intensity || null,
       por_description: body.por_description,
       sel_output: body.sel_output || null,
       sel_description: body.sel_description,
