@@ -1213,6 +1213,21 @@ export default function ComplianceReport() {
               <button onClick={() => report && downloadJSON(report)} className="btn-secondary">
                 Export JSON
               </button>
+              {/* Placeholder — coming in Build 1 */}
+              <div className="relative group">
+                <button
+                  disabled
+                  className="btn-secondary opacity-40 cursor-not-allowed"
+                >
+                  Generate Production AI Statement
+                </button>
+                <div
+                  className="absolute left-0 top-full mt-1.5 w-44 rounded-lg px-3 py-2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  style={{ backgroundColor: '#122E1F', border: '1px solid #2D6A4F', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+                >
+                  <p className="font-courier text-[10px]" style={{ color: '#8BB5A0' }}>Coming in Build 1.</p>
+                </div>
+              </div>
               <button
                 onClick={handleDownloadStatement}
                 disabled={statementGenerating}
