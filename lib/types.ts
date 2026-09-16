@@ -18,6 +18,7 @@ export type Department =
   | 'Locations'
   | 'Makeup'
   | 'Mental Health'
+  | 'Music'
   | 'Picture Post'
   | 'Picture Vehicles'
   | 'Producers'
@@ -289,6 +290,7 @@ export const DEPARTMENTS: Department[] = [
   'Locations',
   'Makeup',
   'Mental Health',
+  'Music',
   'Picture Post',
   'Picture Vehicles',
   'Producers',
@@ -307,6 +309,39 @@ export const DEPARTMENTS: Department[] = [
   'Wardrobe',
   'Writing',
 ]
+
+export const ROLES_BY_DEPARTMENT: Partial<Record<Department, readonly string[]>> = {
+  Writing: ['Writer', 'Script Editor', 'Story Editor', 'Script Coordinator'],
+  Production: ['Director', 'Producer', 'DIT', 'Script Supervisor'],
+  VFX: ['VFX Supervisor', 'VFX Producer', 'Compositor', 'VFX Artist', 'Roto Artist', 'Matchmove Artist'],
+  Editorial: ['Editor', 'First Assistant Editor', 'Assistant Editor'],
+  'Colour / DI': ['Colourist', 'DI Supervisor', 'Online Editor', 'Conform Editor'],
+  'Sound Post': ['Re-recording Mixer', 'Facility Mixer', 'Dialogue Editor', 'Sound Effects Editor', 'ADR Supervisor', 'ADR Editor', 'Foley Artist', 'Foley Editor', 'Music Editor', 'Dubbing Mixer', 'Deliveries and M&E Mix'],
+  Music: ['Composer', 'Music Supervisor', 'Music Producer', 'Orchestrator', 'Arranger'],
+  'Art Department': ['Production Designer', 'Art Director', 'Concept Artist', 'Set Decorator'],
+  'Delivery / QC': ['Post Production Supervisor', 'QC Operator', 'Deliverables Coordinator'],
+} as const
+
+export const ROLE_TO_DEPARTMENT: Record<string, Department> = {
+  'Writer': 'Writing', 'Script Editor': 'Writing', 'Story Editor': 'Writing', 'Script Coordinator': 'Writing',
+  'Director': 'Production', 'Producer': 'Production', 'DIT': 'DIT', 'Script Supervisor': 'Production',
+  'VFX Supervisor': 'VFX', 'VFX Producer': 'VFX', 'Compositor': 'VFX', 'VFX Artist': 'VFX', 'Roto Artist': 'VFX', 'Matchmove Artist': 'VFX',
+  'Editor': 'Editorial', 'First Assistant Editor': 'Editorial', 'Assistant Editor': 'Editorial',
+  'Colourist': 'Colour / DI', 'DI Supervisor': 'Colour / DI', 'Online Editor': 'Colour / DI', 'Conform Editor': 'Colour / DI',
+  'Re-recording Mixer': 'Sound Post', 'Facility Mixer': 'Sound Post', 'Dialogue Editor': 'Sound Post', 'Sound Effects Editor': 'Sound Post',
+  'ADR Supervisor': 'Sound Post', 'ADR Editor': 'Sound Post', 'Foley Artist': 'Sound Post', 'Foley Editor': 'Sound Post',
+  'Music Editor': 'Sound Post', 'Dubbing Mixer': 'Sound Post', 'Deliveries and M&E Mix': 'Sound Post',
+  'Composer': 'Music', 'Music Supervisor': 'Music', 'Music Producer': 'Music', 'Orchestrator': 'Music', 'Arranger': 'Music',
+  'Production Designer': 'Art Department', 'Art Director': 'Art Department', 'Concept Artist': 'Art Department', 'Set Decorator': 'Art Department',
+  'Post Production Supervisor': 'Delivery / QC', 'QC Operator': 'Delivery / QC', 'Deliverables Coordinator': 'Delivery / QC',
+}
+
+export interface CustomRole {
+  id: string
+  role_name: string
+  department: string
+  created_at: string
+}
 
 export interface WhitelistEntry {
   id: string

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import WhitelistAdmin from '@/components/WhitelistAdmin'
 import ProductionAdmin from '@/components/ProductionAdmin'
+import CustomRoleAdmin from '@/components/CustomRoleAdmin'
 
 const CORRECT_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || '1234'
 const SESSION_KEY = 'trace_admin_unlocked'
@@ -95,6 +96,9 @@ export default function AdminPage() {
       <ProductionAdmin />
       <div style={{ borderTop: '1px solid rgba(45,106,79,0.4)', paddingTop: '3rem' }}>
         <WhitelistAdmin />
+      </div>
+      <div style={{ borderTop: '1px solid rgba(45,106,79,0.4)', paddingTop: '3rem' }}>
+        <CustomRoleAdmin />
       </div>
     </div>
   )

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
-import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS, ROLES_BY_DEPARTMENT, ROLE_TO_DEPARTMENT } from '@/lib/types'
+import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry, CustomRole } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -280,6 +280,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   const [discarded, setDiscarded] = useState(false)
 
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([])
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([])
   const [toolQuery, setToolQuery] = useState('')
   const [suggestions, setSuggestions] = useState<WhitelistEntry[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -358,6 +359,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   useEffect(() => {
     fetch('/api/productions').then((r) => r.json()).then(setProductions).catch(() => {})
     fetch('/api/whitelist').then((r) => r.json()).then(setWhitelist).catch(() => {})
+    fetch('/api/custom-roles').then((r) => r.json()).then(setCustomRoles).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -685,7 +687,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
   function getMissingFields(): string[] {
     const missing: string[] = []
-    if (!form.department) missing.push('Department')
+    if (!form.crew_role) missing.push('Role')
     if (isPostProd) {
       if (!toolEntries[0]?.toolQuery?.trim()) missing.push('Tool Name')
       if (toolEntries.some(e => !e.tool_version.trim())) missing.push('Tool Version')
@@ -757,6 +759,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!at.arr_description.trim()) return setError(`${label}: Please complete the ARR field.`)
     }
 
+    if (!form.crew_role.trim()) return setError('Please select a role.')
     if (!form.department) return setError('Please select a department.')
 
     if (isPostProd) {
@@ -944,6 +947,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     }
 
     // Non-post-prod path
+    if (!form.crew_role.trim()) return setError('Please select a role.')
     if (!form.ai_tool_used) return setError('Please enter the AI tool name.')
     if (authBlocked) return setError('Cannot submit: tool is not approved. Resolve tool status before proceeding.')
     if (!form.tool_version.trim()) return setError('Please enter the tool version.')
@@ -1316,21 +1320,6 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               onChange={(e) => set('date', e.target.value)}
             />
           </div>
-          <div>
-            <label className="label" htmlFor="department">Department</label>
-            <select
-              id="department"
-              className="select"
-              required
-              value={form.department}
-              onChange={(e) => set('department', e.target.value as Department)}
-            >
-              <option value="">Select department…</option>
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </section>
 
@@ -1350,15 +1339,43 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             />
           </div>
           <div>
-            <label className="label" htmlFor="crew_role">Role</label>
-            <input
+            <label className="label" htmlFor="crew_role">Role <span className="text-red-500">*</span></label>
+            <select
               id="crew_role"
-              className="input"
+              className="select"
               required
-              placeholder="e.g. VFX Supervisor, Colourist"
               value={form.crew_role}
-              onChange={(e) => set('crew_role', e.target.value)}
-            />
+              onChange={(e) => {
+                const role = e.target.value
+                const dept = ROLE_TO_DEPARTMENT[role] ?? (customRoles.find(r => r.role_name === role)?.department as Department | undefined) ?? form.department
+                set('crew_role', role)
+                set('department', dept)
+              }}
+            >
+              <option value="">Select role…</option>
+              {(Object.entries(ROLES_BY_DEPARTMENT) as [string, readonly string[]][]).map(([dept, roles]) => (
+                <optgroup key={dept} label={dept}>
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
+                </optgroup>
+              ))}
+              {customRoles.length > 0 && (
+                <optgroup label="Custom roles">
+                  {customRoles.map(r => <option key={r.id} value={r.role_name}>{r.role_name} ({r.department})</option>)}
+                </optgroup>
+              )}
+            </select>
+          </div>
+          <div>
+            <label className="label">Department</label>
+            {form.department ? (
+              <div className="flex items-center h-10 px-3 rounded border border-gray-200 bg-gray-50">
+                <span className="text-sm text-gray-700">{form.department}</span>
+              </div>
+            ) : (
+              <div className="flex items-center h-10 px-3 rounded border border-gray-200 bg-gray-50">
+                <span className="text-sm text-gray-400 italic">Auto-populated from role</span>
+              </div>
+            )}
           </div>
           {form.department === 'VFX' && (
             <>
