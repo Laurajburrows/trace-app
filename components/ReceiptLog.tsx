@@ -59,6 +59,573 @@ function exportCSV(receipts: Receipt[]) {
   URL.revokeObjectURL(url)
 }
 
+async function computeSubmissionHash(r: Receipt): Promise<string> {
+  const exclude = new Set([
+    'auth_signer', 'auth_timestamp', 'twin_lock_hash', 'status',
+    'resubmitted_at', 'superseded_at', 'superseded_by', 'recalled_at',
+  ])
+  const payload: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(r)) {
+    if (!exclude.has(k)) payload[k] = v
+  }
+  const sorted = Object.fromEntries(Object.entries(payload).sort())
+  const json = JSON.stringify(sorted)
+  const buf = new TextEncoder().encode(json)
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf)
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function exportReceiptJSON(r: Receipt) {
+  const submissionHash = await computeSubmissionHash(r)
+  const recDate = new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+
+  const output = {
+    trace_document: 'TRACE© Artist Receipt',
+    schema_version: '1.0',
+    exported_at: new Date().toISOString(),
+    receipt: {
+      id: r.id,
+      production: {
+        production_name: r.production_name,
+        date: r.date,
+        formatted_date: recDate,
+        script_date: r.script_date ?? null,
+      },
+      crew: {
+        crew_member_name: r.crew_member_name,
+        crew_role: r.crew_role,
+        submitter_role: r.submitter_role ?? null,
+      },
+      department: r.department,
+      scene: {
+        scene_usid: r.scene_usid,
+        scene_asset_reference: r.scene_asset_reference ?? null,
+        reel: r.reel ?? null,
+        timecode_range: r.timecode_range ?? null,
+        session_file_reference: r.session_file_reference ?? null,
+        deliverable_name: r.deliverable_name ?? null,
+        writing_script_reference: r.writing_script_reference ?? null,
+        writing_scene_number: r.writing_scene_number ?? null,
+      },
+      ai_tool: {
+        ai_tool_used: r.ai_tool_used,
+        tool_version: r.tool_version ?? null,
+        tool_status: r.tool_status,
+        whitelist_condition: r.whitelist_condition ?? null,
+        tool_carbon_intensity: r.tool_carbon_intensity ?? null,
+        is_session: r.is_session ?? false,
+        session_tool_entries: r.session_tool_entries ?? null,
+        additional_tools: r.additional_tools ?? null,
+        input_file_version: r.input_file_version ?? null,
+        output_file_version: r.output_file_version ?? null,
+      },
+      compliance: {
+        por_description: r.por_description,
+        sel_output: r.sel_output ?? null,
+        sel_description: r.sel_description,
+        sel_detail: r.sel_detail ?? null,
+        arr_description: r.arr_description,
+      },
+      auth: {
+        status: r.status,
+        auth_signer: r.auth_signer ?? null,
+        auth_timestamp: r.auth_timestamp ?? null,
+        routed_to_tier: r.routed_to_tier ?? null,
+        crew_confirmed_at: r.crew_confirmed_at ?? null,
+      },
+      lct: {
+        lct_required: r.lct_required,
+        lct_reference: r.lct_reference ?? null,
+        lct_child_performer: r.lct_child_performer ?? false,
+        lct_child_age_bracket: r.lct_child_age_bracket ?? null,
+        lct_guardian_name: r.lct_guardian_name ?? null,
+        lct_guardian_consent_ref: r.lct_guardian_consent_ref ?? null,
+        lct_performance_licence_ref: r.lct_performance_licence_ref ?? null,
+      },
+      department_fields: {
+        vfx: r.department === 'VFX' ? {
+          vfx_software: r.vfx_software ?? null,
+          vfx_data_location: r.vfx_data_location ?? null,
+          vfx_no_training_confirmed: r.vfx_no_training_confirmed ?? false,
+          vfx_input_type: r.vfx_input_type ?? null,
+          vfx_output_type: r.vfx_output_type ?? null,
+          vfx_lct_confirmed: r.vfx_lct_confirmed ?? false,
+          vfx_sequence: (r as Receipt & { vfx_sequence?: string | null }).vfx_sequence ?? null,
+          vfx_shot_version: (r as Receipt & { vfx_shot_version?: string | null }).vfx_shot_version ?? null,
+          vfx_asset_type: (r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type ?? null,
+          vfx_element_processed: (r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed ?? null,
+        } : null,
+        sound: (r.department === 'Sound' || r.department === 'Sound Post') ? {
+          sound_processing_location: r.sound_processing_location ?? null,
+          sound_processing_type: r.sound_processing_type ?? null,
+          sound_performer_audio: r.sound_performer_audio ?? false,
+          sound_no_training_confirmed: r.sound_no_training_confirmed ?? false,
+        } : null,
+        writing: r.department === 'Writing' ? {
+          writing_stage: r.writing_stage ?? null,
+          writing_submitted_material: r.writing_submitted_material ?? null,
+          writing_processing_location: r.writing_processing_location ?? null,
+          writing_guild_status: r.writing_guild_status ?? null,
+          writing_ai_contribution: r.writing_ai_contribution ?? null,
+          writing_no_training_confirmed: r.writing_no_training_confirmed ?? false,
+          writing_authorship_declared: r.writing_authorship_declared ?? false,
+          writing_wga_writers_count: r.writing_wga_writers_count ?? null,
+          writing_wga_registration: r.writing_wga_registration ?? null,
+          writing_wggb_context: r.writing_wggb_context ?? null,
+          writing_wggb_paternity: r.writing_wggb_paternity ?? false,
+        } : null,
+        colour: r.department === 'Colour / DI' ? {
+          colour_grading_system: r.colour_grading_system ?? null,
+          colour_ai_grading: r.colour_ai_grading ?? false,
+          colour_performer_footage: r.colour_performer_footage ?? false,
+          colour_lct_confirmed: r.colour_lct_confirmed ?? false,
+        } : null,
+        editorial: r.department === 'Editorial' ? {
+          editorial_editing_system: r.editorial_editing_system ?? null,
+          editorial_ai_tool_type: r.editorial_ai_tool_type ?? null,
+          editorial_performer_footage: r.editorial_performer_footage ?? false,
+          editorial_lct_confirmed: r.editorial_lct_confirmed ?? false,
+        } : null,
+        delivery: r.department === 'Delivery / QC' ? {
+          delivery_ai_tool_type: r.delivery_ai_tool_type ?? null,
+          delivery_format: r.delivery_format ?? null,
+          delivery_no_training_confirmed: r.delivery_no_training_confirmed ?? false,
+        } : null,
+        post_prod_facility: ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department) ? {
+          facility_name: r.facility_name ?? null,
+          render_processing_location: r.render_processing_location ?? null,
+          facility_ai_policy_confirmed: r.facility_ai_policy_confirmed ?? false,
+        } : null,
+      },
+      third_party: {
+        third_party_asset: r.third_party_asset ?? false,
+        third_party_licence_confirmed: r.third_party_licence_confirmed ?? false,
+      },
+      notes: r.notes ?? null,
+      supersession: {
+        supersedes: r.supersedes ?? null,
+        superseded_by: r.superseded_by ?? null,
+        superseded_at: r.superseded_at ?? null,
+        supersede_reason: r.supersede_reason ?? null,
+      },
+      timestamps: {
+        created_at: r.created_at,
+        crew_confirmed_at: r.crew_confirmed_at ?? null,
+        auth_timestamp: r.auth_timestamp ?? null,
+        recalled_at: r.recalled_at ?? null,
+        resubmitted_at: r.resubmitted_at ?? null,
+      },
+      hashes: {
+        submission_hash_sha256: submissionHash,
+        auth_hash_sha256: r.twin_lock_hash ?? null,
+        hash_note: 'submission_hash covers crew-submitted fields (excludes auth_signer, auth_timestamp, twin_lock_hash, status). auth_hash (TRACE Twin Lock) covers the complete authorised record as signed by HOD.',
+      },
+    },
+  }
+
+  const safeProd = r.production_name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30)
+  const dateStr = new Date(r.date).toISOString().split('T')[0]
+  const shortId = r.id.slice(0, 8).toUpperCase()
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `TRACE-Receipt-${shortId}-${safeProd}-${dateStr}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+async function exportReceiptPDF(r: Receipt) {
+  const submissionHash = await computeSubmissionHash(r)
+  const { jsPDF } = await import('jspdf')
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageW = 210
+  const pageH = 297
+  const margin = 15
+  const cw = pageW - 2 * margin
+  const col = cw / 2 - 3
+  const lineH = 4.8
+  let y = margin
+
+  const shortId = r.id.slice(0, 8).toUpperCase()
+  const recDate = new Date(r.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const authDate = r.auth_timestamp
+    ? new Date(r.auth_timestamp).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : '—'
+
+  function ensureSpace(needed: number) {
+    if (y + needed > pageH - 18) {
+      doc.addPage()
+      y = margin
+    }
+  }
+
+  function sectionBand(title: string) {
+    ensureSpace(12)
+    doc.setFillColor('#1A3D2B')
+    doc.rect(margin, y, cw, 7, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.5)
+    doc.setTextColor('#F5F0E8')
+    doc.text(title, margin + 3, y + 5)
+    y += 9
+  }
+
+  function twoCol(pairs: [string, string | null | undefined][]) {
+    const items = pairs.filter(([, v]) => v !== null && v !== undefined && v !== '')
+    let i = 0
+    while (i < items.length) {
+      const [labelA, valA] = items[i]
+      const [labelB, valB] = items[i + 1] ?? ['', null]
+      const linesA = doc.splitTextToSize(String(valA ?? '—'), col)
+      const linesB = valB ? doc.splitTextToSize(String(valB), col) : []
+      const rowH = Math.max(linesA.length, linesB.length || 0) * lineH + 8
+      ensureSpace(rowH)
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor('#2D6A4F')
+      doc.text(labelA.toUpperCase(), margin, y)
+      if (valB) doc.text(labelB.toUpperCase(), margin + col + 6, y)
+      y += 4
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor('#1C1C1C')
+      doc.text(linesA, margin, y)
+      if (linesB.length > 0) doc.text(linesB, margin + col + 6, y)
+      y += Math.max(linesA.length, linesB.length || 0) * lineH + 2
+      i += 2
+    }
+  }
+
+  function fullField(label: string, value: string | null | undefined) {
+    if (!value) return
+    const lines = doc.splitTextToSize(value, cw)
+    ensureSpace(lines.length * lineH + 10)
+    if (label) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor('#2D6A4F')
+      doc.text(label.toUpperCase(), margin, y)
+      y += 4
+    }
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor('#1C1C1C')
+    doc.text(lines, margin, y)
+    y += lines.length * lineH + 2
+  }
+
+  function hashBox(hash: string) {
+    ensureSpace(14)
+    doc.setFillColor('#0A1C10')
+    doc.rect(margin, y, cw, 10, 'F')
+    doc.setFont('courier', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor('#F0EBE0')
+    doc.text(hash || '—', margin + 3, y + 6.5)
+    y += 13
+  }
+
+  // ── PAGE HEADER ──────────────────────────────────────────────────
+  doc.setFillColor('#1A3D2B')
+  doc.rect(0, 0, pageW, 30, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.setTextColor('#F5F0E8')
+  doc.text('TRACE© ARTIST RECEIPT', margin, 13)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor('#8BB5A0')
+  doc.text(r.production_name, margin, 22)
+  doc.setFontSize(8.5)
+  doc.text(`Receipt ${shortId}   ·   ${recDate}   ·   AUTH COMPLETE`, pageW - margin, 22, { align: 'right' })
+  y = 37
+
+  // ── PRODUCTION & CREW ────────────────────────────────────────────
+  sectionBand('Production & Crew')
+  twoCol([
+    ['Production', r.production_name],
+    ['Date', recDate],
+    ['Department', r.department],
+    ['Script Date', r.script_date],
+    ['Crew Member', r.crew_member_name],
+    ['Role', r.crew_role],
+    ['Shot / Scene Reference', r.scene_usid || null],
+    ['Scene / Asset Reference', r.scene_asset_reference || null],
+  ])
+  if (r.department === 'VFX') {
+    twoCol([
+      ['VFX Sequence', (r as Receipt & { vfx_sequence?: string | null }).vfx_sequence || null],
+      ['Shot Version', (r as Receipt & { vfx_shot_version?: string | null }).vfx_shot_version || null],
+      ['Asset Type', (r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type || null],
+      ['Element Processed', (r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed || null],
+    ])
+  }
+  if (r.department === 'Writing') {
+    twoCol([['Script Reference', r.writing_script_reference || null], ['Scene Number', r.writing_scene_number || null]])
+  }
+  if (r.department === 'Colour / DI' || r.department === 'Editorial') {
+    twoCol([['Reel', r.reel || null], ['Timecode Range', r.timecode_range || null]])
+  }
+  if (r.department === 'Sound Post' && r.session_file_reference) {
+    twoCol([['Session File Reference', r.session_file_reference], ['', null]])
+  }
+  if (r.department === 'Delivery / QC' && r.deliverable_name) {
+    twoCol([['Deliverable Name', r.deliverable_name], ['', null]])
+  }
+
+  y += 2
+
+  // ── AI TOOL ──────────────────────────────────────────────────────
+  sectionBand('AI Tool')
+  if (r.is_session && Array.isArray(r.session_tool_entries) && (r.session_tool_entries as SessionToolEntry[]).length > 0) {
+    ;(r.session_tool_entries as SessionToolEntry[]).forEach((entry, i) => {
+      ensureSpace(22)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.setTextColor('#2D6A4F')
+      doc.text(`TOOL ${i + 1} — ${entry.ai_tool_used}  (${entry.tool_status})`, margin, y)
+      y += 5
+      twoCol([
+        ['Input Version', entry.input_file_version || null],
+        ['Output Version', entry.output_file_version || null],
+      ])
+    })
+  } else {
+    twoCol([
+      ['Tool Name', r.ai_tool_used],
+      ['Version', r.tool_version || null],
+      ['Status', r.tool_status],
+      ['Carbon Intensity', r.tool_carbon_intensity || null],
+    ])
+    if (r.whitelist_condition) fullField('Whitelist Condition', r.whitelist_condition)
+    if (r.input_file_version || r.output_file_version) {
+      twoCol([['Input File Version', r.input_file_version || null], ['Output File Version', r.output_file_version || null]])
+    }
+  }
+
+  y += 2
+
+  // ── POR / SEL / ARR ──────────────────────────────────────────────
+  sectionBand('POR — Point of Record')
+  fullField('', r.por_description)
+
+  y += 1
+  sectionBand('SEL — Selection')
+  twoCol([['What was selected', r.sel_output || null], ['Why selected', r.sel_description || null]])
+  if (r.sel_detail) fullField('Selection Detail', r.sel_detail)
+
+  y += 1
+  sectionBand('ARR — Where did you end up?')
+  fullField('', r.arr_description)
+
+  y += 2
+
+  // ── AUTH SIGN-OFF ────────────────────────────────────────────────
+  sectionBand('AUTH Sign-Off')
+  twoCol([
+    ['AUTH Signer', r.auth_signer || null],
+    ['AUTH Timestamp', authDate],
+    ['Routing Tier', r.routed_to_tier || null],
+    ['Receipt Status', 'AUTH COMPLETE'],
+  ])
+
+  y += 2
+
+  // ── LCT ──────────────────────────────────────────────────────────
+  if (r.lct_required) {
+    sectionBand('Likeness Consent Token (LCT)')
+    twoCol([['LCT Required', 'Yes'], ['LCT Reference', r.lct_reference || null]])
+    if (r.lct_child_performer) {
+      twoCol([
+        ['Child Performer', 'Yes — under 18'],
+        ['Age Bracket', r.lct_child_age_bracket || null],
+        ['Guardian Name', r.lct_guardian_name || null],
+        ['Consent Reference', r.lct_guardian_consent_ref || null],
+        ['Performance Licence Ref', r.lct_performance_licence_ref || null],
+        ['', null],
+      ])
+    }
+    y += 2
+  }
+
+  // ── DEPARTMENT-SPECIFIC ──────────────────────────────────────────
+  if (r.department === 'VFX') {
+    sectionBand('VFX — Pipeline Compliance')
+    twoCol([
+      ['Software & Version', r.vfx_software || null],
+      ['Data Processed At', r.vfx_data_location || null],
+      ['Input Type', r.vfx_input_type || null],
+      ['Output Type', r.vfx_output_type || null],
+      ['No Training Confirmed', r.vfx_no_training_confirmed ? 'Confirmed' : 'Not confirmed'],
+      ['LCT Verified', r.vfx_lct_confirmed ? 'Confirmed' : 'Not required / not confirmed'],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'Sound' || r.department === 'Sound Post') {
+    sectionBand(`${r.department} — Compliance`)
+    twoCol([
+      ['Processing Location', r.sound_processing_location || null],
+      ['Type of Processing', r.sound_processing_type || null],
+      ['Performer Dialogue', r.sound_performer_audio ? 'Yes' : 'No'],
+      ['No Training Confirmed', r.sound_no_training_confirmed ? 'Confirmed' : 'Not confirmed'],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'Writing') {
+    sectionBand('Writing — Compliance')
+    twoCol([
+      ['Stage', r.writing_stage || null],
+      ['Material Submitted', r.writing_submitted_material || null],
+      ['Processing Location', r.writing_processing_location || null],
+      ['Guild Status', r.writing_guild_status || null],
+      ['AI Contribution', r.writing_ai_contribution || null],
+      ['Writers in Session', r.writing_wga_writers_count != null ? String(r.writing_wga_writers_count) : null],
+      ['WGA Registration', r.writing_wga_registration || null],
+      ['WGGB Context', r.writing_wggb_context || null],
+      ['Paternity Asserted', r.writing_wggb_paternity ? 'Confirmed (CDPA s.77)' : null],
+      ['No Training Confirmed', r.writing_no_training_confirmed ? 'Confirmed' : 'Not confirmed'],
+      ['Authorship Declared', r.writing_authorship_declared ? 'Confirmed' : 'Not confirmed'],
+      ['', null],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'Colour / DI') {
+    sectionBand('Colour / DI — Compliance')
+    twoCol([
+      ['Grading System', r.colour_grading_system || null],
+      ['AI-Assisted Grading', r.colour_ai_grading ? 'Yes' : 'No'],
+      ['Performer Footage', r.colour_performer_footage ? 'Yes' : 'No'],
+      ['LCT Verified', r.colour_lct_confirmed ? 'Confirmed' : r.colour_performer_footage ? 'Not confirmed' : 'N/A'],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'Editorial') {
+    sectionBand('Editorial — Compliance')
+    twoCol([
+      ['Editing System', r.editorial_editing_system || null],
+      ['AI Tool Type', r.editorial_ai_tool_type || null],
+      ['Performer Footage', r.editorial_performer_footage ? 'Yes' : 'No'],
+      ['LCT Verified', r.editorial_lct_confirmed ? 'Confirmed' : r.editorial_performer_footage ? 'Not confirmed' : 'N/A'],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'Delivery / QC') {
+    sectionBand('Delivery / QC — Compliance')
+    twoCol([
+      ['AI Tool Type', r.delivery_ai_tool_type || null],
+      ['Delivery Format', r.delivery_format || null],
+      ['No Training Confirmed', r.delivery_no_training_confirmed ? 'Confirmed' : 'Not confirmed'],
+    ])
+    y += 2
+  }
+
+  if (['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department)) {
+    sectionBand('Post-Production Facility')
+    twoCol([
+      ['Facility or Vendor', r.facility_name || null],
+      ['Processing Location', r.render_processing_location || null],
+      ['AI Policy Confirmed', r.facility_ai_policy_confirmed ? 'Confirmed' : 'Not confirmed'],
+    ])
+    y += 2
+  }
+
+  if (Array.isArray(r.additional_tools) && (r.additional_tools as AdditionalToolEntry[]).length > 0) {
+    sectionBand('Additional Tools')
+    ;(r.additional_tools as AdditionalToolEntry[]).forEach((at, i) => {
+      ensureSpace(40)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7.5)
+      doc.setTextColor('#2D6A4F')
+      doc.text(`ADDITIONAL TOOL ${i + 1} — ${at.ai_tool_used}  (${at.tool_status})`, margin, y)
+      y += 5
+      if (at.tool_version) twoCol([['Version', at.tool_version], ['', null]])
+      fullField('POR', at.por_description)
+      twoCol([['SEL — Selected', at.sel_output || null], ['Why selected', at.sel_description || null]])
+      if (at.sel_detail) fullField('Selection Detail', at.sel_detail)
+      fullField('ARR', at.arr_description)
+      y += 2
+    })
+  }
+
+  if (r.third_party_asset) {
+    sectionBand('Third-Party Asset')
+    twoCol([
+      ['Third-Party Asset', 'Yes'],
+      ['Licence Clearance', r.third_party_licence_confirmed ? 'Confirmed' : 'Not confirmed — review required'],
+    ])
+    y += 2
+  }
+
+  if (r.notes) {
+    sectionBand('Notes')
+    fullField('', r.notes)
+    y += 2
+  }
+
+  if (r.supersedes || r.superseded_by) {
+    sectionBand('Supersession')
+    twoCol([
+      r.supersedes ? ['Supersedes Receipt', r.supersedes.slice(0, 8).toUpperCase()] : ['', null],
+      r.superseded_by ? ['Superseded By', r.superseded_by.slice(0, 8).toUpperCase()] : ['', null],
+    ])
+    if (r.supersede_reason) fullField('Reason', r.supersede_reason)
+    y += 2
+  }
+
+  // ── INTEGRITY HASHES ─────────────────────────────────────────────
+  sectionBand('TRACE© Twin Lock — Integrity Hashes')
+
+  ensureSpace(42)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor('#2D6A4F')
+  doc.text('SUBMISSION HASH (SHA-256)', margin, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor('#5A8A72')
+  doc.text('Covers crew-submitted fields — excludes auth data', pageW - margin, y, { align: 'right' })
+  y += 4.5
+  hashBox(submissionHash)
+
+  ensureSpace(24)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor('#2D6A4F')
+  doc.text('AUTH HASH — TRACE TWIN LOCK (SHA-256)', margin, y)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor('#5A8A72')
+  doc.text('Covers complete authorised record including HOD sign-off', pageW - margin, y, { align: 'right' })
+  y += 4.5
+  hashBox(r.twin_lock_hash || '—')
+
+  // ── FOOTERS ON ALL PAGES ─────────────────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const totalPages: number = (doc as any).internal.getNumberOfPages()
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p)
+    doc.setDrawColor('#2D6A4F')
+    doc.setLineWidth(0.3)
+    doc.line(margin, pageH - 12, pageW - margin, pageH - 12)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor('#5A8A72')
+    doc.text('TRACE© Protocol — Artist Receipt — © Laura Burrows 2026', margin, pageH - 7)
+    doc.text(`Receipt ${shortId} — Page ${p} of ${totalPages}`, pageW - margin, pageH - 7, { align: 'right' })
+  }
+
+  const safeProd = r.production_name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 30)
+  const dateStr = new Date(r.date).toISOString().split('T')[0]
+  doc.save(`TRACE-Receipt-${shortId}-${safeProd}-${dateStr}.pdf`)
+}
+
 export default function ReceiptLog() {
   const [receipts, setReceipts] = useState<Receipt[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,6 +634,8 @@ export default function ReceiptLog() {
   const [recalling, setRecalling] = useState(false)
   const [discardConfirming, setDiscardConfirming] = useState<string | null>(null)
   const [discarding, setDiscarding] = useState(false)
+  const [pdfExporting, setPdfExporting] = useState<string | null>(null)
+  const [jsonExporting, setJsonExporting] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
     production: '',
@@ -559,7 +1128,7 @@ export default function ReceiptLog() {
                               )}
                               {r.twin_lock_hash ? (
                                 <div>
-                                  <p className="label">TRACE Twin Lock — SHA-256</p>
+                                  <p className="label">TRACE Twin Lock — AUTH Hash (SHA-256)</p>
                                   <div className="rounded px-3 py-2 mt-1" style={{ background: '#0A1C10', border: '1px solid #2D6A4F' }}>
                                     <p className="font-courier text-xs break-all" style={{ color: '#F0EBE0', lineHeight: 1.7 }}>
                                       {r.twin_lock_hash}
@@ -673,8 +1242,32 @@ export default function ReceiptLog() {
                           )}
                           {r.department === 'VFX' && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
-                              <p className="label mb-3">VFX — Additional Compliance</p>
+                              <p className="label mb-3">VFX — Pipeline Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                {(r as Receipt & { vfx_sequence?: string | null }).vfx_sequence && (
+                                  <div>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>VFX Sequence</p>
+                                    <p style={{ color: '#D4EDE1' }}>{(r as Receipt & { vfx_sequence?: string | null }).vfx_sequence}</p>
+                                  </div>
+                                )}
+                                {(r as Receipt & { vfx_shot_version?: string | null }).vfx_shot_version && (
+                                  <div>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Shot Version</p>
+                                    <p style={{ color: '#D4EDE1' }}>{(r as Receipt & { vfx_shot_version?: string | null }).vfx_shot_version}</p>
+                                  </div>
+                                )}
+                                {(r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type && (
+                                  <div>
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Asset Type</p>
+                                    <p style={{ color: '#D4EDE1' }}>{(r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type}</p>
+                                  </div>
+                                )}
+                                {(r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed && (
+                                  <div className="sm:col-span-2">
+                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Element Processed</p>
+                                    <p style={{ color: '#D4EDE1' }}>{(r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed}</p>
+                                  </div>
+                                )}
                                 <div>
                                   <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Software and version</p>
                                   <p style={{ color: '#D4EDE1' }}>{r.vfx_software || '—'}</p>
@@ -688,23 +1281,21 @@ export default function ReceiptLog() {
                                   <p style={{ color: '#D4EDE1' }}>{r.vfx_input_type || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Output type</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widests" style={{ color: '#5A8A72' }}>Output type</p>
                                   <p style={{ color: '#D4EDE1' }}>{r.vfx_output_type || '—'}</p>
                                 </div>
                                 <div>
-                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>No model training confirmed</p>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>No training on production footage</p>
                                   <p className={r.vfx_no_training_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                     {r.vfx_no_training_confirmed ? 'Confirmed' : 'Not confirmed'}
                                   </p>
                                 </div>
-                                {r.vfx_input_type === 'Plate footage containing performers' && (
-                                  <div>
-                                    <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>LCT verified</p>
-                                    <p className={r.vfx_lct_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
-                                      {r.vfx_lct_confirmed ? 'Confirmed' : 'Not confirmed'}
-                                    </p>
-                                  </div>
-                                )}
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>LCT verified</p>
+                                  <p className={r.vfx_lct_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
+                                    {r.vfx_lct_confirmed ? 'Confirmed' : r.vfx_input_type === 'Plate footage containing performers' ? 'Not confirmed' : 'N/A'}
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -805,6 +1396,32 @@ export default function ReceiptLog() {
                                   </p>
                                 </div>
                               </div>
+                            </div>
+                          )}
+                          {r.status === 'AUTH_COMPLETE' && (
+                            <div className="mt-5 pt-5 flex items-center gap-3 flex-wrap" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                              <button
+                                onClick={async () => {
+                                  setPdfExporting(r.id)
+                                  try { await exportReceiptPDF(r) } finally { setPdfExporting(null) }
+                                }}
+                                disabled={pdfExporting === r.id}
+                                className="inline-flex items-center gap-2 font-courier text-xs px-4 py-2 rounded transition-opacity disabled:opacity-60"
+                                style={{ background: '#1A3D2B', color: '#F5F0E8', border: '1px solid #2D6A4F' }}
+                              >
+                                {pdfExporting === r.id ? 'Generating…' : 'Export PDF'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setJsonExporting(r.id)
+                                  try { await exportReceiptJSON(r) } finally { setJsonExporting(null) }
+                                }}
+                                disabled={jsonExporting === r.id}
+                                className="inline-flex items-center gap-2 font-courier text-xs px-4 py-2 rounded transition-opacity disabled:opacity-60"
+                                style={{ color: '#8BB5A0', border: '1px solid rgba(45,106,79,0.5)' }}
+                              >
+                                {jsonExporting === r.id ? 'Exporting…' : 'Export JSON'}
+                              </button>
                             </div>
                           )}
                           {['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department) && (
