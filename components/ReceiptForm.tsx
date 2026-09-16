@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -38,6 +38,10 @@ const emptyForm = {
   vfx_input_type: '',
   vfx_output_type: '',
   vfx_lct_confirmed: false,
+  vfx_sequence: '',
+  vfx_shot_version: '',
+  vfx_asset_type: '',
+  vfx_element_processed: '',
   sound_processing_location: '',
   sound_processing_type: '',
   sound_performer_audio: false,
@@ -392,6 +396,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           vfx_input_type: receipt.vfx_input_type || '',
           vfx_output_type: receipt.vfx_output_type || '',
           vfx_lct_confirmed: Boolean(receipt.vfx_lct_confirmed),
+          vfx_sequence: receipt.vfx_sequence || '',
+          vfx_shot_version: receipt.vfx_shot_version || '',
+          vfx_asset_type: receipt.vfx_asset_type || '',
+          vfx_element_processed: receipt.vfx_element_processed || '',
           sound_processing_location: receipt.sound_processing_location || '',
           sound_processing_type: receipt.sound_processing_type || '',
           sound_performer_audio: Boolean(receipt.sound_performer_audio),
@@ -488,7 +496,13 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   useEffect(() => {
     setToolEntries([makeEmptyEntry()])
     setAdditionalTools([])
-    if (form.department !== 'VFX') set('scene_usid', '')
+    if (form.department !== 'VFX') {
+      set('scene_usid', '')
+      set('vfx_sequence', '')
+      set('vfx_shot_version', '')
+      set('vfx_asset_type', '')
+      set('vfx_element_processed', '')
+    }
   }, [form.department])
 
   // Click-outside: handles both single toolRef and all session toolRefs
@@ -674,6 +688,13 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     if (form.department === 'VFX' || form.department === 'Art Department') {
       if (!form.scene_asset_reference.trim()) missing.push('Scene or Asset Reference')
     }
+    if (form.department === 'VFX') {
+      if (!form.scene_usid.trim()) missing.push('Shot Reference')
+      if (!form.vfx_sequence.trim()) missing.push('VFX Sequence')
+      if (!form.vfx_shot_version.trim()) missing.push('Shot Version')
+      if (!form.vfx_asset_type) missing.push('Asset Type')
+      if (!form.facility_name.trim()) missing.push('Facility or Vendor Name')
+    }
     if (form.department === 'Colour / DI' || form.department === 'Editorial') {
       if (!form.reel.trim()) missing.push('Reel')
       if (!form.timecode_range.trim()) missing.push('Timecode Range')
@@ -745,11 +766,11 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
         if (form.department === 'VFX') {
           if (!entry.vfx_software.trim()) return setError(`VFX: Please enter the software name and version${label}.`)
           if (!entry.vfx_data_location) return setError(`VFX: Please select where data was processed${label}.`)
-          if (!entry.vfx_no_training_confirmed) return setError(`VFX: Please confirm the training data policy${label}.`)
+          if (!entry.vfx_no_training_confirmed) return setError(`VFX: Please confirm that this AI tool has not been used to train on production footage${label}.`)
           if (!entry.vfx_input_type) return setError(`VFX: Please select what was submitted to the AI tool${label}.`)
           if (!entry.vfx_output_type) return setError(`VFX: Please select what the AI generated${label}.`)
           if (entry.vfx_input_type === 'Plate footage containing performers' && !entry.vfx_lct_confirmed) {
-            return setError(`VFX: Please confirm a valid LCT exists for all performers in this footage${label}.`)
+            return setError(`VFX: Please confirm a Likeness Consent Token is in place for all performers in this shot${label}.`)
           }
         }
 
@@ -1320,17 +1341,65 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             />
           </div>
           {form.department === 'VFX' && (
-            <div>
-              <label className="label" htmlFor="scene_usid">Shot Reference</label>
-              <p className="text-xs text-gray-400 mb-1.5">The VFX shot code for this work — e.g. VFX_0023, SC23_045A, or your production&apos;s shot identifier.</p>
-              <input
-                id="scene_usid"
-                className="input"
-                placeholder="e.g. VFX_0023, SC23_045A"
-                value={form.scene_usid}
-                onChange={(e) => set('scene_usid', e.target.value)}
-              />
-            </div>
+            <>
+              <div>
+                <label className="label" htmlFor="scene_usid">Shot Reference <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-400 mb-1.5">The VFX shot code for this work — e.g. DW_0042_010, or your production&apos;s shot identifier.</p>
+                <input
+                  id="scene_usid"
+                  className="input"
+                  placeholder="e.g. DW_0042_010"
+                  value={form.scene_usid}
+                  onChange={(e) => set('scene_usid', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="vfx_sequence">VFX Sequence <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-400 mb-1.5">The sequence identifier this shot belongs to.</p>
+                <input
+                  id="vfx_sequence"
+                  className="input"
+                  placeholder="e.g. SEQ004"
+                  value={form.vfx_sequence}
+                  onChange={(e) => set('vfx_sequence', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="vfx_shot_version">Shot Version <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-400 mb-1.5">The version of the shot being processed.</p>
+                <input
+                  id="vfx_shot_version"
+                  className="input"
+                  placeholder="e.g. V002"
+                  value={form.vfx_shot_version}
+                  onChange={(e) => set('vfx_shot_version', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="vfx_asset_type">Asset Type <span className="text-red-500">*</span></label>
+                <p className="text-xs text-gray-400 mb-1.5">The category of AI processing applied to this shot.</p>
+                <select
+                  id="vfx_asset_type"
+                  className="select"
+                  value={form.vfx_asset_type}
+                  onChange={(e) => set('vfx_asset_type', e.target.value)}
+                >
+                  <option value="">Select asset type…</option>
+                  {VFX_ASSET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="vfx_element_processed">Element Processed</label>
+                <p className="text-xs text-gray-400 mb-1.5">Which specific layer or element AI was applied to — e.g. background plate, face replacement, crowd layer.</p>
+                <input
+                  id="vfx_element_processed"
+                  className="input"
+                  placeholder="e.g. background plate, face replacement, crowd layer"
+                  value={form.vfx_element_processed}
+                  onChange={(e) => set('vfx_element_processed', e.target.value)}
+                />
+              </div>
+            </>
           )}
           {(form.department === 'VFX' || form.department === 'Art Department') && (
             <div>
@@ -1456,22 +1525,26 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             <>
               <div className="sm:col-span-2 pt-4" style={{ borderTop: '1px solid #E5E7EB' }}>
                 <label className="label" htmlFor="facility_name">
-                  Facility name <span className="normal-case font-normal text-gray-400">(optional)</span>
+                  Facility or vendor name{form.department === 'VFX' ? <span className="text-red-500"> *</span> : <span className="normal-case font-normal text-gray-400"> (optional)</span>}
                 </label>
                 <p className="text-xs text-gray-400 mb-1.5">
-                  The post production facility where this work was carried out — leave blank if working remotely or in-house.
+                  {form.department === 'VFX'
+                    ? 'The VFX facility or vendor where this AI processing was carried out.'
+                    : 'The post production facility where this work was carried out — leave blank if working remotely or in-house.'}
                 </p>
                 <input
                   id="facility_name"
                   className="input"
-                  placeholder="e.g. Framestore, Goldcrest, or leave blank if in-house"
+                  placeholder={form.department === 'VFX' ? 'e.g. Framestore, DNEG, Rising Sun Pictures' : 'e.g. Framestore, Goldcrest, or leave blank if in-house'}
                   value={form.facility_name}
                   onChange={(e) => set('facility_name', e.target.value)}
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="label" htmlFor="render_processing_location">Render / processing location</label>
+                <label className="label" htmlFor="render_processing_location">
+                  {form.department === 'VFX' ? 'Processing location' : 'Render / processing location'}
+                </label>
                 <select
                   id="render_processing_location"
                   className="select"
@@ -1480,7 +1553,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                   onChange={(e) => set('render_processing_location', e.target.value)}
                 >
                   <option value="">Select location…</option>
-                  {RENDER_PROCESSING_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  {(form.department === 'VFX' ? VFX_PROCESSING_LOCATIONS : RENDER_PROCESSING_LOCATIONS).map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
 
@@ -1678,10 +1751,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                         {VFX_DATA_LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
                       </select>
                     </div>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-3 rounded border border-gray-200 bg-gray-50 px-4 py-3">
                       <input id={`vfx_train_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.vfx_no_training_confirmed} onChange={(e) => updateEntry(index, { vfx_no_training_confirmed: e.target.checked })} />
-                      <label htmlFor={`vfx_train_${index}`} className="text-sm text-gray-700 cursor-pointer">
-                        I confirm this tool does not use submitted material for model training, or I have written vendor confirmation that it does not
+                      <label htmlFor={`vfx_train_${index}`} className="text-sm text-gray-700 cursor-pointer font-medium">
+                        I confirm this AI tool has not been used to train on production footage
                       </label>
                     </div>
                     <div>
@@ -1694,8 +1767,8 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                     {entry.vfx_input_type === 'Plate footage containing performers' && (
                       <div className="flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
                         <input id={`vfx_lct_${index}`} type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 text-trace-moss focus:ring-trace-moss" checked={entry.vfx_lct_confirmed} onChange={(e) => updateEntry(index, { vfx_lct_confirmed: e.target.checked })} />
-                        <label htmlFor={`vfx_lct_${index}`} className="text-sm text-gray-700 cursor-pointer">
-                          I have verified a valid Likeness Consent Token exists for all performers in this footage before submitting this receipt
+                        <label htmlFor={`vfx_lct_${index}`} className="text-sm text-gray-700 cursor-pointer font-medium">
+                          I confirm a Likeness Consent Token is in place for all performers whose likeness appears in this shot
                         </label>
                       </div>
                     )}

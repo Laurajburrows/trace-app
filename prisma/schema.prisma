@@ -47,6 +47,10 @@ model Receipt {
   vfx_input_type      String?
   vfx_output_type     String?
   vfx_lct_confirmed   Boolean @default(false)
+  vfx_sequence          String?
+  vfx_shot_version      String?
+  vfx_asset_type        String?
+  vfx_element_processed String?
   sound_processing_location   String?
   sound_processing_type       String?
   sound_performer_audio       Boolean @default(false)

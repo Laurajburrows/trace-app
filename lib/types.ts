@@ -83,6 +83,25 @@ export const VFX_OUTPUT_TYPES = [
   'Other',
 ] as const
 
+export const VFX_ASSET_TYPES = [
+  'Background replacement',
+  'Crowd replication',
+  'De-ageing or appearance modification',
+  'Object removal',
+  'Environment extension',
+  'Motion capture processing',
+  'Rotoscoping',
+  'Upscaling or restoration',
+  'Colour or texture generation',
+  'Other',
+] as const
+
+export const VFX_PROCESSING_LOCATIONS = [
+  'Local workstation',
+  'Render farm',
+  'Cloud service',
+] as const
+
 export const SOUND_PROCESSING_LOCATIONS = [
   'Local software — not uploaded',
   'UK cloud server',
@@ -317,6 +336,10 @@ export interface Receipt {
   vfx_input_type?: string | null
   vfx_output_type?: string | null
   vfx_lct_confirmed?: boolean
+  vfx_sequence?: string | null
+  vfx_shot_version?: string | null
+  vfx_asset_type?: string | null
+  vfx_element_processed?: string | null
   sound_processing_location?: string | null
   sound_processing_type?: string | null
   sound_performer_audio?: boolean
