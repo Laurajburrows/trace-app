@@ -7,6 +7,7 @@ export type Department =
   | 'Cast'
   | 'Colour / DI'
   | 'Delivery / QC'
+  | 'DIT'
   | 'Directors'
   | 'Editorial'
   | 'Grip'
@@ -81,6 +82,29 @@ export const VFX_OUTPUT_TYPES = [
   'Upscaled image',
   'Composite',
   'Other',
+] as const
+
+export const DIT_CAMERA_UNITS = [
+  'A cam',
+  'B cam',
+  'C cam',
+  'Additional unit',
+  'All units',
+] as const
+
+export const DIT_PROCESSING_TYPES = [
+  'Noise reduction',
+  'Colour management',
+  'LUT creation',
+  'Format conversion',
+  'Dailies processing',
+  'Other',
+] as const
+
+export const DIT_COVERAGES = [
+  'Single clip',
+  'Roll',
+  'Full day\'s footage',
 ] as const
 
 export const VFX_ASSET_TYPES = [
@@ -254,6 +278,7 @@ export const DEPARTMENTS: Department[] = [
   'Cast',
   'Colour / DI',
   'Delivery / QC',
+  'DIT',
   'Directors',
   'Editorial',
   'Grip',
@@ -340,6 +365,10 @@ export interface Receipt {
   vfx_shot_version?: string | null
   vfx_asset_type?: string | null
   vfx_element_processed?: string | null
+  dit_camera_unit?: string | null
+  dit_processing_type?: string | null
+  dit_coverage?: string | null
+  dit_lct_flag?: boolean
   sound_processing_location?: string | null
   sound_processing_type?: string | null
   sound_performer_audio?: boolean

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
+import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -42,6 +42,10 @@ const emptyForm = {
   vfx_shot_version: '',
   vfx_asset_type: '',
   vfx_element_processed: '',
+  dit_camera_unit: '',
+  dit_processing_type: '',
+  dit_coverage: '',
+  dit_lct_flag: false,
   sound_processing_location: '',
   sound_processing_type: '',
   sound_performer_audio: false,
@@ -400,6 +404,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           vfx_shot_version: receipt.vfx_shot_version || '',
           vfx_asset_type: receipt.vfx_asset_type || '',
           vfx_element_processed: receipt.vfx_element_processed || '',
+          dit_camera_unit: receipt.dit_camera_unit || '',
+          dit_processing_type: receipt.dit_processing_type || '',
+          dit_coverage: receipt.dit_coverage || '',
+          dit_lct_flag: Boolean(receipt.dit_lct_flag),
           sound_processing_location: receipt.sound_processing_location || '',
           sound_processing_type: receipt.sound_processing_type || '',
           sound_performer_audio: Boolean(receipt.sound_performer_audio),
@@ -502,6 +510,12 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       set('vfx_shot_version', '')
       set('vfx_asset_type', '')
       set('vfx_element_processed', '')
+    }
+    if (form.department !== 'DIT') {
+      set('dit_camera_unit', '')
+      set('dit_processing_type', '')
+      set('dit_coverage', '')
+      set('dit_lct_flag', false)
     }
   }, [form.department])
 
@@ -938,6 +952,12 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!form.sound_processing_location) return setError('Sound: Please select where audio was processed.')
       if (!form.sound_processing_type) return setError('Sound: Please select the type of processing.')
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
+    }
+
+    if (form.department === 'DIT') {
+      if (!form.dit_camera_unit) return setError('DIT: Please select the camera unit.')
+      if (!form.dit_processing_type) return setError('DIT: Please select the processing type.')
+      if (!form.dit_coverage) return setError('DIT: Please select the coverage.')
     }
 
     if (form.department === 'Writing') {
@@ -2373,6 +2393,59 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 I confirm this tool does not use submitted audio for model training, or I have written vendor confirmation that it does not
               </label>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* DIT */}
+      {form.department === 'DIT' && (
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="section-heading">DIT — Additional Compliance</h2>
+          <div className="space-y-5">
+            <div>
+              <label className="label" htmlFor="dit_camera_unit">Camera unit</label>
+              <select id="dit_camera_unit" className="select" required value={form.dit_camera_unit} onChange={(e) => set('dit_camera_unit', e.target.value)}>
+                <option value="">Select camera unit…</option>
+                {DIT_CAMERA_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="dit_processing_type">Processing type</label>
+              <select id="dit_processing_type" className="select" required value={form.dit_processing_type} onChange={(e) => set('dit_processing_type', e.target.value)}>
+                <option value="">Select processing type…</option>
+                {DIT_PROCESSING_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="dit_coverage">Coverage</label>
+              <select id="dit_coverage" className="select" required value={form.dit_coverage} onChange={(e) => set('dit_coverage', e.target.value)}>
+                <option value="">Select coverage…</option>
+                {DIT_COVERAGES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.dit_lct_flag}
+                onClick={() => set('dit_lct_flag', !form.dit_lct_flag)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-trace-moss focus:ring-offset-2 ${form.dit_lct_flag ? 'bg-trace-moss' : 'bg-gray-200'}`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.dit_lct_flag ? 'translate-x-5' : 'translate-x-0'}`}
+                />
+              </button>
+              <span className="text-sm text-gray-700">Performer footage included</span>
+            </div>
+            {form.dit_lct_flag && (
+              <div className="rounded border border-yellow-300 bg-yellow-50 px-4 py-3">
+                <p className="text-sm font-semibold text-yellow-800 mb-1">LCT check required</p>
+                <p className="text-xs text-yellow-700">This processing includes performer footage. Verify that a valid Likeness Consent Token is in place before submitting.</p>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 pt-1">
+              Build 2: TRACE© will automatically import DIT processing logs from Silverstack, Livegrade, and DaVinci Resolve — replacing manual entry with automated clip-level logging.
+            </p>
           </div>
         </section>
       )}

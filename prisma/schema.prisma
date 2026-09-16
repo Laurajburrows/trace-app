@@ -51,6 +51,10 @@ model Receipt {
   vfx_shot_version      String?
   vfx_asset_type        String?
   vfx_element_processed String?
+  dit_camera_unit       String?
+  dit_processing_type   String?
+  dit_coverage          String?
+  dit_lct_flag          Boolean @default(false)
   sound_processing_location   String?
   sound_processing_type       String?
   sound_performer_audio       Boolean @default(false)

@@ -155,6 +155,12 @@ async function exportReceiptJSON(r: Receipt) {
           vfx_asset_type: (r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type ?? null,
           vfx_element_processed: (r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed ?? null,
         } : null,
+        dit: r.department === 'DIT' ? {
+          dit_camera_unit: r.dit_camera_unit ?? null,
+          dit_processing_type: r.dit_processing_type ?? null,
+          dit_coverage: r.dit_coverage ?? null,
+          dit_lct_flag: r.dit_lct_flag ?? false,
+        } : null,
         sound: (r.department === 'Sound' || r.department === 'Sound Post') ? {
           sound_processing_location: r.sound_processing_location ?? null,
           sound_processing_type: r.sound_processing_type ?? null,
@@ -462,6 +468,17 @@ async function exportReceiptPDF(r: Receipt) {
       ['Output Type', r.vfx_output_type || null],
       ['No Training Confirmed', r.vfx_no_training_confirmed ? 'Confirmed' : 'Not confirmed'],
       ['LCT Verified', r.vfx_lct_confirmed ? 'Confirmed' : 'Not required / not confirmed'],
+    ])
+    y += 2
+  }
+
+  if (r.department === 'DIT') {
+    sectionBand('DIT — Compliance')
+    twoCol([
+      ['Camera Unit', r.dit_camera_unit || null],
+      ['Processing Type', r.dit_processing_type || null],
+      ['Coverage', r.dit_coverage || null],
+      ['Performer Footage', r.dit_lct_flag ? 'Yes — LCT check required' : 'No'],
     ])
     y += 2
   }
@@ -1294,6 +1311,31 @@ export default function ReceiptLog() {
                                   <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>LCT verified</p>
                                   <p className={r.vfx_lct_confirmed ? 'text-status-green font-medium' : 'text-status-red font-medium'}>
                                     {r.vfx_lct_confirmed ? 'Confirmed' : r.vfx_input_type === 'Plate footage containing performers' ? 'Not confirmed' : 'N/A'}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {r.department === 'DIT' && (
+                            <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
+                              <p className="label mb-3">DIT — Compliance</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Camera unit</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.dit_camera_unit || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Processing type</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.dit_processing_type || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Coverage</p>
+                                  <p style={{ color: '#D4EDE1' }}>{r.dit_coverage || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>Performer footage</p>
+                                  <p className={r.dit_lct_flag ? 'text-status-amber font-medium' : ''} style={r.dit_lct_flag ? {} : { color: '#D4EDE1' }}>
+                                    {r.dit_lct_flag ? 'Yes — LCT check required' : 'No'}
                                   </p>
                                 </div>
                               </div>
