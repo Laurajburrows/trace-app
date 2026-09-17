@@ -94,6 +94,7 @@ async function exportReceiptJSON(r: Receipt) {
       crew: {
         crew_member_name: r.crew_member_name,
         crew_role: r.crew_role,
+        guild_affiliation: r.guild_affiliation === 'Other' ? (r.guild_affiliation_other || 'Other') : (r.guild_affiliation ?? null),
         submitter_role: r.submitter_role ?? null,
       },
       department: r.department,
@@ -359,6 +360,7 @@ async function exportReceiptPDF(r: Receipt) {
     ['Script Date', r.script_date],
     ['Crew Member', r.crew_member_name],
     ['Role', r.crew_role],
+    ['Guild / Union', r.guild_affiliation === 'Other' ? (r.guild_affiliation_other || 'Other') : (r.guild_affiliation || null)],
     ['Shot / Scene Reference', r.scene_usid || null],
     ['Scene / Asset Reference', r.scene_asset_reference || null],
   ])

@@ -106,6 +106,8 @@ model Receipt {
   third_party_asset           Boolean @default(false)
   third_party_licence_confirmed Boolean @default(false)
   additional_tools            Json?
+  guild_affiliation           String?
+  guild_affiliation_other     String?
 }
 
 model Production {

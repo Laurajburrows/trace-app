@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, ROLES_BY_DEPARTMENT, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
+import { DEPARTMENTS, ROLES_BY_DEPARTMENT, GUILD_OPTIONS, ROLE_GUILD_SUGGESTIONS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry, CustomRole } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -88,6 +88,8 @@ const emptyForm = {
   writing_consent_confirmed: false,
   third_party_asset: false,
   third_party_licence_confirmed: false,
+  guild_affiliation: '',
+  guild_affiliation_other: '',
 }
 
 type FormState = typeof emptyForm
@@ -452,6 +454,8 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           writing_consent_confirmed: Boolean(receipt.writing_consent_confirmed),
           third_party_asset: Boolean(receipt.third_party_asset),
           third_party_licence_confirmed: Boolean(receipt.third_party_licence_confirmed),
+          guild_affiliation: receipt.guild_affiliation || '',
+          guild_affiliation_other: receipt.guild_affiliation_other || '',
         })
         setToolQuery(receipt.ai_tool_used || '')
         if (receipt.is_session && Array.isArray(receipt.session_tool_entries) && receipt.session_tool_entries.length > 0) {
@@ -1355,7 +1359,11 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 className="select"
                 required
                 value={form.crew_role}
-                onChange={(e) => set('crew_role', e.target.value)}
+                onChange={(e) => {
+                  const role = e.target.value
+                  const suggestion = ROLE_GUILD_SUGGESTIONS[role] ?? ''
+                  setForm(prev => ({ ...prev, crew_role: role, guild_affiliation: suggestion, guild_affiliation_other: '' }))
+                }}
               >
                 <option value="">Select role…</option>
                 {(ROLES_BY_DEPARTMENT[form.department] ?? []).map(r => (
@@ -1367,6 +1375,37 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               </select>
             </div>
           )}
+          <div>
+            <label className="label" htmlFor="guild_affiliation">Guild / Union affiliation <span className="font-normal text-gray-400">(optional)</span></label>
+            {form.crew_role && ROLE_GUILD_SUGGESTIONS[form.crew_role] && (
+              <p className="text-xs text-gray-400 mb-1.5">Suggested: <span className="font-medium text-gray-600">{ROLE_GUILD_SUGGESTIONS[form.crew_role]}</span></p>
+            )}
+            <select
+              id="guild_affiliation"
+              className="select"
+              value={form.guild_affiliation}
+              onChange={(e) => set('guild_affiliation', e.target.value)}
+            >
+              <option value="">Select guild or union…</option>
+              {GUILD_OPTIONS.map(({ group, options }) =>
+                group ? (
+                  <optgroup key={group} label={group}>
+                    {options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </optgroup>
+                ) : (
+                  options.map(o => <option key={o} value={o}>{o}</option>)
+                )
+              )}
+            </select>
+            {form.guild_affiliation === 'Other' && (
+              <input
+                className="input mt-2"
+                placeholder="Specify guild or union…"
+                value={form.guild_affiliation_other}
+                onChange={(e) => set('guild_affiliation_other', e.target.value)}
+              />
+            )}
+          </div>
           {form.department === 'VFX Post' && (
             <>
               <div>

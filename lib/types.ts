@@ -47,6 +47,139 @@ export const SUBMITTER_ROLES: { value: SubmitterRole; label: string }[] = [
   { value: 'producer', label: 'Producer' },
 ]
 
+export const GUILD_OPTIONS: { group: string; options: readonly string[] }[] = [
+  {
+    group: 'UK Guilds & Unions',
+    options: ['BECTU', 'Equity', "Writers' Guild of Great Britain", "Musicians' Union", "Directors' Guild of Great Britain", 'PACT'],
+  },
+  {
+    group: 'US Guilds & Unions',
+    options: ['WGA (Writers Guild of America)', 'SAG-AFTRA', 'DGA (Directors Guild of America)', 'IATSE', 'Teamsters'],
+  },
+  {
+    group: 'International',
+    options: ['Other'],
+  },
+  {
+    group: '',
+    options: ['None / Non-union'],
+  },
+]
+
+export const ROLE_GUILD_SUGGESTIONS: Record<string, string> = {
+  // Development and Writing
+  'Writer': "Writers' Guild of Great Britain",
+  'Script Editor': "Writers' Guild of Great Britain",
+  'Story Editor': "Writers' Guild of Great Britain",
+  'Script Coordinator': "Writers' Guild of Great Britain",
+  'Script Reader': "Writers' Guild of Great Britain",
+  // Direction
+  'Director': "Directors' Guild of Great Britain",
+  '1st AD': "Directors' Guild of Great Britain",
+  '2nd AD': 'BECTU',
+  '3rd AD': 'BECTU',
+  // Production
+  'Executive Producer': 'PACT',
+  'Producer': 'PACT',
+  'Co-Producer': 'PACT',
+  'Line Producer': 'PACT',
+  'Production Manager': 'BECTU',
+  'Production Coordinator': 'BECTU',
+  'Production Secretary': 'BECTU',
+  'Production Assistant': 'BECTU',
+  // Camera
+  'Director of Photography': 'BECTU',
+  'Camera Operator': 'BECTU',
+  '1st AC': 'BECTU',
+  '2nd AC': 'BECTU',
+  'DIT': 'BECTU',
+  'Aerial DoP': 'BECTU',
+  'Underwater Camera': 'BECTU',
+  'Additional Camera Operator': 'BECTU',
+  // Lighting & Grip
+  'Gaffer': 'BECTU',
+  'Best Boy Electric': 'BECTU',
+  'Electrician': 'BECTU',
+  'Generator Operator': 'BECTU',
+  'Rigging Gaffer': 'BECTU',
+  'Key Grip': 'BECTU',
+  'Best Boy Grip': 'BECTU',
+  'Grip': 'BECTU',
+  'Dolly Grip': 'BECTU',
+  'Rigging Grip': 'BECTU',
+  // Sound (production)
+  'Production Sound Mixer': 'BECTU',
+  'Boom Operator': 'BECTU',
+  'Sound Assistant': 'BECTU',
+  // Art & Construction
+  'Production Designer': 'BECTU',
+  'Supervising Art Director': 'BECTU',
+  'Art Director': 'BECTU',
+  'Assistant Art Director': 'BECTU',
+  'Set Decorator': 'BECTU',
+  'Concept Artist': 'BECTU',
+  'Storyboard Artist': 'BECTU',
+  'Graphic Designer': 'BECTU',
+  'Construction Manager': 'BECTU',
+  'Scenic Artist': 'BECTU',
+  'Painter': 'BECTU',
+  // Hair, Makeup, Costume
+  'Hair and Makeup Designer': 'BECTU',
+  'Hair and Makeup Artist': 'BECTU',
+  'Prosthetics Designer': 'BECTU',
+  'Prosthetics Artist': 'BECTU',
+  'Costume Designer': 'BECTU',
+  'Supervising Costume Designer': 'BECTU',
+  'Costume Supervisor': 'BECTU',
+  'Costume Standby': 'BECTU',
+  'Costume Assistant': 'BECTU',
+  'Costume Buyer': 'BECTU',
+  // Continuity
+  'Script Supervisor': 'BECTU',
+  // Post Production management
+  'Post Production Supervisor': 'BECTU',
+  'Post Production Coordinator': 'BECTU',
+  // Editorial
+  'Editor': 'BECTU',
+  'First Assistant Editor': 'BECTU',
+  'Assistant Editor': 'BECTU',
+  // VFX Post
+  'VFX Supervisor (Post)': 'BECTU',
+  'VFX Producer': 'BECTU',
+  'Compositor': 'BECTU',
+  'VFX Artist': 'BECTU',
+  'Roto Artist': 'BECTU',
+  'Matchmove Artist': 'BECTU',
+  'Matte Painter': 'BECTU',
+  // Colour
+  'Colourist': 'BECTU',
+  'DI Supervisor': 'BECTU',
+  'Online Editor': 'BECTU',
+  'Conform Editor': 'BECTU',
+  // Sound Post
+  'Re-recording Mixer': 'BECTU',
+  'Facility Mixer': 'BECTU',
+  'Dialogue Editor': 'BECTU',
+  'Sound Effects Editor': 'BECTU',
+  'ADR Supervisor': 'BECTU',
+  'ADR Editor': 'BECTU',
+  'Foley Artist': 'BECTU',
+  'Foley Editor': 'BECTU',
+  'Music Editor': 'BECTU',
+  'Dubbing Mixer': 'BECTU',
+  'Deliveries and M&E Mix': 'BECTU',
+  // Music
+  'Composer': "Musicians' Union",
+  'Music Supervisor': "Musicians' Union",
+  'Music Producer': "Musicians' Union",
+  'Orchestrator': "Musicians' Union",
+  'Arranger': "Musicians' Union",
+  // Delivery
+  'QC Operator': 'BECTU',
+  'Deliverables Coordinator': 'BECTU',
+  'Localisation Coordinator': 'BECTU',
+}
+
 export const VFX_DATA_LOCATIONS = [
   'On-premises facility',
   'UK cloud server',
@@ -436,6 +569,8 @@ export interface Receipt {
   third_party_asset?: boolean
   third_party_licence_confirmed?: boolean
   additional_tools?: AdditionalToolEntry[] | null
+  guild_affiliation?: string | null
+  guild_affiliation_other?: string | null
 }
 
 export interface AdditionalToolEntry {

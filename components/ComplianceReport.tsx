@@ -2270,7 +2270,7 @@ function ReceiptAuditRow({
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="font-courier text-[10px] uppercase tracking-widest" style={{ color: '#5A8A72' }}>
-                {r.department} · {r.crew_member_name} · {r.crew_role} · {fmtD(r.date)}
+                {r.department} · {r.crew_member_name} · {r.crew_role}{r.guild_affiliation && r.guild_affiliation !== 'None / Non-union' ? ` · ${r.guild_affiliation === 'Other' ? (r.guild_affiliation_other || 'Other') : r.guild_affiliation}` : ''} · {fmtD(r.date)}
               </p>
               {r.twin_lock_hash && (
                 <p className="font-courier text-[9px] mt-1 break-all" style={{ color: '#2D6A4F' }}>

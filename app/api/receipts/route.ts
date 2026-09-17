@@ -160,6 +160,8 @@ export async function POST(req: NextRequest) {
       third_party_asset: Boolean(body.third_party_asset),
       third_party_licence_confirmed: Boolean(body.third_party_licence_confirmed),
       additional_tools: body.additional_tools ?? null,
+      guild_affiliation: body.guild_affiliation || null,
+      guild_affiliation_other: body.guild_affiliation_other || null,
     },
   })
 
