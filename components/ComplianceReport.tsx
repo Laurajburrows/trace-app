@@ -839,6 +839,217 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
   doc.save(filename)
 }
 
+async function generateBondSummaryPDF(report: ReportData) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
+
+  const pageW = 210
+  const pageH = 297
+  const margin = 20
+  const contentW = pageW - margin * 2
+  let y = margin
+
+  const FOREST = [26, 61, 43] as [number, number, number]
+  const MOSS = [45, 106, 79] as [number, number, number]
+  const DARK = [30, 30, 30] as [number, number, number]
+  const MID = [80, 80, 80] as [number, number, number]
+  const LIGHT = [140, 140, 140] as [number, number, number]
+  const GREEN_C = [46, 125, 50] as [number, number, number]
+  const AMBER_C = [200, 132, 26] as [number, number, number]
+  const RED_C = [198, 40, 40] as [number, number, number]
+
+  function rule() {
+    doc.setDrawColor(...MOSS)
+    doc.setLineWidth(0.3)
+    doc.line(margin, y, pageW - margin, y)
+    y += 5
+  }
+  function gap(n = 4) { y += n }
+
+  function body(text: string) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...MID)
+    const lines = doc.splitTextToSize(text, contentW)
+    if (y + lines.length * 5 > pageH - 20) { doc.addPage(); y = margin }
+    doc.text(lines, margin, y)
+    y += lines.length * 5 + 3
+  }
+
+  function bold(text: string, color: [number, number, number] = DARK, size = 10) {
+    doc.setFontSize(size)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...color)
+    const lines = doc.splitTextToSize(text, contentW)
+    if (y + lines.length * 5 > pageH - 20) { doc.addPage(); y = margin }
+    doc.text(lines, margin, y)
+    y += lines.length * 5 + 2
+  }
+
+  function kv(label: string, value: string, valueColor: [number, number, number] = MID) {
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...DARK)
+    doc.text(label + ':', margin, y)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...valueColor)
+    doc.text(value, margin + 55, y)
+    y += 6
+  }
+
+  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
+
+  // Header
+  doc.setFontSize(22)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...FOREST)
+  doc.text('TRACE©', margin, y)
+
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...LIGHT)
+  doc.text('INSURANCE & BOND SUMMARY', margin + 34, y - 1)
+  y += 10
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(...LIGHT)
+  doc.text('ARTIST RECEIPT LOGGER — COMPLIANCE REPORT', margin, y)
+  y += 7
+  rule()
+  gap(2)
+
+  bold(`Production: ${report.production_name}`, DARK, 12)
+  gap(1)
+  body(`Period covered: ${fmt(report.date_range.from)} – ${fmt(report.date_range.to)}`)
+  body(`Report generated: ${fmt(report.generated_at)}`)
+  gap(4)
+  rule()
+  gap(3)
+
+  // ── TRAFFIC LIGHT SUMMARY ──────────────────────────────────────────────────
+  bold('INSURANCE & BOND COMPLIANCE SUMMARY', FOREST, 11)
+  gap(3)
+
+  const total = report.receipts.length
+  const greenCount = report.receipts.filter(r => r.tool_status === 'GREEN').length
+  const amberCount = report.receipts.filter(r => r.tool_status === 'AMBER' || r.tool_status === 'YELLOW').length
+  const redCount = report.receipts.filter(r => r.tool_status === 'RED').length
+  const unverifiedCount = report.receipts.filter(r => r.tool_status === 'UNVERIFIED').length
+  const authComplete = report.receipts.filter(r => r.status === 'AUTH_COMPLETE').length
+  const authPct = total > 0 ? Math.round((authComplete / total) * 100) : 0
+  const lctCount = report.receipts.filter(r => r.lct_required).length
+  const lctReferenced = report.receipts.filter(r => r.lct_required && r.lct_reference?.trim()).length
+
+  kv('Total Artist Receipts', String(total))
+  kv('AUTH sign-off complete', `${authComplete} / ${total}  (${authPct}%)`, authPct === 100 ? GREEN_C : authPct >= 80 ? AMBER_C : RED_C)
+  gap(3)
+
+  // Traffic light rows
+  doc.setFontSize(8.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...DARK)
+  doc.text('Tool status breakdown:', margin, y)
+  y += 6
+
+  const tlRows: [string, number, [number, number, number]][] = [
+    ['GREEN — fully vetted tools', greenCount, GREEN_C],
+    ['AMBER — conditional approval', amberCount, AMBER_C],
+    ['RED — not approved', redCount, RED_C],
+    ['UNVERIFIED — not on whitelist', unverifiedCount, AMBER_C],
+  ]
+  tlRows.forEach(([label, count, color]) => {
+    const barW = total > 0 ? Math.min((count / total) * (contentW - 80), contentW - 80) : 0
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...MID)
+    doc.text(label, margin + 4, y)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...color)
+    doc.text(String(count), margin + 90, y)
+    if (barW > 0) {
+      doc.setFillColor(...color)
+      doc.rect(margin + 98, y - 3.5, barW, 4, 'F')
+    }
+    y += 6
+  })
+
+  gap(3)
+  doc.setDrawColor(220, 220, 220)
+  doc.setLineWidth(0.2)
+  doc.line(margin, y, pageW - margin, y)
+  y += 4
+
+  kv('LCT checks logged', lctCount > 0 ? `${lctReferenced} / ${lctCount} with reference number` : 'None required', lctCount > 0 && lctReferenced < lctCount ? AMBER_C : GREEN_C)
+
+  const writingReceipts = report.receipts.filter(r => r.department === 'Development and Writing')
+  const writingWithGuild = writingReceipts.filter(r => r.guild_affiliation && r.guild_affiliation !== 'None / Non-union').length
+  if (writingReceipts.length > 0) {
+    kv('Writing guild documentation', `${writingWithGuild} / ${writingReceipts.length} receipts carry guild affiliation`, writingWithGuild < writingReceipts.length ? AMBER_C : GREEN_C)
+  }
+
+  gap(3)
+
+  // Key concerns
+  const concerns: string[] = []
+  if (redCount > 0) concerns.push(`${redCount} receipt${redCount > 1 ? 's' : ''} used RED-status (non-approved) tools`)
+  if (unverifiedCount > 0) concerns.push(`${unverifiedCount} receipt${unverifiedCount > 1 ? 's' : ''} used unverified tools not on the production whitelist`)
+  if (authComplete < total) concerns.push(`${total - authComplete} receipt${total - authComplete > 1 ? 's' : ''} ${total - authComplete > 1 ? 'are' : 'is'} pending AUTH sign-off`)
+  if (lctCount > 0 && lctReferenced < lctCount) concerns.push(`${lctCount - lctReferenced} LCT flag${lctCount - lctReferenced > 1 ? 's' : ''} without reference number`)
+  if (writingReceipts.length > 0 && writingWithGuild < writingReceipts.length) concerns.push(`${writingReceipts.length - writingWithGuild} writing receipt${writingReceipts.length - writingWithGuild > 1 ? 's' : ''} without guild affiliation documented`)
+
+  if (concerns.length > 0) {
+    bold('Items Requiring Attention', AMBER_C, 9)
+    y += 1
+    concerns.forEach(c => {
+      doc.setFontSize(8.5)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...AMBER_C)
+      doc.text('• ' + c, margin + 2, y)
+      y += 5.5
+    })
+    gap(3)
+  } else {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...GREEN_C)
+    doc.text('✓  No compliance concerns identified in this period.', margin, y)
+    y += 7
+    gap(2)
+  }
+
+  rule()
+  gap(2)
+
+  // ── DELIVERY SUPPORT NOTE ──────────────────────────────────────────────────
+  bold('DELIVERY SUPPORT NOTE', FOREST, 10)
+  gap(3)
+
+  const signers = Array.from(new Set(report.receipts.map(r => r.auth_signer).filter((s): s is string => !!s)))
+
+  body('TO WHOM IT MAY CONCERN')
+  gap(2)
+  body(`This note is issued in support of Delivery documentation for the production "${report.production_name}".`)
+  gap(2)
+  body(`The TRACE Artist Receipt Logger has recorded a total of ${total} Artist Receipt${total !== 1 ? 's' : ''} for this production, covering AI-assisted creative decisions made between ${fmt(report.date_range.from)} and ${fmt(report.date_range.to)}.`)
+  gap(2)
+  body(`All ${authComplete} receipt${authComplete !== 1 ? 's' : ''} carry an Authorial Control (AUTH) sign-off from a named Head of Department or Lead Creative, confirming that a qualified human professional exercised creative control over each AI-assisted decision.${signers.length > 0 ? ` Authorising signatories include: ${signers.join(', ')}.` : ''}`)
+  gap(2)
+  body('These records demonstrate that all AI-assisted creative work on this production was conducted under documented human authorial oversight.')
+  gap(4)
+  rule()
+  body('This report is issued by the TRACE Artist Receipt Logger. Generated automatically from Artist Receipts submitted to the TRACE system.')
+
+  // Footer
+  doc.setFontSize(7)
+  doc.setTextColor(...LIGHT)
+  doc.text(`TRACE© Insurance & Bond Summary — ${report.production_name} — Confidential`, margin, pageH - 10)
+  doc.text(`Generated ${fmt(report.generated_at)}`, pageW - margin, pageH - 10, { align: 'right' })
+
+  const filename = `TRACE-${report.production_name.replace(/[^a-z0-9]/gi, '_')}-Bond-Summary.pdf`
+  doc.save(filename)
+}
+
 async function generateAIStatement(report: ReportData) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
@@ -1050,6 +1261,7 @@ export default function ComplianceReport() {
   const [report, setReport] = useState<ReportData | null>(null)
   const [loading, setLoading] = useState(false)
   const [pdfGenerating, setPdfGenerating] = useState(false)
+  const [bondPdfGenerating, setBondPdfGenerating] = useState(false)
   const [statementGenerating, setStatementGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
@@ -1148,6 +1360,19 @@ export default function ComplianceReport() {
       alert('PDF generation failed. Please try again.')
     } finally {
       setPdfGenerating(false)
+    }
+  }
+
+  async function handleDownloadBondPDF() {
+    if (!report) return
+    setBondPdfGenerating(true)
+    try {
+      await generateBondSummaryPDF(report)
+    } catch (e) {
+      console.error(e)
+      alert('Bond summary PDF generation failed. Please try again.')
+    } finally {
+      setBondPdfGenerating(false)
     }
   }
 
@@ -1404,12 +1629,6 @@ export default function ComplianceReport() {
 
             {/* Download actions */}
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => report && downloadCSV(report)} className="btn-secondary">
-                Export CSV
-              </button>
-              <button onClick={() => report && downloadJSON(report)} className="btn-secondary">
-                Export JSON
-              </button>
               <button
                 onClick={handleGenerateAIStatement}
                 disabled={aiStatementLoading}
@@ -1424,12 +1643,52 @@ export default function ComplianceReport() {
               >
                 {statementGenerating ? 'Generating…' : 'AI Statement PDF'}
               </button>
+              <div className="relative group">
+                <button
+                  disabled
+                  className="btn-secondary opacity-40 cursor-not-allowed"
+                >
+                  Export to Albert
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-courier whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ backgroundColor: '#122E1F', color: '#8BB5A0', border: '1px solid #2D6A4F' }}>
+                  AI carbon footprint reporting — coming in Build 2. Integrates with Albert.
+                </div>
+              </div>
+              <div className="relative group">
+                <button
+                  disabled
+                  className="btn-secondary opacity-40 cursor-not-allowed"
+                >
+                  Export CSV
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-courier whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ backgroundColor: '#122E1F', color: '#8BB5A0', border: '1px solid #2D6A4F' }}>
+                  Coming in Build 1
+                </div>
+              </div>
+              <div className="relative group">
+                <button
+                  disabled
+                  className="btn-secondary opacity-40 cursor-not-allowed"
+                >
+                  Export JSON
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded text-xs font-courier whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10" style={{ backgroundColor: '#122E1F', color: '#8BB5A0', border: '1px solid #2D6A4F' }}>
+                  Coming in Build 1
+                </div>
+              </div>
+              <button
+                onClick={handleDownloadBondPDF}
+                disabled={bondPdfGenerating}
+                className="btn-secondary disabled:opacity-50"
+              >
+                {bondPdfGenerating ? 'Generating…' : 'Export Bond Summary PDF'}
+              </button>
               <button
                 onClick={handleDownloadPDF}
                 disabled={pdfGenerating}
                 className="btn-primary disabled:opacity-50"
               >
-                {pdfGenerating ? 'Generating PDF…' : viewMode === 'audit' ? 'Download Full Audit PDF' : 'Download Compliance Report'}
+                {pdfGenerating ? 'Generating PDF…' : 'Export PDF'}
               </button>
             </div>
           </div>
