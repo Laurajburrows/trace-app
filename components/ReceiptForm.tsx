@@ -1340,8 +1340,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               required
               value={form.department}
               onChange={(e) => {
-                set('department', e.target.value as Department | '')
-                set('crew_role', '')
+                setForm(prev => ({ ...prev, department: e.target.value as Department | '', crew_role: '' }))
               }}
             >
               <option value="">Select department…</option>
@@ -1359,7 +1358,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 onChange={(e) => set('crew_role', e.target.value)}
               >
                 <option value="">Select role…</option>
-                {(ROLES_BY_DEPARTMENT[form.department as keyof typeof ROLES_BY_DEPARTMENT] ?? []).map(r => (
+                {(ROLES_BY_DEPARTMENT[form.department] ?? []).map(r => (
                   <option key={r} value={r}>{r}</option>
                 ))}
                 {customRoles
