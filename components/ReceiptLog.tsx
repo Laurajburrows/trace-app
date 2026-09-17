@@ -143,7 +143,7 @@ async function exportReceiptJSON(r: Receipt) {
         lct_performance_licence_ref: r.lct_performance_licence_ref ?? null,
       },
       department_fields: {
-        vfx: r.department === 'VFX' ? {
+        vfx: r.department === 'VFX Post' ? {
           vfx_software: r.vfx_software ?? null,
           vfx_data_location: r.vfx_data_location ?? null,
           vfx_no_training_confirmed: r.vfx_no_training_confirmed ?? false,
@@ -155,7 +155,7 @@ async function exportReceiptJSON(r: Receipt) {
           vfx_asset_type: (r as Receipt & { vfx_asset_type?: string | null }).vfx_asset_type ?? null,
           vfx_element_processed: (r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed ?? null,
         } : null,
-        dit: r.department === 'DIT' ? {
+        dit: r.department === 'Camera' && r.crew_role === 'DIT' ? {
           dit_camera_unit: r.dit_camera_unit ?? null,
           dit_processing_type: r.dit_processing_type ?? null,
           dit_coverage: r.dit_coverage ?? null,
@@ -167,7 +167,7 @@ async function exportReceiptJSON(r: Receipt) {
           sound_performer_audio: r.sound_performer_audio ?? false,
           sound_no_training_confirmed: r.sound_no_training_confirmed ?? false,
         } : null,
-        writing: r.department === 'Writing' ? {
+        writing: r.department === 'Development and Writing' ? {
           writing_stage: r.writing_stage ?? null,
           writing_submitted_material: r.writing_submitted_material ?? null,
           writing_processing_location: r.writing_processing_location ?? null,
@@ -180,7 +180,7 @@ async function exportReceiptJSON(r: Receipt) {
           writing_wggb_context: r.writing_wggb_context ?? null,
           writing_wggb_paternity: r.writing_wggb_paternity ?? false,
         } : null,
-        colour: r.department === 'Colour / DI' ? {
+        colour: r.department === 'Colour' ? {
           colour_grading_system: r.colour_grading_system ?? null,
           colour_ai_grading: r.colour_ai_grading ?? false,
           colour_performer_footage: r.colour_performer_footage ?? false,
@@ -192,12 +192,12 @@ async function exportReceiptJSON(r: Receipt) {
           editorial_performer_footage: r.editorial_performer_footage ?? false,
           editorial_lct_confirmed: r.editorial_lct_confirmed ?? false,
         } : null,
-        delivery: r.department === 'Delivery / QC' ? {
+        delivery: r.department === 'Delivery' ? {
           delivery_ai_tool_type: r.delivery_ai_tool_type ?? null,
           delivery_format: r.delivery_format ?? null,
           delivery_no_training_confirmed: r.delivery_no_training_confirmed ?? false,
         } : null,
-        post_prod_facility: ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department) ? {
+        post_prod_facility: ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery'].includes(r.department) ? {
           facility_name: r.facility_name ?? null,
           render_processing_location: r.render_processing_location ?? null,
           facility_ai_policy_confirmed: r.facility_ai_policy_confirmed ?? false,
@@ -362,7 +362,7 @@ async function exportReceiptPDF(r: Receipt) {
     ['Shot / Scene Reference', r.scene_usid || null],
     ['Scene / Asset Reference', r.scene_asset_reference || null],
   ])
-  if (r.department === 'VFX') {
+  if (r.department === 'VFX Post') {
     twoCol([
       ['VFX Sequence', (r as Receipt & { vfx_sequence?: string | null }).vfx_sequence || null],
       ['Shot Version', (r as Receipt & { vfx_shot_version?: string | null }).vfx_shot_version || null],
@@ -370,16 +370,16 @@ async function exportReceiptPDF(r: Receipt) {
       ['Element Processed', (r as Receipt & { vfx_element_processed?: string | null }).vfx_element_processed || null],
     ])
   }
-  if (r.department === 'Writing') {
+  if (r.department === 'Development and Writing') {
     twoCol([['Script Reference', r.writing_script_reference || null], ['Scene Number', r.writing_scene_number || null]])
   }
-  if (r.department === 'Colour / DI' || r.department === 'Editorial') {
+  if (r.department === 'Colour' || r.department === 'Editorial') {
     twoCol([['Reel', r.reel || null], ['Timecode Range', r.timecode_range || null]])
   }
   if (r.department === 'Sound Post' && r.session_file_reference) {
     twoCol([['Session File Reference', r.session_file_reference], ['', null]])
   }
-  if (r.department === 'Delivery / QC' && r.deliverable_name) {
+  if (r.department === 'Delivery' && r.deliverable_name) {
     twoCol([['Deliverable Name', r.deliverable_name], ['', null]])
   }
 
@@ -459,7 +459,7 @@ async function exportReceiptPDF(r: Receipt) {
   }
 
   // ── DEPARTMENT-SPECIFIC ──────────────────────────────────────────
-  if (r.department === 'VFX') {
+  if (r.department === 'VFX Post') {
     sectionBand('VFX — Pipeline Compliance')
     twoCol([
       ['Software & Version', r.vfx_software || null],
@@ -472,7 +472,7 @@ async function exportReceiptPDF(r: Receipt) {
     y += 2
   }
 
-  if (r.department === 'DIT') {
+  if (r.department === 'Camera' && r.crew_role === 'DIT') {
     sectionBand('DIT — Compliance')
     twoCol([
       ['Camera Unit', r.dit_camera_unit || null],
@@ -494,7 +494,7 @@ async function exportReceiptPDF(r: Receipt) {
     y += 2
   }
 
-  if (r.department === 'Writing') {
+  if (r.department === 'Development and Writing') {
     sectionBand('Writing — Compliance')
     twoCol([
       ['Stage', r.writing_stage || null],
@@ -513,7 +513,7 @@ async function exportReceiptPDF(r: Receipt) {
     y += 2
   }
 
-  if (r.department === 'Colour / DI') {
+  if (r.department === 'Colour') {
     sectionBand('Colour / DI — Compliance')
     twoCol([
       ['Grading System', r.colour_grading_system || null],
@@ -535,7 +535,7 @@ async function exportReceiptPDF(r: Receipt) {
     y += 2
   }
 
-  if (r.department === 'Delivery / QC') {
+  if (r.department === 'Delivery') {
     sectionBand('Delivery / QC — Compliance')
     twoCol([
       ['AI Tool Type', r.delivery_ai_tool_type || null],
@@ -545,7 +545,7 @@ async function exportReceiptPDF(r: Receipt) {
     y += 2
   }
 
-  if (['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department)) {
+  if (['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery'].includes(r.department)) {
     sectionBand('Post-Production Facility')
     twoCol([
       ['Facility or Vendor', r.facility_name || null],
@@ -1257,7 +1257,7 @@ export default function ReceiptLog() {
                               </div>
                             </div>
                           )}
-                          {r.department === 'VFX' && (
+                          {r.department === 'VFX Post' && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">VFX — Pipeline Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -1316,7 +1316,7 @@ export default function ReceiptLog() {
                               </div>
                             </div>
                           )}
-                          {r.department === 'DIT' && (
+                          {r.department === 'Camera' && r.crew_role === 'DIT' && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">DIT — Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -1375,7 +1375,7 @@ export default function ReceiptLog() {
                               </div>
                             )
                           })()}
-                          {r.department === 'Writing' && (
+                          {r.department === 'Development and Writing' && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">Writing — Additional Compliance</p>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -1466,7 +1466,7 @@ export default function ReceiptLog() {
                               </button>
                             </div>
                           )}
-                          {['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department) && (
+                          {['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery'].includes(r.department) && (
                             <div className="mt-5 pt-5" style={{ borderTop: '1px solid rgba(45,106,79,0.4)' }}>
                               <p className="label mb-3">Post-Production Facility</p>
                               {!r.facility_ai_policy_confirmed && (

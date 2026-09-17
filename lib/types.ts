@@ -1,41 +1,30 @@
 export type Department =
-  | 'Access'
-  | 'Animals'
-  | 'Armoury'
-  | 'Art Department'
-  | 'Camera'
-  | 'Cast'
-  | 'Colour / DI'
-  | 'Delivery / QC'
-  | 'DIT'
-  | 'Directors'
-  | 'Editorial'
-  | 'Grip'
-  | 'Hair'
-  | 'Health & Safety'
-  | 'HR'
-  | 'Lighting'
-  | 'Locations'
-  | 'Makeup'
-  | 'Mental Health'
-  | 'Music'
-  | 'Picture Post'
-  | 'Picture Vehicles'
-  | 'Producers'
+  | 'Development and Writing'
   | 'Production'
-  | 'Property'
-  | 'Publicity'
-  | 'Set Construction'
-  | 'Set Design'
-  | 'Set Dressing'
-  | 'SFX'
+  | 'Casting'
+  | 'Archive and Research'
+  | 'Art Department'
+  | 'Construction'
+  | 'Camera'
+  | 'Lighting'
+  | 'Grip'
   | 'Sound'
-  | 'Sound Post'
+  | 'Hair and Makeup'
+  | 'Costume'
+  | 'Continuity'
+  | 'Locations'
   | 'Stunts'
-  | 'Sustainability'
-  | 'VFX'
-  | 'Wardrobe'
-  | 'Writing'
+  | 'VFX On Set'
+  | 'Special Effects'
+  | 'Publicity'
+  | 'Corporate Responsibility'
+  | 'Post Production'
+  | 'Editorial'
+  | 'VFX Post'
+  | 'Colour'
+  | 'Sound Post'
+  | 'Music'
+  | 'Delivery'
 
 export type ToolStatus = 'GREEN' | 'AMBER' | 'YELLOW' | 'RED' | 'UNVERIFIED'
 
@@ -271,70 +260,62 @@ export const SEL_REASONS = [
 export type SelReason = typeof SEL_REASONS[number]
 
 export const DEPARTMENTS: Department[] = [
-  'Access',
-  'Animals',
-  'Armoury',
-  'Art Department',
-  'Camera',
-  'Cast',
-  'Colour / DI',
-  'Delivery / QC',
-  'DIT',
-  'Directors',
-  'Editorial',
-  'Grip',
-  'Hair',
-  'Health & Safety',
-  'HR',
-  'Lighting',
-  'Locations',
-  'Makeup',
-  'Mental Health',
-  'Music',
-  'Picture Post',
-  'Picture Vehicles',
-  'Producers',
+  'Development and Writing',
   'Production',
-  'Property',
-  'Publicity',
-  'Set Construction',
-  'Set Design',
-  'Set Dressing',
-  'SFX',
+  'Casting',
+  'Archive and Research',
+  'Art Department',
+  'Construction',
+  'Camera',
+  'Lighting',
+  'Grip',
   'Sound',
-  'Sound Post',
+  'Hair and Makeup',
+  'Costume',
+  'Continuity',
+  'Locations',
   'Stunts',
-  'Sustainability',
-  'VFX',
-  'Wardrobe',
-  'Writing',
+  'VFX On Set',
+  'Special Effects',
+  'Publicity',
+  'Corporate Responsibility',
+  'Post Production',
+  'Editorial',
+  'VFX Post',
+  'Colour',
+  'Sound Post',
+  'Music',
+  'Delivery',
 ]
 
-export const ROLES_BY_DEPARTMENT: Partial<Record<Department, readonly string[]>> = {
-  Writing: ['Writer', 'Script Editor', 'Story Editor', 'Script Coordinator'],
-  Production: ['Director', 'Producer', 'DIT', 'Script Supervisor'],
-  VFX: ['VFX Supervisor', 'VFX Producer', 'Compositor', 'VFX Artist', 'Roto Artist', 'Matchmove Artist'],
-  Editorial: ['Editor', 'First Assistant Editor', 'Assistant Editor'],
-  'Colour / DI': ['Colourist', 'DI Supervisor', 'Online Editor', 'Conform Editor'],
+export const ROLES_BY_DEPARTMENT: Record<Department, readonly string[]> = {
+  'Development and Writing': ['Writer', 'Script Editor', 'Story Editor', 'Script Coordinator', 'Script Reader'],
+  'Production': ['Executive Producer', 'Producer', 'Co-Producer', 'Line Producer', 'Production Manager', 'Production Coordinator', 'Production Secretary', 'Production Assistant', 'Director', '1st AD', '2nd AD', '3rd AD'],
+  'Casting': ['Casting Director', 'Casting Associate', 'Casting Assistant'],
+  'Archive and Research': ['Researcher', 'Archive Producer', 'Archive Coordinator'],
+  'Art Department': ['Production Designer', 'Supervising Art Director', 'Art Director', 'Assistant Art Director', 'Set Decorator', 'Buyer', 'Prop Master', 'Props Buyer', 'Props Assistant', 'Standby Props', 'Concept Artist', 'Storyboard Artist', 'Graphic Designer'],
+  'Construction': ['Construction Manager', 'Scenic Artist', 'Painter'],
+  'Camera': ['Director of Photography', 'Camera Operator', '1st AC', '2nd AC', 'DIT', 'Aerial DoP', 'Underwater Camera', 'Additional Camera Operator'],
+  'Lighting': ['Gaffer', 'Best Boy Electric', 'Electrician', 'Generator Operator', 'Rigging Gaffer'],
+  'Grip': ['Key Grip', 'Best Boy Grip', 'Grip', 'Dolly Grip', 'Rigging Grip'],
+  'Sound': ['Production Sound Mixer', 'Boom Operator', 'Sound Assistant'],
+  'Hair and Makeup': ['Hair and Makeup Designer', 'Hair and Makeup Artist', 'Prosthetics Designer', 'Prosthetics Artist'],
+  'Costume': ['Costume Designer', 'Supervising Costume Designer', 'Costume Supervisor', 'Costume Standby', 'Costume Assistant', 'Costume Buyer'],
+  'Continuity': ['Script Supervisor'],
+  'Locations': ['Location Manager', 'Unit Manager', 'Location Scout', 'Location Assistant', 'Security Coordinator', 'Security'],
+  'Stunts': ['Stunt Coordinator', 'Stunt Performer'],
+  'VFX On Set': ['VFX Supervisor (On Set)', 'VFX Production Manager', 'VFX PA'],
+  'Special Effects': ['Special Effects Supervisor', 'Special Effects Technician'],
+  'Publicity': ['Unit Publicist', 'Publicity Assistant', 'On Set Publicist', 'Stills Photographer'],
+  'Corporate Responsibility': ['Sustainability Coordinator', 'Access Coordinator', 'DEI Manager'],
+  'Post Production': ['Post Production Supervisor', 'Post Production Coordinator'],
+  'Editorial': ['Editor', 'First Assistant Editor', 'Assistant Editor'],
+  'VFX Post': ['VFX Supervisor (Post)', 'VFX Producer', 'Compositor', 'VFX Artist', 'Roto Artist', 'Matchmove Artist', 'Matte Painter'],
+  'Colour': ['Colourist', 'DI Supervisor', 'Online Editor', 'Conform Editor'],
   'Sound Post': ['Re-recording Mixer', 'Facility Mixer', 'Dialogue Editor', 'Sound Effects Editor', 'ADR Supervisor', 'ADR Editor', 'Foley Artist', 'Foley Editor', 'Music Editor', 'Dubbing Mixer', 'Deliveries and M&E Mix'],
-  Music: ['Composer', 'Music Supervisor', 'Music Producer', 'Orchestrator', 'Arranger'],
-  'Art Department': ['Production Designer', 'Art Director', 'Concept Artist', 'Set Decorator'],
-  'Delivery / QC': ['Post Production Supervisor', 'QC Operator', 'Deliverables Coordinator'],
+  'Music': ['Composer', 'Music Supervisor', 'Music Producer', 'Orchestrator', 'Arranger'],
+  'Delivery': ['QC Operator', 'Deliverables Coordinator', 'Localisation Coordinator'],
 } as const
-
-export const ROLE_TO_DEPARTMENT: Record<string, Department> = {
-  'Writer': 'Writing', 'Script Editor': 'Writing', 'Story Editor': 'Writing', 'Script Coordinator': 'Writing',
-  'Director': 'Production', 'Producer': 'Production', 'DIT': 'DIT', 'Script Supervisor': 'Production',
-  'VFX Supervisor': 'VFX', 'VFX Producer': 'VFX', 'Compositor': 'VFX', 'VFX Artist': 'VFX', 'Roto Artist': 'VFX', 'Matchmove Artist': 'VFX',
-  'Editor': 'Editorial', 'First Assistant Editor': 'Editorial', 'Assistant Editor': 'Editorial',
-  'Colourist': 'Colour / DI', 'DI Supervisor': 'Colour / DI', 'Online Editor': 'Colour / DI', 'Conform Editor': 'Colour / DI',
-  'Re-recording Mixer': 'Sound Post', 'Facility Mixer': 'Sound Post', 'Dialogue Editor': 'Sound Post', 'Sound Effects Editor': 'Sound Post',
-  'ADR Supervisor': 'Sound Post', 'ADR Editor': 'Sound Post', 'Foley Artist': 'Sound Post', 'Foley Editor': 'Sound Post',
-  'Music Editor': 'Sound Post', 'Dubbing Mixer': 'Sound Post', 'Deliveries and M&E Mix': 'Sound Post',
-  'Composer': 'Music', 'Music Supervisor': 'Music', 'Music Producer': 'Music', 'Orchestrator': 'Music', 'Arranger': 'Music',
-  'Production Designer': 'Art Department', 'Art Director': 'Art Department', 'Concept Artist': 'Art Department', 'Set Decorator': 'Art Department',
-  'Post Production Supervisor': 'Delivery / QC', 'QC Operator': 'Delivery / QC', 'Deliverables Coordinator': 'Delivery / QC',
-}
 
 export interface CustomRole {
   id: string

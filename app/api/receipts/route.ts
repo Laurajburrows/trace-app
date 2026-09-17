@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const body = await req.json()
 
-  const isWritingDevelopment = body.department === 'Writing' && body.writing_stage === 'Development'
+  const isWritingDevelopment = body.department === 'Development and Writing' && body.writing_stage === 'Development'
   const submitterRole: string = body.submitter_role || 'crew'
   const now = new Date()
 

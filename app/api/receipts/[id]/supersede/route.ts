@@ -38,7 +38,7 @@ export async function POST(
   let initialStatus: string
   let routedToTier: string
 
-  const isWritingDevelopment = body.department === 'Writing' && body.writing_stage === 'Development'
+  const isWritingDevelopment = body.department === 'Development and Writing' && body.writing_stage === 'Development'
 
   if (isWritingDevelopment) {
     initialStatus = 'AUTH_COMPLETE'

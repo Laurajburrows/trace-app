@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import type { Receipt } from '@/lib/types'
 
-const POST_PROD = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+const POST_PROD = ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery']
 
 function isComplianceFlagged(r: Receipt): boolean {
   const cloudSound = Boolean(r.sound_performer_audio) &&
@@ -13,10 +13,10 @@ function isComplianceFlagged(r: Receipt): boolean {
     r.sound_processing_location !== 'Local software — not uploaded'
   return (
     r.tool_status === 'RED' ||
-    (r.department === 'VFX' && !r.vfx_no_training_confirmed) ||
+    (r.department === 'VFX Post' && !r.vfx_no_training_confirmed) ||
     ((r.department === 'Sound' || r.department === 'Sound Post') && !r.sound_no_training_confirmed) ||
-    (r.department === 'Writing' && !r.writing_no_training_confirmed) ||
-    (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
+    (r.department === 'Development and Writing' && !r.writing_no_training_confirmed) ||
+    (r.department === 'Delivery' && !r.delivery_no_training_confirmed) ||
     cloudSound ||
     (POST_PROD.includes(r.department) && !r.facility_ai_policy_confirmed)
   )

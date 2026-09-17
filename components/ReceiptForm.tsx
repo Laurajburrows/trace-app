@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { DEPARTMENTS, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS, ROLES_BY_DEPARTMENT, ROLE_TO_DEPARTMENT } from '@/lib/types'
+import { DEPARTMENTS, ROLES_BY_DEPARTMENT, SEL_REASONS, VFX_DATA_LOCATIONS, VFX_INPUT_TYPES, VFX_OUTPUT_TYPES, VFX_ASSET_TYPES, VFX_PROCESSING_LOCATIONS, DIT_CAMERA_UNITS, DIT_PROCESSING_TYPES, DIT_COVERAGES, SOUND_PROCESSING_LOCATIONS, SOUND_PROCESSING_TYPES, WRITING_STAGES, WRITING_SUBMITTED_MATERIALS, WRITING_PROCESSING_LOCATIONS, WRITING_GUILD_STATUSES, WRITING_AI_CONTRIBUTIONS, WGA_SCRIPT_REGISTRATION_STATUSES, WGGB_WRITING_CONTEXTS, LCT_AGE_BRACKETS, SUBMITTER_ROLES, COLOUR_GRADING_SYSTEMS, EDITORIAL_EDITING_SYSTEMS, EDITORIAL_AI_TOOL_TYPES, DELIVERY_AI_TOOL_TYPES, DELIVERY_FORMATS, RENDER_PROCESSING_LOCATIONS } from '@/lib/types'
 import type { Department, WhitelistEntry, SelReason, SubmitterRole, Receipt, AdditionalToolEntry, CustomRole } from '@/lib/types'
 
 const today = new Date().toISOString().split('T')[0]
@@ -502,22 +502,16 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       .finally(() => setPreloadLoading(false))
   }, [preloadId, supersedeId])
 
-  // Reset toolEntries, additionalTools and VFX-only fields when department changes
+  // Reset toolEntries, additionalTools and department-specific fields when department changes
   useEffect(() => {
     setToolEntries([makeEmptyEntry()])
     setAdditionalTools([])
-    if (form.department !== 'VFX') {
+    if (form.department !== 'VFX Post') {
       set('scene_usid', '')
       set('vfx_sequence', '')
       set('vfx_shot_version', '')
       set('vfx_asset_type', '')
       set('vfx_element_processed', '')
-    }
-    if (form.department !== 'DIT') {
-      set('dit_camera_unit', '')
-      set('dit_processing_type', '')
-      set('dit_coverage', '')
-      set('dit_lct_flag', false)
     }
   }, [form.department])
 
@@ -664,7 +658,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     return e.toolQuery.trim().length >= 3 ? 'UNVERIFIED' : ''
   }
 
-  const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+  const POST_PROD_DEPTS = ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery']
   const isPostProd = POST_PROD_DEPTS.includes(form.department)
 
   const sessionAuthBlocked = toolEntries.some(e => {
@@ -683,7 +677,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     : form.submitter_role === 'producer'
     ? 'Exec / OAS'
     : 'HOD'
-  const isWritingDev = form.department === 'Writing' && form.writing_stage === 'Development'
+  const isWritingDev = form.department === 'Development and Writing' && form.writing_stage === 'Development'
 
   function getMissingFields(): string[] {
     const missing: string[] = []
@@ -697,28 +691,28 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     }
     if (!form.por_description.trim()) missing.push('POR')
     if (!form.arr_description.trim()) missing.push('ARR')
-    if (form.department === 'Writing') {
+    if (form.department === 'Development and Writing') {
       if (!form.writing_script_reference.trim()) missing.push('Script Reference')
       if (!form.writing_scene_number.trim()) missing.push('Scene Number')
     }
-    if (form.department === 'VFX' || form.department === 'Art Department') {
+    if (form.department === 'VFX Post' || form.department === 'Art Department') {
       if (!form.scene_asset_reference.trim()) missing.push('Scene or Asset Reference')
     }
-    if (form.department === 'VFX') {
+    if (form.department === 'VFX Post') {
       if (!form.scene_usid.trim()) missing.push('Shot Reference')
       if (!form.vfx_sequence.trim()) missing.push('VFX Sequence')
       if (!form.vfx_shot_version.trim()) missing.push('Shot Version')
       if (!form.vfx_asset_type) missing.push('Asset Type')
       if (!form.facility_name.trim()) missing.push('Facility or Vendor Name')
     }
-    if (form.department === 'Colour / DI' || form.department === 'Editorial') {
+    if (form.department === 'Colour' || form.department === 'Editorial') {
       if (!form.reel.trim()) missing.push('Reel')
       if (!form.timecode_range.trim()) missing.push('Timecode Range')
     }
     if (form.department === 'Sound Post') {
       if (!form.session_file_reference.trim()) missing.push('Session File Reference')
     }
-    if (form.department === 'Delivery / QC') {
+    if (form.department === 'Delivery') {
       if (!form.deliverable_name.trim()) missing.push('Deliverable Name')
     }
     if (mode === 'supersede' && !supersedeReason.trim()) missing.push('Reason for Superseding')
@@ -730,7 +724,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
     setError(null)
     setMissingFields([])
 
-    if (form.department === 'Writing' && !form.writing_consent_confirmed) {
+    if (form.department === 'Development and Writing' && !form.writing_consent_confirmed) {
       setError('Writer consent must be confirmed before this receipt can be submitted.')
       return
     }
@@ -780,7 +774,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
         }
         if (!entry.tool_version.trim()) return setError(`Please enter the tool version${label}.`)
 
-        if (form.department === 'VFX') {
+        if (form.department === 'VFX Post') {
           if (!entry.vfx_software.trim()) return setError(`VFX: Please enter the software name and version${label}.`)
           if (!entry.vfx_data_location) return setError(`VFX: Please select where data was processed${label}.`)
           if (!entry.vfx_no_training_confirmed) return setError(`VFX: Please confirm that this AI tool has not been used to train on production footage${label}.`)
@@ -797,10 +791,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           if (!entry.sound_no_training_confirmed) return setError(`Sound Post: Please confirm the training data policy${label}.`)
         }
 
-        if (form.department === 'Colour / DI') {
-          if (!entry.colour_grading_system) return setError(`Colour / DI: Please select the grading system${label}.`)
+        if (form.department === 'Colour') {
+          if (!entry.colour_grading_system) return setError(`Colour: Please select the grading system${label}.`)
           if (entry.colour_performer_footage && !entry.colour_lct_confirmed) {
-            return setError(`Colour / DI: Please confirm LCT verification for footage containing performers${label}.`)
+            return setError(`Colour: Please confirm LCT verification for footage containing performers${label}.`)
           }
         }
 
@@ -812,10 +806,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           }
         }
 
-        if (form.department === 'Delivery / QC') {
-          if (!entry.delivery_ai_tool_type) return setError(`Delivery / QC: Please select the type of AI tool used${label}.`)
-          if (!entry.delivery_format) return setError(`Delivery / QC: Please select the delivery format${label}.`)
-          if (!entry.delivery_no_training_confirmed) return setError(`Delivery / QC: Please confirm the training data policy${label}.`)
+        if (form.department === 'Delivery') {
+          if (!entry.delivery_ai_tool_type) return setError(`Delivery: Please select the type of AI tool used${label}.`)
+          if (!entry.delivery_format) return setError(`Delivery: Please select the delivery format${label}.`)
+          if (!entry.delivery_no_training_confirmed) return setError(`Delivery: Please confirm the training data policy${label}.`)
         }
       }
 
@@ -958,13 +952,13 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!form.sound_no_training_confirmed) return setError('Sound: Please confirm the training data policy.')
     }
 
-    if (form.department === 'DIT') {
+    if (form.department === 'Camera' && form.crew_role === 'DIT') {
       if (!form.dit_camera_unit) return setError('DIT: Please select the camera unit.')
       if (!form.dit_processing_type) return setError('DIT: Please select the processing type.')
       if (!form.dit_coverage) return setError('DIT: Please select the coverage.')
     }
 
-    if (form.department === 'Writing') {
+    if (form.department === 'Development and Writing') {
       if (!form.writing_stage) return setError('Writing: Please select the stage of development.')
       if (!form.writing_submitted_material) return setError('Writing: Please select what script material was submitted.')
       if (!form.writing_processing_location) return setError('Writing: Please select where this was processed.')
@@ -1033,7 +1027,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!res.ok) throw new Error('Submission failed')
 
       const receipt = await res.json()
-      const selfAuth = form.department === 'Writing' && form.writing_stage === 'Development'
+      const selfAuth = form.department === 'Development and Writing' && form.writing_stage === 'Development'
       const routedTo: Confirmation['routedTo'] = mode === 'edit'
         ? 'hod'
         : selfAuth
@@ -1339,45 +1333,42 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             />
           </div>
           <div>
-            <label className="label" htmlFor="crew_role">Role <span className="text-red-500">*</span></label>
+            <label className="label" htmlFor="department">Department <span className="text-red-500">*</span></label>
             <select
-              id="crew_role"
+              id="department"
               className="select"
               required
-              value={form.crew_role}
+              value={form.department}
               onChange={(e) => {
-                const role = e.target.value
-                const dept = ROLE_TO_DEPARTMENT[role] ?? (customRoles.find(r => r.role_name === role)?.department as Department | undefined) ?? form.department
-                set('crew_role', role)
-                set('department', dept)
+                set('department', e.target.value as Department | '')
+                set('crew_role', '')
               }}
             >
-              <option value="">Select role…</option>
-              {(Object.entries(ROLES_BY_DEPARTMENT) as [string, readonly string[]][]).map(([dept, roles]) => (
-                <optgroup key={dept} label={dept}>
-                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
-                </optgroup>
-              ))}
-              {customRoles.length > 0 && (
-                <optgroup label="Custom roles">
-                  {customRoles.map(r => <option key={r.id} value={r.role_name}>{r.role_name} ({r.department})</option>)}
-                </optgroup>
-              )}
+              <option value="">Select department…</option>
+              {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
-          <div>
-            <label className="label">Department</label>
-            {form.department ? (
-              <div className="flex items-center h-10 px-3 rounded border border-gray-200 bg-gray-50">
-                <span className="text-sm text-gray-700">{form.department}</span>
-              </div>
-            ) : (
-              <div className="flex items-center h-10 px-3 rounded border border-gray-200 bg-gray-50">
-                <span className="text-sm text-gray-400 italic">Auto-populated from role</span>
-              </div>
-            )}
-          </div>
-          {form.department === 'VFX' && (
+          {form.department && (
+            <div>
+              <label className="label" htmlFor="crew_role">Role <span className="text-red-500">*</span></label>
+              <select
+                id="crew_role"
+                className="select"
+                required
+                value={form.crew_role}
+                onChange={(e) => set('crew_role', e.target.value)}
+              >
+                <option value="">Select role…</option>
+                {(ROLES_BY_DEPARTMENT[form.department as keyof typeof ROLES_BY_DEPARTMENT] ?? []).map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+                {customRoles
+                  .filter(r => r.department === form.department)
+                  .map(r => <option key={r.id} value={r.role_name}>{r.role_name}</option>)}
+              </select>
+            </div>
+          )}
+          {form.department === 'VFX Post' && (
             <>
               <div>
                 <label className="label" htmlFor="scene_usid">Shot Reference <span className="text-red-500">*</span></label>
@@ -1438,7 +1429,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               </div>
             </>
           )}
-          {(form.department === 'VFX' || form.department === 'Art Department') && (
+          {(form.department === 'VFX Post' || form.department === 'Art Department') && (
             <div>
               <label className="label" htmlFor="scene_asset_reference">Scene or Asset Reference</label>
               <input
@@ -1450,7 +1441,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               />
             </div>
           )}
-          {form.department === 'Writing' && (
+          {form.department === 'Development and Writing' && (
             <>
               <div>
                 <label className="label" htmlFor="writing_script_reference">Script Reference</label>
@@ -1474,7 +1465,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               </div>
             </>
           )}
-          {(form.department === 'Colour / DI' || form.department === 'Editorial') && (
+          {(form.department === 'Colour' || form.department === 'Editorial') && (
             <>
               <div>
                 <label className="label" htmlFor="reel">Reel</label>
@@ -1510,7 +1501,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
               />
             </div>
           )}
-          {form.department === 'Delivery / QC' && (
+          {form.department === 'Delivery' && (
             <div>
               <label className="label" htmlFor="deliverable_name">Deliverable Name</label>
               <input
@@ -1562,17 +1553,17 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             <>
               <div className="sm:col-span-2 pt-4" style={{ borderTop: '1px solid #E5E7EB' }}>
                 <label className="label" htmlFor="facility_name">
-                  Facility or vendor name{form.department === 'VFX' ? <span className="text-red-500"> *</span> : <span className="normal-case font-normal text-gray-400"> (optional)</span>}
+                  Facility or vendor name{form.department === 'VFX Post' ? <span className="text-red-500"> *</span> : <span className="normal-case font-normal text-gray-400"> (optional)</span>}
                 </label>
                 <p className="text-xs text-gray-400 mb-1.5">
-                  {form.department === 'VFX'
+                  {form.department === 'VFX Post'
                     ? 'The VFX facility or vendor where this AI processing was carried out.'
                     : 'The post production facility where this work was carried out — leave blank if working remotely or in-house.'}
                 </p>
                 <input
                   id="facility_name"
                   className="input"
-                  placeholder={form.department === 'VFX' ? 'e.g. Framestore, DNEG, Rising Sun Pictures' : 'e.g. Framestore, Goldcrest, or leave blank if in-house'}
+                  placeholder={form.department === 'VFX Post' ? 'e.g. Framestore, DNEG, Rising Sun Pictures' : 'e.g. Framestore, Goldcrest, or leave blank if in-house'}
                   value={form.facility_name}
                   onChange={(e) => set('facility_name', e.target.value)}
                 />
@@ -1580,7 +1571,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
 
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="render_processing_location">
-                  {form.department === 'VFX' ? 'Processing location' : 'Render / processing location'}
+                  {form.department === 'VFX Post' ? 'Processing location' : 'Render / processing location'}
                 </label>
                 <select
                   id="render_processing_location"
@@ -1590,7 +1581,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                   onChange={(e) => set('render_processing_location', e.target.value)}
                 >
                   <option value="">Select location…</option>
-                  {(form.department === 'VFX' ? VFX_PROCESSING_LOCATIONS : RENDER_PROCESSING_LOCATIONS).map((l) => <option key={l} value={l}>{l}</option>)}
+                  {(form.department === 'VFX Post' ? VFX_PROCESSING_LOCATIONS : RENDER_PROCESSING_LOCATIONS).map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
 
@@ -1774,7 +1765,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 </div>
 
                 {/* VFX-specific fields */}
-                {form.department === 'VFX' && (
+                {form.department === 'VFX Post' && (
                   <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-400">VFX — Tool Compliance</p>
                     <div>
@@ -1855,9 +1846,9 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 )}
 
                 {/* Colour/DI specific */}
-                {form.department === 'Colour / DI' && (
+                {form.department === 'Colour' && (
                   <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Colour / DI — Tool Compliance</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Colour — Tool Compliance</p>
                     <div>
                       <label className="label" htmlFor={`col_sys_${index}`}>Grading system</label>
                       <select id={`col_sys_${index}`} className="select" value={entry.colour_grading_system} onChange={(e) => updateEntry(index, { colour_grading_system: e.target.value })}>
@@ -1914,9 +1905,9 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 )}
 
                 {/* Delivery/QC specific */}
-                {form.department === 'Delivery / QC' && (
+                {form.department === 'Delivery' && (
                   <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid #F3F4F6' }}>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery / QC — Tool Compliance</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Delivery — Tool Compliance</p>
                     <div>
                       <label className="label" htmlFor={`del_tool_${index}`}>Type of AI tool used at delivery</label>
                       <select id={`del_tool_${index}`} className="select" value={entry.delivery_ai_tool_type} onChange={(e) => updateEntry(index, { delivery_ai_tool_type: e.target.value })}>
@@ -2415,7 +2406,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       )}
 
       {/* DIT */}
-      {form.department === 'DIT' && (
+      {(form.department === 'Camera' && form.crew_role === 'DIT') && (
         <section className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="section-heading">DIT — Additional Compliance</h2>
           <div className="space-y-5">
@@ -2468,7 +2459,7 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       )}
 
       {/* Writing */}
-      {form.department === 'Writing' && (
+      {form.department === 'Development and Writing' && (
         <section className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="section-heading">Writing — Additional Compliance</h2>
           <div className="space-y-5">

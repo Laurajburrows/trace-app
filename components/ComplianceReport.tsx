@@ -452,7 +452,7 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
   })
 
   // ── VFX COMPLIANCE REGISTER (conditional) ─────────────────────────────────
-  const vfxReceipts = report.receipts.filter((r) => r.department === 'VFX')
+  const vfxReceipts = report.receipts.filter((r) => r.department === 'VFX Post')
   if (vfxReceipts.length > 0) {
     newPage()
     h2('VFX Compliance Register')
@@ -514,7 +514,7 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
   }
 
   // ── WRITING COMPLIANCE REGISTER (conditional) ─────────────────────────────
-  const writingReceipts = report.receipts.filter((r) => r.department === 'Writing')
+  const writingReceipts = report.receipts.filter((r) => r.department === 'Development and Writing')
   if (writingReceipts.length > 0) {
     newPage()
     h2('Writing Compliance Register')
@@ -605,7 +605,7 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
   }
 
   // ── FACILITY AI POLICY REGISTER (conditional) ─────────────────────────────
-  const postProdDepts = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+  const postProdDepts = ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery']
   const facilityReceipts = report.receipts.filter((r) => postProdDepts.includes(r.department))
   if (facilityReceipts.length > 0) {
     newPage()
@@ -812,7 +812,7 @@ async function generatePDF(report: ReportData, mode: 'summary' | 'audit' = 'summ
       const flags: string[] = []
       if (r.lct_required) flags.push(`LCT required — ref: ${r.lct_reference || 'not provided'}`)
       if (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed) flags.push('Third-party licence clearance not confirmed')
-      if (r.department === 'Writing' && r.writing_consent_confirmed === false) flags.push('Writer consent not confirmed')
+      if (r.department === 'Development and Writing' && r.writing_consent_confirmed === false) flags.push('Writer consent not confirmed')
       if (r.tool_status === 'RED' || r.tool_status === 'UNVERIFIED') flags.push(`Tool status: ${r.tool_status}`)
       if (flags.length > 0) {
         checkPage(6)
@@ -1437,7 +1437,7 @@ export default function ComplianceReport() {
           <div ref={reportRef} className="space-y-6">
             {/* Summary stat row */}
             {(() => {
-              const POST_PROD_DEPTS = ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC']
+              const POST_PROD_DEPTS = ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery']
               const pendingAuth = report.receipts.filter((r) =>
                 r.status.startsWith('PENDING_') || r.status === 'RECALLED'
               ).length
@@ -1447,10 +1447,10 @@ export default function ComplianceReport() {
                   r.sound_processing_location !== 'Local software — not uploaded'
                 return (
                   r.tool_status === 'RED' ||
-                  (r.department === 'VFX' && !r.vfx_no_training_confirmed) ||
+                  (r.department === 'VFX Post' && !r.vfx_no_training_confirmed) ||
                   ((r.department === 'Sound' || r.department === 'Sound Post') && !r.sound_no_training_confirmed) ||
-                  (r.department === 'Writing' && !r.writing_no_training_confirmed) ||
-                  (r.department === 'Delivery / QC' && !r.delivery_no_training_confirmed) ||
+                  (r.department === 'Development and Writing' && !r.writing_no_training_confirmed) ||
+                  (r.department === 'Delivery' && !r.delivery_no_training_confirmed) ||
                   cloudSound ||
                   (POST_PROD_DEPTS.includes(r.department) && !r.facility_ai_policy_confirmed) ||
                   (Boolean(r.third_party_asset) && !r.third_party_licence_confirmed) ||
@@ -1841,7 +1841,7 @@ export default function ComplianceReport() {
             </ReportSection>
 
             {/* VFX Compliance Register (conditional) */}
-            {report.receipts.some((r) => r.department === 'VFX') && (
+            {report.receipts.some((r) => r.department === 'VFX Post') && (
               <ReportSection title="VFX Compliance Register">
                 <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                   Per-receipt VFX compliance data: software used, data processing location, input and output types, and training data confirmation.
@@ -1861,7 +1861,7 @@ export default function ComplianceReport() {
                       </tr>
                     </thead>
                     <tbody>
-                      {report.receipts.filter((r) => r.department === 'VFX').map((r) => (
+                      {report.receipts.filter((r) => r.department === 'VFX Post').map((r) => (
                         <tr key={r.id} className="align-top" style={{ borderTop: '1px solid rgba(45,106,79,0.3)' }}>
                           <td className="px-3 py-2 font-courier text-xs whitespace-nowrap" style={{ color: '#8BB5A0' }}>{r.scene_usid}</td>
                           <td className="px-3 py-2 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{r.crew_member_name}</td>
@@ -1949,7 +1949,7 @@ export default function ComplianceReport() {
             )}
 
             {/* Writing Compliance Register (conditional) */}
-            {report.receipts.some((r) => r.department === 'Writing') && (
+            {report.receipts.some((r) => r.department === 'Development and Writing') && (
               <ReportSection title="Writing Compliance Register">
                 <p className="text-sm mb-4" style={{ color: '#8BB5A0' }}>
                   Per-receipt Writing compliance data. Unconfirmed training data use and missing authorship declarations are highlighted.
@@ -1969,7 +1969,7 @@ export default function ComplianceReport() {
                       </tr>
                     </thead>
                     <tbody>
-                      {report.receipts.filter((r) => r.department === 'Writing').map((r) => {
+                      {report.receipts.filter((r) => r.department === 'Development and Writing').map((r) => {
                         const flagged = !r.writing_no_training_confirmed || !r.writing_authorship_declared
                         return (
                           <tr key={r.id} className="align-top" style={{
@@ -2075,8 +2075,8 @@ export default function ComplianceReport() {
             })()}
 
             {/* Facility AI Policy Register (conditional) */}
-            {report.receipts.some((r) => ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department)) && (() => {
-              const ppReceipts = report.receipts.filter((r) => ['VFX', 'Colour / DI', 'Editorial', 'Sound Post', 'Delivery / QC'].includes(r.department))
+            {report.receipts.some((r) => ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery'].includes(r.department)) && (() => {
+              const ppReceipts = report.receipts.filter((r) => ['VFX Post', 'Colour', 'Editorial', 'Sound Post', 'Delivery'].includes(r.department))
               const unconfirmed = ppReceipts.filter((r) => !r.facility_ai_policy_confirmed)
               return (
                 <ReportSection title="Facility AI Policy Register">
@@ -2224,7 +2224,7 @@ function ReceiptAuditRow({
     (r.lct_required && !r.lct_reference) ||
     r.tool_status === 'RED' ||
     r.tool_status === 'UNVERIFIED' ||
-    (r.department === 'Writing' && r.writing_consent_confirmed === false)
+    (r.department === 'Development and Writing' && r.writing_consent_confirmed === false)
 
   return (
     <div style={{ borderBottom: index > 0 ? '1px solid rgba(45,106,79,0.25)' : undefined }}>
@@ -2303,7 +2303,7 @@ function ReceiptAuditRow({
                 {Boolean(r.third_party_asset) && !r.third_party_licence_confirmed && (
                   <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ Third-party licence clearance not confirmed — legal review required before delivery</p>
                 )}
-                {r.department === 'Writing' && r.writing_consent_confirmed === false && (
+                {r.department === 'Development and Writing' && r.writing_consent_confirmed === false && (
                   <p className="font-courier text-xs" style={{ color: '#C8A84B' }}>⚑ Writer consent not confirmed</p>
                 )}
               </div>
