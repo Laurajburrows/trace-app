@@ -301,54 +301,36 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   const [showConsentGate, setShowConsentGate] = useState(false)
   const [consentBoxChecked, setConsentBoxChecked] = useState(false)
   const [consentSubmitting, setConsentSubmitting] = useState(false)
-  const checkedConsentPairs = useRef<Set<string>>(new Set())
+  const [consentName, setConsentName] = useState('')
+  const [consentProd, setConsentProd] = useState('')
+  const [consentRole, setConsentRole] = useState('')
 
+  // Show consent gate immediately on first visit (new session), skip for edit/supersede
   useEffect(() => {
     if (mode === 'edit' || mode === 'supersede') return
-    const name = form.crew_member_name.trim()
-    const prod = form.production_name.trim()
-    const role = form.crew_role.trim()
-    if (!name || !prod || !role) return
-
-    const key = `${prod}::${name}`
-    if (checkedConsentPairs.current.has(key)) return
-
-    const lsKey = `trace_consent_${prod}_${name}`
-    if (typeof window !== 'undefined' && localStorage.getItem(lsKey)) {
-      checkedConsentPairs.current.add(key)
-      return
-    }
-
-    const params = new URLSearchParams({ production_name: prod, crew_member_name: name })
-    fetch(`/api/consent?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.consented) {
-          if (typeof window !== 'undefined') localStorage.setItem(lsKey, '1')
-          checkedConsentPairs.current.add(key)
-        } else {
-          setShowConsentGate(true)
-        }
-      })
-      .catch(() => {})
-  }, [form.crew_member_name, form.production_name, form.crew_role, mode])
+    if (typeof window !== 'undefined' && sessionStorage.getItem('trace_session_consented')) return
+    setShowConsentGate(true)
+  }, [mode])
 
   async function handleConsentConfirm() {
-    if (!consentBoxChecked) return
+    if (!consentBoxChecked || !consentName.trim() || !consentProd.trim() || !consentRole.trim()) return
     setConsentSubmitting(true)
     try {
       await fetch('/api/consent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          production_name: form.production_name.trim(),
-          crew_member_name: form.crew_member_name.trim(),
-          crew_role: form.crew_role.trim(),
+          production_name: consentProd.trim(),
+          crew_member_name: consentName.trim(),
+          crew_role: consentRole.trim(),
         }),
       })
-      const lsKey = `trace_consent_${form.production_name.trim()}_${form.crew_member_name.trim()}`
-      if (typeof window !== 'undefined') localStorage.setItem(lsKey, '1')
-      checkedConsentPairs.current.add(`${form.production_name.trim()}::${form.crew_member_name.trim()}`)
+      if (typeof window !== 'undefined') sessionStorage.setItem('trace_session_consented', '1')
+      setForm(prev => ({
+        ...prev,
+        production_name: consentProd.trim(),
+        crew_member_name: consentName.trim(),
+      }))
       setShowConsentGate(false)
       setConsentBoxChecked(false)
     } catch {
@@ -1205,17 +1187,72 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
 
-      {/* Consent gate — full-screen blocking overlay */}
+      {/* Consent gate — full-screen blocking overlay, shown on first session visit */}
       {showConsentGate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(10,25,16,0.92)' }}>
-          <div className="w-full max-w-lg rounded-xl p-8 space-y-6" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
+          <div className="w-full max-w-lg rounded-xl p-8 space-y-5" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F' }}>
             <div>
               <p className="font-courier text-[10px] uppercase tracking-widest mb-2" style={{ color: '#8BB5A0' }}>TRACE© — Before you continue</p>
-              <h2 className="font-garamond text-2xl mb-4" style={{ color: '#F0EBE0' }}>Activity Consent Declaration</h2>
-              <div className="rounded-lg px-5 py-4 font-courier text-sm leading-relaxed" style={{ backgroundColor: '#0F2419', border: '1px solid rgba(45,106,79,0.5)', color: '#D4EDE1' }}>
-                I understand that AI tool use on this production is logged through TRACE© and I consent to my activity being recorded as part of the production&apos;s compliance record.
+              <h2 className="font-garamond text-2xl mb-1" style={{ color: '#F0EBE0' }}>Activity Consent Declaration</h2>
+              <p className="font-courier text-[11px]" style={{ color: '#5A8A72' }}>Please confirm your details and read the declaration below.</p>
+            </div>
+
+            {/* Identity fields */}
+            <div className="space-y-3">
+              <div>
+                <label className="block font-courier text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8BB5A0' }}>Production</label>
+                {productions.length > 0 ? (
+                  <select
+                    className="w-full rounded px-3 py-2 font-courier text-sm"
+                    style={{ backgroundColor: '#0F2419', border: '1px solid #2D6A4F', color: '#F0EBE0', outline: 'none' }}
+                    value={consentProd}
+                    onChange={(e) => setConsentProd(e.target.value)}
+                  >
+                    <option value="">Select production…</option>
+                    {productions.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="w-full rounded px-3 py-2 font-courier text-sm"
+                    style={{ backgroundColor: '#0F2419', border: '1px solid #2D6A4F', color: '#F0EBE0', outline: 'none' }}
+                    placeholder="Production name"
+                    value={consentProd}
+                    onChange={(e) => setConsentProd(e.target.value)}
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block font-courier text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8BB5A0' }}>Your name</label>
+                <input
+                  type="text"
+                  className="w-full rounded px-3 py-2 font-courier text-sm"
+                  style={{ backgroundColor: '#0F2419', border: '1px solid #2D6A4F', color: '#F0EBE0', outline: 'none' }}
+                  placeholder="Full name"
+                  value={consentName}
+                  onChange={(e) => setConsentName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block font-courier text-[11px] uppercase tracking-wider mb-1" style={{ color: '#8BB5A0' }}>Your role</label>
+                <input
+                  type="text"
+                  className="w-full rounded px-3 py-2 font-courier text-sm"
+                  style={{ backgroundColor: '#0F2419', border: '1px solid #2D6A4F', color: '#F0EBE0', outline: 'none' }}
+                  placeholder="e.g. VFX Supervisor, Director, Editor"
+                  value={consentRole}
+                  onChange={(e) => setConsentRole(e.target.value)}
+                />
               </div>
             </div>
+
+            {/* Consent text */}
+            <div className="rounded-lg px-5 py-4 font-courier text-sm leading-relaxed" style={{ backgroundColor: '#0F2419', border: '1px solid rgba(45,106,79,0.5)', color: '#D4EDE1' }}>
+              I understand that AI tool use on this production is logged through TRACE© and I consent to my activity being recorded as part of the production&apos;s compliance record.
+            </div>
+
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -1227,16 +1264,18 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
                 I confirm I have read and agree to the above declaration.
               </span>
             </label>
+
             <button
               type="button"
-              disabled={!consentBoxChecked || consentSubmitting}
+              disabled={!consentBoxChecked || !consentName.trim() || !consentProd.trim() || !consentRole.trim() || consentSubmitting}
               onClick={handleConsentConfirm}
               className="w-full btn-primary disabled:opacity-40"
             >
               {consentSubmitting ? 'Confirming…' : 'Confirm and continue'}
             </button>
+
             <p className="font-courier text-[10px] text-center" style={{ color: '#5A8A72' }}>
-              {form.crew_member_name} · {form.production_name}
+              TRACE© Compliance — consent recorded with timestamp in the Global Activity Log
             </p>
           </div>
         </div>
