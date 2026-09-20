@@ -108,6 +108,8 @@ model Receipt {
   additional_tools            Json?
   guild_affiliation           String?
   guild_affiliation_other     String?
+  eu_ai_act_real_person       Boolean @default(false)
+  eu_ai_act_synthetic_voice   Boolean @default(false)
 }
 
 model Production {

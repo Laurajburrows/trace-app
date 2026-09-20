@@ -90,6 +90,8 @@ const emptyForm = {
   third_party_licence_confirmed: false,
   guild_affiliation: '',
   guild_affiliation_other: '',
+  eu_ai_act_real_person: null as boolean | null,
+  eu_ai_act_synthetic_voice: null as boolean | null,
 }
 
 type FormState = typeof emptyForm
@@ -438,6 +440,8 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
           third_party_licence_confirmed: Boolean(receipt.third_party_licence_confirmed),
           guild_affiliation: receipt.guild_affiliation || '',
           guild_affiliation_other: receipt.guild_affiliation_other || '',
+          eu_ai_act_real_person: receipt.eu_ai_act_real_person != null ? Boolean(receipt.eu_ai_act_real_person) : null,
+          eu_ai_act_synthetic_voice: receipt.eu_ai_act_synthetic_voice != null ? Boolean(receipt.eu_ai_act_synthetic_voice) : null,
         })
         setToolQuery(receipt.ai_tool_used || '')
         if (receipt.is_session && Array.isArray(receipt.session_tool_entries) && receipt.session_tool_entries.length > 0) {
@@ -702,6 +706,10 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
       if (!form.deliverable_name.trim()) missing.push('Deliverable Name')
     }
     if (mode === 'supersede' && !supersedeReason.trim()) missing.push('Reason for Superseding')
+    if (['VFX Post', 'Sound Post', 'Music'].includes(form.department)) {
+      if (form.eu_ai_act_real_person === null) missing.push('Article 50 — Real Person Depiction')
+      if (form.eu_ai_act_synthetic_voice === null) missing.push('Article 50 — Synthetic Voice')
+    }
     return missing
   }
 
@@ -2218,6 +2226,78 @@ export default function ReceiptForm({ mode, preloadId, supersedeId }: ReceiptFor
             />
             <p className="text-xs text-gray-400 mt-2">Where did you end up? Write a description, paste a URL, or add a file or asset reference — whichever most accurately captures the final version.</p>
           </div>
+
+          {/* EU AI Act Article 50 Flags — VFX Post, Sound Post, Music only */}
+          {['VFX Post', 'Sound Post', 'Music'].includes(form.department) && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 space-y-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700 mb-0.5">EU AI Act — Article 50 Flags</p>
+                <p className="text-xs text-amber-800">Both questions are mandatory for {form.department} receipts. These flags are used to generate the Article 50 disclosure document for broadcasters and distributors.</p>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-2">
+                  (a) Does this output contain a realistic AI-generated depiction of a real person?
+                  <span className="text-red-500 ml-1">*</span>
+                </p>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eu_ai_act_real_person"
+                      value="yes"
+                      checked={form.eu_ai_act_real_person === true}
+                      onChange={() => set('eu_ai_act_real_person', true)}
+                      className="accent-amber-600"
+                    />
+                    <span className="text-sm font-medium text-gray-800">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eu_ai_act_real_person"
+                      value="no"
+                      checked={form.eu_ai_act_real_person === false}
+                      onChange={() => set('eu_ai_act_real_person', false)}
+                      className="accent-amber-600"
+                    />
+                    <span className="text-sm font-medium text-gray-800">No</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-gray-800 mb-2">
+                  (b) Does this output contain a synthetic voice based on a real person&apos;s voice?
+                  <span className="text-red-500 ml-1">*</span>
+                </p>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eu_ai_act_synthetic_voice"
+                      value="yes"
+                      checked={form.eu_ai_act_synthetic_voice === true}
+                      onChange={() => set('eu_ai_act_synthetic_voice', true)}
+                      className="accent-amber-600"
+                    />
+                    <span className="text-sm font-medium text-gray-800">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eu_ai_act_synthetic_voice"
+                      value="no"
+                      checked={form.eu_ai_act_synthetic_voice === false}
+                      onChange={() => set('eu_ai_act_synthetic_voice', false)}
+                      className="accent-amber-600"
+                    />
+                    <span className="text-sm font-medium text-gray-800">No</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

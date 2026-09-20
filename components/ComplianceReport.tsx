@@ -1288,6 +1288,64 @@ export default function ComplianceReport() {
   const [aiStatementError, setAiStatementError] = useState<string | null>(null)
   const [aiStatementCopied, setAiStatementCopied] = useState(false)
 
+  const [showArticle50Modal, setShowArticle50Modal] = useState(false)
+  const [article50Copied, setArticle50Copied] = useState(false)
+
+  function getArticle50Receipts(): Receipt[] {
+    if (!report) return []
+    return report.receipts.filter(
+      (r) => r.eu_ai_act_real_person === true || r.eu_ai_act_synthetic_voice === true
+    )
+  }
+
+  function buildArticle50Text(): string {
+    const receipts = getArticle50Receipts()
+    const lines: string[] = [
+      `TRACE© — EU AI ACT ARTICLE 50 DISCLOSURE`,
+      `Production: ${report?.production_name ?? ''}`,
+      `Generated: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+      ``,
+      `This document lists all Artist Receipts for this production where AI-generated output`,
+      `contains a realistic depiction of a real person or a synthetic voice based on a real`,
+      `person's voice, as required under EU AI Act Article 50.`,
+      ``,
+      `─────────────────────────────────────────────────────────`,
+      ``,
+    ]
+    receipts.forEach((r, i) => {
+      const ref = r.scene_asset_reference || r.scene_usid || '—'
+      const hodAuth = r.auth_signer
+        ? `${r.auth_signer} (${r.auth_timestamp ? new Date(r.auth_timestamp).toLocaleDateString('en-GB') : 'date unknown'})`
+        : r.status === 'AUTH_COMPLETE' ? 'AUTH COMPLETE' : 'PENDING'
+      lines.push(`Receipt ${i + 1}`)
+      lines.push(`  Shot / Asset Reference : ${ref}`)
+      lines.push(`  Department             : ${r.department}`)
+      lines.push(`  Tool Used              : ${r.ai_tool_used}`)
+      lines.push(`  Type of AI Use         : ${r.sel_description || '—'}`)
+      lines.push(`  Date                   : ${fmt(r.date)}`)
+      lines.push(`  HOD AUTH               : ${hodAuth}`)
+      lines.push(`  Article 50 Flags       :`)
+      if (r.eu_ai_act_real_person) lines.push(`    ✓ Realistic AI-generated depiction of a real person`)
+      if (r.eu_ai_act_synthetic_voice) lines.push(`    ✓ Synthetic voice based on a real person's voice`)
+      lines.push(``)
+    })
+    if (receipts.length === 0) {
+      lines.push(`No receipts on this production carry Article 50 flags.`)
+      lines.push(``)
+    }
+    lines.push(`─────────────────────────────────────────────────────────`)
+    lines.push(`TRACE© Protocol — Article50-v1 — © Laura Burrows 2026`)
+    return lines.join('\n')
+  }
+
+  function copyArticle50() {
+    const text = buildArticle50Text()
+    navigator.clipboard.writeText(text).then(() => {
+      setArticle50Copied(true)
+      setTimeout(() => setArticle50Copied(false), 2000)
+    })
+  }
+
   async function handleGenerateAIStatement() {
     if (!selected) return
     setAiStatementLoading(true)
@@ -1449,6 +1507,88 @@ export default function ComplianceReport() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Article 50 Disclosure Modal */}
+      {showArticle50Modal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(10,25,16,0.88)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowArticle50Modal(false) }}
+        >
+          <div className="w-full max-w-2xl rounded-xl p-8 space-y-5 max-h-[90vh] flex flex-col" style={{ backgroundColor: '#1A3D2B', border: '1px solid #2D6A4F', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            <div className="flex items-start justify-between gap-4 flex-shrink-0">
+              <div>
+                <p className="font-courier text-[10px] uppercase tracking-widest mb-1" style={{ color: '#C8A84B' }}>TRACE© — EU AI Act Article 50 Disclosure</p>
+                <p className="font-garamond text-xl" style={{ color: '#F0EBE0' }}>{selected}</p>
+                <p className="font-courier text-xs mt-1" style={{ color: '#8BB5A0' }}>
+                  {getArticle50Receipts().length === 0
+                    ? 'No Article 50 flags on this production.'
+                    : `${getArticle50Receipts().length} receipt${getArticle50Receipts().length !== 1 ? 's' : ''} with Article 50 flags`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowArticle50Modal(false)}
+                className="font-courier text-xs flex-shrink-0"
+                style={{ color: '#5A8A72' }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 rounded-lg" style={{ backgroundColor: '#0F2419', border: '1px solid rgba(45,106,79,0.5)' }}>
+              {getArticle50Receipts().length === 0 ? (
+                <p className="font-courier text-xs p-5 leading-relaxed" style={{ color: '#8BB5A0' }}>
+                  No receipts on this production carry Article 50 flags. The Article 50 disclosure document will reflect this.
+                </p>
+              ) : (
+                <table className="w-full text-xs font-courier">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(45,106,79,0.5)' }}>
+                      {['Shot / Asset Ref', 'Dept', 'Tool', 'Type of AI Use', 'Date', 'HOD AUTH', 'Flags'].map((h) => (
+                        <th key={h} className="text-left px-4 py-3 font-bold uppercase tracking-wider" style={{ color: '#C8A84B', fontSize: 9 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getArticle50Receipts().map((r) => (
+                      <tr key={r.id} style={{ borderBottom: '1px solid rgba(45,106,79,0.3)' }}>
+                        <td className="px-4 py-3" style={{ color: '#D4EDE1' }}>{r.scene_asset_reference || r.scene_usid || '—'}</td>
+                        <td className="px-4 py-3" style={{ color: '#D4EDE1' }}>{r.department}</td>
+                        <td className="px-4 py-3" style={{ color: '#D4EDE1' }}>{r.ai_tool_used}</td>
+                        <td className="px-4 py-3" style={{ color: '#D4EDE1' }}>{r.sel_description || '—'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: '#D4EDE1' }}>{fmt(r.date)}</td>
+                        <td className="px-4 py-3" style={{ color: r.auth_signer ? '#4ade80' : '#C8A84B' }}>
+                          {r.auth_signer || (r.status === 'AUTH_COMPLETE' ? 'AUTH' : 'Pending')}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.eu_ai_act_real_person && (
+                            <span className="block" style={{ color: '#C8A84B' }}>Real person depiction</span>
+                          )}
+                          {r.eu_ai_act_synthetic_voice && (
+                            <span className="block" style={{ color: '#C8A84B' }}>Synthetic voice</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={copyArticle50}
+                className="btn-secondary text-xs"
+              >
+                {article50Copied ? 'Copied!' : 'Copy to clipboard'}
+              </button>
+              <p className="font-courier text-[10px]" style={{ color: '#5A8A72' }}>
+                For delivery to broadcaster or distributor — EU AI Act Article 50 compliance
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -1629,6 +1769,13 @@ export default function ComplianceReport() {
 
             {/* Download actions */}
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowArticle50Modal(true)}
+                className="btn-secondary"
+                style={{ borderColor: '#C8A84B', color: '#C8A84B' }}
+              >
+                Generate Article 50 Disclosure
+              </button>
               <button
                 onClick={handleGenerateAIStatement}
                 disabled={aiStatementLoading}

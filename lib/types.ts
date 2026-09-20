@@ -571,6 +571,8 @@ export interface Receipt {
   additional_tools?: AdditionalToolEntry[] | null
   guild_affiliation?: string | null
   guild_affiliation_other?: string | null
+  eu_ai_act_real_person?: boolean
+  eu_ai_act_synthetic_voice?: boolean
 }
 
 export interface AdditionalToolEntry {

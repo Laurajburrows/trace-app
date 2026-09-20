@@ -162,6 +162,8 @@ export async function POST(req: NextRequest) {
       additional_tools: body.additional_tools ?? null,
       guild_affiliation: body.guild_affiliation || null,
       guild_affiliation_other: body.guild_affiliation_other || null,
+      eu_ai_act_real_person: Boolean(body.eu_ai_act_real_person),
+      eu_ai_act_synthetic_voice: Boolean(body.eu_ai_act_synthetic_voice),
     },
   })
 
